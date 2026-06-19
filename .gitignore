@@ -38,3 +38,10 @@ htmlcov/
 .idea/
 .DS_Store
 Thumbs.db
+file.txt
+
+# Datasets (exclude large dataset files but keep structure)
+datasets/demo/*
+!datasets/demo/.gitkeep
+datasets/uploaded/*
+!datasets/uploaded/.gitkeep

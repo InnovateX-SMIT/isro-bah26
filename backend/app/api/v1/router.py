@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from app.api.v1.analysis import router as analysis_router
+from app.api.v1.datasets import router as datasets_router
 
 api_router = APIRouter()
 
@@ -15,4 +16,6 @@ def get_v1_status():
     }
 
 api_router.include_router(analysis_router, prefix="/analysis", tags=["Analysis Sessions"])
+api_router.include_router(datasets_router, prefix="/datasets", tags=["Datasets"])
+
 

@@ -1,5 +1,6 @@
 import uuid
 from sqlalchemy import Column, String, DateTime
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
 
@@ -36,3 +37,7 @@ class AnalysisSession(Base):
         nullable=False,
         doc="Timestamp of the last status change or session modification"
     )
+
+    # Relationship to Datasets
+    datasets = relationship("Dataset", back_populates="session", cascade="all, delete-orphan")
+

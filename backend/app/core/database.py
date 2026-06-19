@@ -38,5 +38,7 @@ def init_db():
     """
     # Defer import of models to avoid circular import issues
     from app.models.session import AnalysisSession
+    from app.models.dataset import Dataset
     Base.metadata.create_all(bind=engine)
+
 

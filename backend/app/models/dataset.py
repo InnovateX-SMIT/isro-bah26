@@ -62,3 +62,7 @@ class Dataset(Base):
 
     # Relationship back to AnalysisSession
     session = relationship("AnalysisSession", back_populates="datasets")
+
+    # Relationship to DatasetInspection (one-to-one)
+    inspection = relationship("DatasetInspection", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
+

@@ -36,4 +36,7 @@ def init_db():
     Initialize SQLite database tables based on loaded models metadata.
     Does not impact running servers if tables already exist.
     """
+    # Defer import of models to avoid circular import issues
+    from app.models.session import AnalysisSession
     Base.metadata.create_all(bind=engine)
+

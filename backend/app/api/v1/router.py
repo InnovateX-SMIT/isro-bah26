@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from app.api.v1.analysis import router as analysis_router
 
 api_router = APIRouter()
 
@@ -12,3 +13,6 @@ def get_v1_status():
         "service": "AI-Powered Geospatial Reconstruction Platform API",
         "status": "ready"
     }
+
+api_router.include_router(analysis_router, prefix="/analysis", tags=["Analysis Sessions"])
+

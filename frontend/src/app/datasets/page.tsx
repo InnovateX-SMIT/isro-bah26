@@ -29,9 +29,15 @@ import {
   getDatasetInspectionFiles,
   deleteDatasetInspection
 } from "@/lib/dataset-inspection-api"
+import {
+  runDatasetMetadata,
+  getDatasetMetadata,
+  deleteDatasetMetadata
+} from "@/lib/dataset-metadata-api"
 import { DemoDataset, Dataset } from "@/lib/types/dataset"
 import { AnalysisSession } from "@/lib/types/analysis"
 import { DatasetInspection, DatasetFile } from "@/lib/types/dataset-inspection"
+import { DatasetMetadata } from "@/lib/types/dataset-metadata"
 
 function DatasetsDashboard() {
   const router = useRouter()
@@ -57,6 +63,11 @@ function DatasetsDashboard() {
   const [loadingInspection, setLoadingInspection] = useState<boolean>(false)
   const [loadingFiles, setLoadingFiles] = useState<boolean>(false)
   const [runningInspection, setRunningInspection] = useState<boolean>(false)
+
+  // Metadata states
+  const [metadata, setMetadata] = useState<DatasetMetadata | null>(null)
+  const [loadingMetadata, setLoadingMetadata] = useState<boolean>(false)
+  const [runningMetadata, setRunningMetadata] = useState<boolean>(false)
 
   // Form states
   const [formSessionId, setFormSessionId] = useState<string>("")
@@ -210,6 +221,7 @@ function DatasetsDashboard() {
       setSelectedDataset(null)
       setInspection(null)
       setFiles([])
+      setMetadata(null)
     }
 
     try {
@@ -229,7 +241,9 @@ function DatasetsDashboard() {
     setSelectedDataset(dataset)
     setInspection(null)
     setFiles([])
+    setMetadata(null)
     setLoadingInspection(true)
+    setLoadingMetadata(true)
     setError(null)
     
     try {
@@ -252,6 +266,19 @@ function DatasetsDashboard() {
     } finally {
       setLoadingInspection(false)
       setLoadingFiles(false)
+    }
+
+    try {
+      const metadataData = await getDatasetMetadata(dataset.dataset_id)
+      setMetadata(metadataData)
+    } catch (err: any) {
+      if (err.message && err.message.includes("404")) {
+        setMetadata(null)
+      } else {
+        console.error(err)
+      }
+    } finally {
+      setLoadingMetadata(false)
     }
   }
 
@@ -279,6 +306,25 @@ function DatasetsDashboard() {
     } finally {
       setRunningInspection(false)
       setLoadingFiles(false)
+    }
+  }
+
+  // Run Metadata Extraction
+  const handleRunMetadata = async () => {
+    if (!selectedDataset) return
+    setRunningMetadata(true)
+    setError(null)
+    setMetadata(null)
+    
+    try {
+      const metadataData = await runDatasetMetadata(selectedDataset.dataset_id)
+      setMetadata(metadataData)
+      triggerSuccess(`Metadata intelligence extraction completed for ${selectedDataset.dataset_name}.`)
+    } catch (err: any) {
+      console.error(err)
+      setError(err.message || "Metadata extraction failed. Verify files are valid.")
+    } finally {
+      setRunningMetadata(false)
     }
   }
 
@@ -864,6 +910,195 @@ function DatasetsDashboard() {
                                 ))}
                               </tbody>
                             </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Metadata Intelligence Panel */}
+                    <div className="border-t border-border/40 pt-6 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-3">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 font-mono">
+                            Metadata Intelligence
+                          </h3>
+                          {metadata && (
+                            <span
+                              className={`px-1.5 py-0.5 border text-[8px] font-bold tracking-widest uppercase ${
+                                metadata.metadata_status === "COMPLETED"
+                                  ? "border-emerald-500/20 text-emerald-400 bg-emerald-500/5"
+                                  : metadata.metadata_status === "EXTRACTING"
+                                  ? "border-amber-500/20 text-amber-500 bg-amber-500/5 animate-pulse"
+                                  : metadata.metadata_status === "FAILED"
+                                  ? "border-red-500/20 text-red-400 bg-red-500/5"
+                                  : "border-border text-muted-foreground bg-muted/5"
+                              }`}
+                            >
+                              {metadata.metadata_status}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          disabled={runningMetadata || loadingMetadata}
+                          onClick={handleRunMetadata}
+                          className="px-3 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/30 hover:border-primary transition-all font-mono font-bold tracking-widest uppercase text-[9px] flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          {runningMetadata ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Running Extraction...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="w-3 h-3" />
+                              {metadata ? "Re-Run Extraction" : "Run Extraction"}
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {loadingMetadata ? (
+                        <div className="flex items-center justify-center p-6 space-x-2 text-[10px] font-mono text-muted-foreground">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                          <span>FETCHING METADATA TELEMETRY FROM PLATFORM ENGINE...</span>
+                        </div>
+                      ) : !metadata ? (
+                        /* Empty state */
+                        <div className="border border-dashed border-border bg-muted/5 p-8 text-center flex flex-col items-center justify-center space-y-3 min-h-[140px]">
+                          <Info className="w-5 h-5 text-muted-foreground/50" />
+                          <div className="space-y-1">
+                            <h4 className="text-[11px] font-bold uppercase tracking-wider text-foreground font-mono">
+                              No Metadata Profile Extracted
+                            </h4>
+                            <p className="text-[10px] text-muted-foreground leading-normal max-w-sm">
+                              The geospatial metadata intelligence profile has not been created yet. Run the extraction engine to process GeoTIFF attributes.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Metadata content */
+                        <div className="space-y-6">
+                          {/* Summary cards */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-center text-[10px]">
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">CRS</div>
+                              <div className="text-xs font-bold text-foreground mt-1 truncate" title={metadata.coordinate_system || "N/A"}>
+                                {metadata.coordinate_system || "N/A"}
+                              </div>
+                            </div>
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">Projection</div>
+                              <div className="text-xs font-bold text-foreground mt-1 truncate" title={metadata.projection_name || "N/A"}>
+                                {metadata.projection_name || "N/A"}
+                              </div>
+                            </div>
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">EPSG Code</div>
+                              <div className="text-xs font-bold text-cyan-400 mt-1">
+                                {metadata.epsg_code || "N/A"}
+                              </div>
+                            </div>
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">UTM Zone</div>
+                              <div className="text-xs font-bold text-foreground mt-1">
+                                {metadata.utm_zone || "N/A"}
+                              </div>
+                            </div>
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">Spectral Bands</div>
+                              <div className="text-xs font-bold text-foreground mt-1">
+                                {metadata.band_count || "N/A"}
+                              </div>
+                            </div>
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">Raster Size</div>
+                              <div className="text-xs font-bold text-foreground mt-1 truncate">
+                                {metadata.raster_width && metadata.raster_height
+                                  ? `${metadata.raster_width} x ${metadata.raster_height}`
+                                  : "N/A"}
+                              </div>
+                            </div>
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">Pixel Size</div>
+                              <div className="text-xs font-bold text-amber-500 mt-1 truncate">
+                                {metadata.pixel_size_x && metadata.pixel_size_y
+                                  ? `${Math.abs(metadata.pixel_size_x).toFixed(2)}m x ${Math.abs(metadata.pixel_size_y).toFixed(2)}m`
+                                  : "N/A"}
+                              </div>
+                            </div>
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">Acquisition Date</div>
+                              <div className="text-xs font-bold text-pink-500 mt-1 truncate" title={metadata.acquisition_date || "N/A"}>
+                                {metadata.acquisition_date || "N/A"}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Details Table */}
+                          <div className="space-y-2">
+                            <div className="text-[9px] font-bold text-muted-foreground/80 uppercase font-mono tracking-wider">
+                              Geospatial Properties Register
+                            </div>
+                            <div className="border border-border bg-card/15 overflow-hidden">
+                              <table className="w-full text-left border-collapse font-mono text-[10px]">
+                                <thead>
+                                  <tr className="border-b border-border bg-muted/20 text-muted-foreground uppercase tracking-widest text-[9px]">
+                                    <th className="p-2.5 font-bold">Property Field</th>
+                                    <th className="p-2.5 font-bold">Extracted Value</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border/60 text-muted-foreground">
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Coordinate System (Datum)</td>
+                                    <td className="p-2.5 select-all text-foreground">{metadata.coordinate_system || "N/A"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Map Projection</td>
+                                    <td className="p-2.5 select-all text-foreground">{metadata.projection_name || "N/A"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">EPSG Identifier</td>
+                                    <td className="p-2.5 select-all text-cyan-400 font-bold">{metadata.epsg_code || "N/A"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">UTM Grid Zone</td>
+                                    <td className="p-2.5 select-all text-foreground">{metadata.utm_zone || "N/A"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Top-Left Origin X (Easting)</td>
+                                    <td className="p-2.5 select-all text-foreground">{metadata.origin_x !== null ? metadata.origin_x.toFixed(6) : "N/A"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Top-Left Origin Y (Northing)</td>
+                                    <td className="p-2.5 select-all text-foreground">{metadata.origin_y !== null ? metadata.origin_y.toFixed(6) : "N/A"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Horizontal Resolution (Pixel size X)</td>
+                                    <td className="p-2.5 select-all text-foreground">{metadata.pixel_size_x !== null ? `${metadata.pixel_size_x.toFixed(6)} meters` : "N/A"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Vertical Resolution (Pixel size Y)</td>
+                                    <td className="p-2.5 select-all text-foreground">{metadata.pixel_size_y !== null ? `${metadata.pixel_size_y.toFixed(6)} meters` : "N/A"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Raster Width (Pixels)</td>
+                                    <td className="p-2.5 select-all text-foreground">{metadata.raster_width || "N/A"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Raster Height (Scan lines)</td>
+                                    <td className="p-2.5 select-all text-foreground">{metadata.raster_height || "N/A"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Spectral Band Count</td>
+                                    <td className="p-2.5 select-all text-foreground">{metadata.band_count || "N/A"}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Capture Acquisition Date</td>
+                                    <td className="p-2.5 select-all text-pink-400 font-bold">{metadata.acquisition_date || "N/A"}</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
                         </div>
                       )}

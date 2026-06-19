@@ -66,3 +66,6 @@ class Dataset(Base):
     # Relationship to DatasetInspection (one-to-one)
     inspection = relationship("DatasetInspection", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
 
+    # Relationship to DatasetMetadata (one-to-one)
+    dataset_metadata = relationship("DatasetMetadata", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
+

@@ -116,4 +116,16 @@ class DatasetService:
                 status_code=404,
                 detail=f"Dataset registration {dataset_id} not found"
             )
+
+        # Clean up physical preview directory on disk if it exists
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+        preview_dir = os.path.join(workspace_root, "datasets", "previews", dataset_id)
+        if os.path.exists(preview_dir):
+            import shutil
+            try:
+                shutil.rmtree(preview_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove preview directory {preview_dir} on dataset purge: {io_err}")
+
         return self.repository.delete_dataset(dataset_id)

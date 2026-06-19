@@ -42,6 +42,7 @@ def init_db():
     from app.models.dataset_inspection import DatasetInspection
     from app.models.dataset_file import DatasetFile
     from app.models.dataset_metadata import DatasetMetadata
+    from app.models.dataset_preview import DatasetPreview
     Base.metadata.create_all(bind=engine)
 
 

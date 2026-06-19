@@ -34,10 +34,18 @@ import {
   getDatasetMetadata,
   deleteDatasetMetadata
 } from "@/lib/dataset-metadata-api"
+import {
+  runDatasetPreview,
+  getDatasetPreview,
+  deleteDatasetPreview,
+  getDatasetPreviewImageUrl,
+  getDatasetPreviewThumbnailUrl
+} from "@/lib/dataset-preview-api"
 import { DemoDataset, Dataset } from "@/lib/types/dataset"
 import { AnalysisSession } from "@/lib/types/analysis"
 import { DatasetInspection, DatasetFile } from "@/lib/types/dataset-inspection"
 import { DatasetMetadata } from "@/lib/types/dataset-metadata"
+import { DatasetPreview } from "@/lib/types/dataset-preview"
 
 function DatasetsDashboard() {
   const router = useRouter()
@@ -68,6 +76,12 @@ function DatasetsDashboard() {
   const [metadata, setMetadata] = useState<DatasetMetadata | null>(null)
   const [loadingMetadata, setLoadingMetadata] = useState<boolean>(false)
   const [runningMetadata, setRunningMetadata] = useState<boolean>(false)
+
+  // Preview states
+  const [preview, setPreview] = useState<DatasetPreview | null>(null)
+  const [loadingPreview, setLoadingPreview] = useState<boolean>(false)
+  const [runningPreview, setRunningPreview] = useState<boolean>(false)
+  const [previewZoom, setPreviewZoom] = useState<number>(1)
 
   // Form states
   const [formSessionId, setFormSessionId] = useState<string>("")
@@ -222,6 +236,7 @@ function DatasetsDashboard() {
       setInspection(null)
       setFiles([])
       setMetadata(null)
+      setPreview(null)
     }
 
     try {
@@ -242,8 +257,10 @@ function DatasetsDashboard() {
     setInspection(null)
     setFiles([])
     setMetadata(null)
+    setPreview(null)
     setLoadingInspection(true)
     setLoadingMetadata(true)
+    setLoadingPreview(true)
     setError(null)
     
     try {
@@ -256,7 +273,6 @@ function DatasetsDashboard() {
         setFiles(fileList)
       }
     } catch (err: any) {
-      // 404 is normal if it has not been inspected yet, we don't display it as a blocking error
       if (err.message && err.message.includes("404")) {
         setInspection(null)
       } else {
@@ -279,6 +295,19 @@ function DatasetsDashboard() {
       }
     } finally {
       setLoadingMetadata(false)
+    }
+
+    try {
+      const previewData = await getDatasetPreview(dataset.dataset_id)
+      setPreview(previewData)
+    } catch (err: any) {
+      if (err.message && err.message.includes("404")) {
+        setPreview(null)
+      } else {
+        console.error(err)
+      }
+    } finally {
+      setLoadingPreview(false)
     }
   }
 
@@ -325,6 +354,26 @@ function DatasetsDashboard() {
       setError(err.message || "Metadata extraction failed. Verify files are valid.")
     } finally {
       setRunningMetadata(false)
+    }
+  }
+
+  // Run Preview Generation
+  const handleRunPreview = async () => {
+    if (!selectedDataset) return
+    setRunningPreview(true)
+    setError(null)
+    setPreview(null)
+    setPreviewZoom(1)
+    
+    try {
+      const previewData = await runDatasetPreview(selectedDataset.dataset_id)
+      setPreview(previewData)
+      triggerSuccess(`Visual preview generation completed for ${selectedDataset.dataset_name}.`)
+    } catch (err: any) {
+      console.error(err)
+      setError(err.message || "Failed to generate visual preview. Ensure dataset path is valid.")
+    } finally {
+      setRunningPreview(false)
     }
   }
 
@@ -1095,6 +1144,227 @@ function DatasetsDashboard() {
                                   <tr>
                                     <td className="p-2.5 font-bold text-foreground/80">Capture Acquisition Date</td>
                                     <td className="p-2.5 select-all text-pink-400 font-bold">{metadata.acquisition_date || "N/A"}</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dataset Preview Panel */}
+                    <div className="border-t border-border/40 pt-6 space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-3">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 font-mono">
+                            Dataset Visual Preview
+                          </h3>
+                          {preview && (
+                            <span
+                              className={`px-1.5 py-0.5 border text-[8px] font-bold tracking-widest uppercase ${
+                                preview.preview_status === "COMPLETED"
+                                  ? "border-emerald-500/20 text-emerald-400 bg-emerald-500/5"
+                                  : preview.preview_status === "GENERATING"
+                                  ? "border-amber-500/20 text-amber-500 bg-amber-500/5 animate-pulse"
+                                  : preview.preview_status === "FAILED"
+                                  ? "border-red-500/20 text-red-400 bg-red-500/5"
+                                  : "border-border text-muted-foreground bg-muted/5"
+                              }`}
+                            >
+                              {preview.preview_status}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          disabled={runningPreview || loadingPreview}
+                          onClick={handleRunPreview}
+                          className="px-3 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/30 hover:border-primary transition-all font-mono font-bold tracking-widest uppercase text-[9px] flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          {runningPreview ? (
+                            <>
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Generating Preview...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="w-3 h-3" />
+                              {preview ? "Re-Generate Preview" : "Generate Preview"}
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {loadingPreview ? (
+                        <div className="flex items-center justify-center p-6 space-x-2 text-[10px] font-mono text-muted-foreground">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                          <span>FETCHING PREVIEW IMAGES FROM TELEMETRY DEPOT...</span>
+                        </div>
+                      ) : !preview ? (
+                        /* Empty state */
+                        <div className="border border-dashed border-border bg-muted/5 p-8 text-center flex flex-col items-center justify-center space-y-3 min-h-[140px]">
+                          <Info className="w-5 h-5 text-muted-foreground/50" />
+                          <div className="space-y-1">
+                            <h4 className="text-[11px] font-bold uppercase tracking-wider text-foreground font-mono">
+                              No Preview Available
+                            </h4>
+                            <p className="text-[10px] text-muted-foreground leading-normal max-w-sm">
+                              Generate a preview to visually inspect this dataset before geospatial analysis.
+                            </p>
+                          </div>
+                        </div>
+                      ) : preview.preview_status !== "COMPLETED" ? (
+                        /* Non-completed state */
+                        <div className="border border-border bg-card/10 p-6 text-center font-mono text-xs text-muted-foreground">
+                          {preview.preview_status === "GENERATING" ? (
+                            <div className="flex flex-col items-center justify-center space-y-2">
+                              <Loader2 className="w-6 h-6 animate-spin text-primary animate-pulse" />
+                              <span>GENERATING DECI-RESOLUTION PREVIEWS (RGB STACK)...</span>
+                            </div>
+                          ) : (
+                            <div className="text-red-400 uppercase font-bold flex items-center justify-center gap-2">
+                              <AlertTriangle className="w-4 h-4" />
+                              <span>Preview Generation Failed. Check raster directories and readable permissions.</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* Preview Content */
+                        <div className="space-y-6">
+                          {/* Summary stats */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-center text-[10px]">
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">Preview Status</div>
+                              <div className="text-xs font-bold text-emerald-400 mt-1">
+                                {preview.preview_status}
+                              </div>
+                            </div>
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">Resolution</div>
+                              <div className="text-xs font-bold text-foreground mt-1">
+                                {preview.preview_width} x {preview.preview_height}
+                              </div>
+                            </div>
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">Bands Output</div>
+                              <div className="text-xs font-bold text-foreground mt-1">
+                                {preview.band_count} (RGB Stacked)
+                              </div>
+                            </div>
+                            <div className="border border-border bg-card/30 p-2.5">
+                              <div className="text-[8px] text-muted-foreground uppercase">Generation Time</div>
+                              <div className="text-xs font-bold text-cyan-400 mt-1">
+                                {preview.generation_time_ms} ms
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Split Viewer Layout */}
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            
+                            {/* Thumbnail navigation */}
+                            <div className="md:col-span-1 border border-border bg-card/30 p-3 space-y-3 font-mono text-[9px] flex flex-col justify-between">
+                              <div className="space-y-2">
+                                <div className="font-bold text-muted-foreground uppercase">Quick Thumbnail</div>
+                                <div className="border border-border/80 bg-background/50 flex items-center justify-center p-2 min-h-[128px]">
+                                  <img
+                                    src={getDatasetPreviewThumbnailUrl(selectedDataset.dataset_id)}
+                                    alt="Thumbnail"
+                                    className="max-h-[128px] max-w-full object-contain border border-border"
+                                    loading="lazy"
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div className="space-y-1.5 border-t border-border/60 pt-3">
+                                <div className="font-bold text-muted-foreground uppercase">Controls</div>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() => setPreviewZoom(Math.max(1, previewZoom - 0.5))}
+                                    className="px-2 py-1 bg-muted hover:bg-muted/70 border border-border text-[9px] font-bold"
+                                    disabled={previewZoom <= 1}
+                                  >
+                                    Zoom -
+                                  </button>
+                                  <button
+                                    onClick={() => setPreviewZoom(Math.min(4, previewZoom + 0.5))}
+                                    className="px-2 py-1 bg-muted hover:bg-muted/70 border border-border text-[9px] font-bold"
+                                    disabled={previewZoom >= 4}
+                                  >
+                                    Zoom +
+                                  </button>
+                                  <button
+                                    onClick={() => setPreviewZoom(1)}
+                                    className="px-2 py-1 bg-muted hover:bg-muted/70 border border-border text-[9px] font-bold"
+                                  >
+                                    Reset
+                                  </button>
+                                </div>
+                                <div className="text-[8px] text-muted-foreground">Zoom factor: {previewZoom}x</div>
+                              </div>
+                            </div>
+
+                            {/* Main Preview Viewer */}
+                            <div className="md:col-span-3 border border-border bg-black/40 overflow-hidden relative flex items-center justify-center min-h-[300px] max-h-[450px]">
+                              <div className="absolute top-2 left-2 bg-background/80 border border-border px-2 py-0.5 text-[8px] tracking-widest font-mono text-muted-foreground uppercase z-10">
+                                Main Viewer // DECIMATED RASTER
+                              </div>
+                              <div
+                                className="w-full h-full overflow-auto flex items-center justify-center p-4 scrollbar-thin scrollbar-thumb-border"
+                                style={{ cursor: "grab" }}
+                              >
+                                <img
+                                  src={getDatasetPreviewImageUrl(selectedDataset.dataset_id)}
+                                  alt="Dataset Preview"
+                                  className="object-contain transition-transform duration-200"
+                                  style={{
+                                    transform: `scale(${previewZoom})`,
+                                    maxHeight: "380px",
+                                    maxWidth: "100%",
+                                  }}
+                                  loading="lazy"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Preview Metadata Panel */}
+                          <div className="space-y-2">
+                            <div className="text-[9px] font-bold text-muted-foreground/80 uppercase font-mono tracking-wider">
+                              Preview Telemetry Assets
+                            </div>
+                            <div className="border border-border bg-card/15 overflow-hidden">
+                              <table className="w-full text-left border-collapse font-mono text-[10px]">
+                                <thead>
+                                  <tr className="border-b border-border bg-muted/20 text-muted-foreground uppercase tracking-widest text-[9px]">
+                                    <th className="p-2.5 font-bold">Attribute Field</th>
+                                    <th className="p-2.5 font-bold">Registered Value</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-border/60 text-muted-foreground">
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Preview Resolution Width</td>
+                                    <td className="p-2.5 select-all text-foreground">{preview.preview_width} pixels</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Preview Resolution Height</td>
+                                    <td className="p-2.5 select-all text-foreground">{preview.preview_height} pixels</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Decimated Band count</td>
+                                    <td className="p-2.5 select-all text-foreground">{preview.band_count}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Preview File Path (disk)</td>
+                                    <td className="p-2.5 select-all text-foreground text-[9px]">{preview.preview_image_path}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Thumbnail File Path (disk)</td>
+                                    <td className="p-2.5 select-all text-foreground text-[9px]">{preview.thumbnail_path}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="p-2.5 font-bold text-foreground/80">Generation Compute Latency</td>
+                                    <td className="p-2.5 select-all text-foreground">{preview.generation_time_ms} milliseconds</td>
                                   </tr>
                                 </tbody>
                               </table>

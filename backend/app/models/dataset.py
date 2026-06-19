@@ -69,3 +69,6 @@ class Dataset(Base):
     # Relationship to DatasetMetadata (one-to-one)
     dataset_metadata = relationship("DatasetMetadata", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
 
+    # Relationship to DatasetPreview (one-to-one)
+    preview = relationship("DatasetPreview", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
+

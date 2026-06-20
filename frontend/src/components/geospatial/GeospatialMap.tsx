@@ -184,13 +184,15 @@ export default function GeospatialMap({ context, loading, error }: GeospatialMap
         .addTo(map);
 
       // Auto open popup after flight completion
-      setTimeout(() => {
+      const popupTimeoutId = setTimeout(() => {
         if (mapRef.current && marker) {
           marker.togglePopup();
         }
       }, 1600);
 
       markerRef.current = marker;
+
+      return () => clearTimeout(popupTimeoutId);
     } catch (err) {
       console.error("Error applying geospatial footprint layers:", err);
     }

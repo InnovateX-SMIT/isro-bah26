@@ -29,6 +29,10 @@ class GeospatialContextService:
         Retrieves existing context profile or runs context intelligence rule engine
         to deduce environmental descriptors, then stores context inside SQLite.
         """
+        existing = self.repository.get_by_dataset(dataset_id)
+        if existing is not None:
+            return self._build_response(existing)
+
         # 1. Verify Dataset exists
         dataset = self.dataset_repository.get_dataset(dataset_id)
         if not dataset:
@@ -36,11 +40,6 @@ class GeospatialContextService:
                 status_code=404,
                 detail=f"Dataset registration {dataset_id} not found."
             )
-
-        # 2. Check if profile already exists in database
-        db_profile = self.repository.get_by_dataset(dataset_id)
-        if db_profile:
-            return self._build_response(db_profile)
 
         # 3. Retrieve or compute Location Context (lazy generation cascade)
         location_context = self.location_repository.get_by_dataset(dataset_id)

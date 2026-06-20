@@ -75,3 +75,6 @@ class Dataset(Base):
     # Relationship to GeospatialContext (one-to-one)
     geospatial_context = relationship("GeospatialContext", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
 
+    # Relationship to LocationContext (one-to-one)
+    location_context = relationship("LocationContext", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
+

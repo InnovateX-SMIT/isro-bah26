@@ -7,9 +7,12 @@ import { GeospatialContext } from "@/lib/types/geospatial";
 import { getRegisteredDatasets } from "@/lib/dataset-api";
 import { getDatasetMetadata } from "@/lib/dataset-metadata-api";
 import { getGeospatialContext } from "@/lib/geospatial-api";
+import { getDatasetLocationContext } from "@/lib/location-api";
+import { LocationContext } from "@/lib/types/location";
 import GeospatialMap from "@/components/geospatial/GeospatialMap";
 import DatasetInfoPanel from "@/components/geospatial/DatasetInfoPanel";
 import DatasetBoundsLayer from "@/components/geospatial/DatasetBoundsLayer";
+import LocationIntelligencePanel from "@/components/location/LocationIntelligencePanel";
 import { RefreshCw, MapPin, Database, Loader2, Compass, AlertCircle } from "lucide-react";
 
 export default function GeospatialPage() {
@@ -17,10 +20,12 @@ export default function GeospatialPage() {
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
   const [metadata, setMetadata] = useState<DatasetMetadata | null>(null);
   const [context, setContext] = useState<GeospatialContext | null>(null);
+  const [location, setLocation] = useState<LocationContext | null>(null);
 
   // States
   const [loadingDatasets, setLoadingDatasets] = useState<boolean>(true);
   const [loadingContext, setLoadingContext] = useState<boolean>(false);
+  const [loadingLocation, setLoadingLocation] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -50,7 +55,9 @@ export default function GeospatialPage() {
     setSelectedDataset(dataset);
     setMetadata(null);
     setContext(null);
+    setLocation(null);
     setLoadingContext(true);
+    setLoadingLocation(true);
     setError(null);
 
     try {
@@ -70,6 +77,16 @@ export default function GeospatialPage() {
       // 2. Fetch Geospatial Context (calls lazy generator on backend)
       const geoContext = await getGeospatialContext(dataset.dataset_id);
       setContext(geoContext);
+
+      // 3. Fetch Location Context (resolves administrative boundaries)
+      try {
+        const locContext = await getDatasetLocationContext(dataset.dataset_id);
+        setLocation(locContext);
+      } catch (locErr: any) {
+        console.error("Location lock error:", locErr);
+        setLocation(null);
+      }
+
       setSuccess(`Geospatial lock established on UTM zone EPSG:${geoContext.epsg}`);
       setTimeout(() => setSuccess(null), 4000);
 
@@ -79,6 +96,7 @@ export default function GeospatialPage() {
       setError(geoErr.message || "Failed to resolve geospatial intelligence coordinates.");
     } finally {
       setLoadingContext(false);
+      setLoadingLocation(false);
     }
   };
 
@@ -191,6 +209,12 @@ export default function GeospatialPage() {
               error={error}
             />
           </div>
+
+          {/* Location Intelligence Panel */}
+          <LocationIntelligencePanel 
+            location={location} 
+            loading={loadingLocation} 
+          />
 
           {/* Corner coordinates helper display */}
           <DatasetBoundsLayer context={context} />

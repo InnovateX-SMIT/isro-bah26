@@ -44,6 +44,7 @@ def init_db():
     from app.models.dataset_metadata import DatasetMetadata
     from app.models.dataset_preview import DatasetPreview
     from app.models.geospatial_context import GeospatialContext
+    from app.models.location_context import LocationContext
     Base.metadata.create_all(bind=engine)
 
 

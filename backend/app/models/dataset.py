@@ -72,3 +72,6 @@ class Dataset(Base):
     # Relationship to DatasetPreview (one-to-one)
     preview = relationship("DatasetPreview", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
 
+    # Relationship to GeospatialContext (one-to-one)
+    geospatial_context = relationship("GeospatialContext", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
+

@@ -3,7 +3,7 @@
 import React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Cpu, Database, BarChart3, Settings, ShieldAlert } from "lucide-react"
+import { Home, Cpu, Database, BarChart3, Settings, ShieldAlert, Globe } from "lucide-react"
 
 export default function ClientSidebar() {
   const pathname = usePathname()
@@ -12,6 +12,7 @@ export default function ClientSidebar() {
     { label: "Mission Overview", href: "/", icon: Home },
     { label: "Analysis Pipeline", href: "/analysis", icon: Cpu },
     { label: "Data Inventory", href: "/datasets", icon: Database },
+    { label: "Geospatial Map", href: "/geospatial", icon: Globe },
     { label: "Analytics Dashboard", href: "/dashboard", icon: BarChart3 },
     { label: "System Settings", href: "/settings", icon: Settings },
   ]

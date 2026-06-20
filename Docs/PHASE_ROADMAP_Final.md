@@ -495,10 +495,6 @@ Primary:
 
 * Google Earth Engine
 
-Secondary:
-
-* Bhoonidhi
-
 Fallback:
 
 * Local Historical Cache

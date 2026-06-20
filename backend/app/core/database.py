@@ -43,6 +43,7 @@ def init_db():
     from app.models.dataset_file import DatasetFile
     from app.models.dataset_metadata import DatasetMetadata
     from app.models.dataset_preview import DatasetPreview
+    from app.models.geospatial_context import GeospatialContext
     Base.metadata.create_all(bind=engine)
 
 

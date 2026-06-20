@@ -8,11 +8,14 @@ import { getRegisteredDatasets } from "@/lib/dataset-api";
 import { getDatasetMetadata } from "@/lib/dataset-metadata-api";
 import { getGeospatialContext } from "@/lib/geospatial-api";
 import { getDatasetLocationContext } from "@/lib/location-api";
+import { getGeospatialContextProfile } from "@/lib/geospatial-context-api";
 import { LocationContext } from "@/lib/types/location";
+import { GeospatialContextProfile } from "@/lib/types/geospatial-context";
 import GeospatialMap from "@/components/geospatial/GeospatialMap";
 import DatasetInfoPanel from "@/components/geospatial/DatasetInfoPanel";
 import DatasetBoundsLayer from "@/components/geospatial/DatasetBoundsLayer";
 import LocationIntelligencePanel from "@/components/location/LocationIntelligencePanel";
+import GeospatialContextPanel from "@/components/context/GeospatialContextPanel";
 import { RefreshCw, MapPin, Database, Loader2, Compass, AlertCircle } from "lucide-react";
 
 export default function GeospatialPage() {
@@ -21,11 +24,13 @@ export default function GeospatialPage() {
   const [metadata, setMetadata] = useState<DatasetMetadata | null>(null);
   const [context, setContext] = useState<GeospatialContext | null>(null);
   const [location, setLocation] = useState<LocationContext | null>(null);
+  const [profile, setProfile] = useState<GeospatialContextProfile | null>(null);
 
   // States
   const [loadingDatasets, setLoadingDatasets] = useState<boolean>(true);
   const [loadingContext, setLoadingContext] = useState<boolean>(false);
   const [loadingLocation, setLoadingLocation] = useState<boolean>(false);
+  const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -56,8 +61,10 @@ export default function GeospatialPage() {
     setMetadata(null);
     setContext(null);
     setLocation(null);
+    setProfile(null);
     setLoadingContext(true);
     setLoadingLocation(true);
+    setLoadingProfile(true);
     setError(null);
 
     try {
@@ -87,6 +94,15 @@ export default function GeospatialPage() {
         setLocation(null);
       }
 
+      // 4. Fetch Geospatial Context Profile (resolves environment details)
+      try {
+        const geoProfile = await getGeospatialContextProfile(dataset.dataset_id);
+        setProfile(geoProfile);
+      } catch (profErr: any) {
+        console.error("Context profile error:", profErr);
+        setProfile(null);
+      }
+
       setSuccess(`Geospatial lock established on UTM zone EPSG:${geoContext.epsg}`);
       setTimeout(() => setSuccess(null), 4000);
 
@@ -97,6 +113,7 @@ export default function GeospatialPage() {
     } finally {
       setLoadingContext(false);
       setLoadingLocation(false);
+      setLoadingProfile(false);
     }
   };
 
@@ -231,6 +248,19 @@ export default function GeospatialPage() {
         </div>
 
       </div>
+
+      {/* Full width Geospatial Context Intelligence Panel */}
+      {selectedDataset && (
+        <div className="border-t border-border/60 pt-6 space-y-4">
+          <div className="font-mono text-xs font-bold text-primary uppercase tracking-widest">
+            // GEOSPATIAL CONTEXT ENVIRONMENTAL INTELLIGENCE
+          </div>
+          <GeospatialContextPanel 
+            profile={profile} 
+            loading={loadingProfile} 
+          />
+        </div>
+      )}
     </div>
   );
 }

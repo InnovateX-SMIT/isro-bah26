@@ -6,6 +6,7 @@ from app.api.v1.dataset_metadata import router as dataset_metadata_router
 from app.api.v1.dataset_preview import router as dataset_preview_router
 from app.api.v1.geospatial import router as geospatial_router
 from app.api.v1.location import router as location_router
+from app.api.v1.geospatial_context import router as geospatial_context_router
 
 api_router = APIRouter()
 
@@ -27,6 +28,7 @@ api_router.include_router(dataset_metadata_router, prefix="/dataset-metadata", t
 api_router.include_router(dataset_preview_router, prefix="/dataset-preview", tags=["Dataset Preview"])
 api_router.include_router(geospatial_router, prefix="/geospatial", tags=["Geospatial Context"])
 api_router.include_router(location_router, prefix="/location", tags=["Location Intelligence"])
+api_router.include_router(geospatial_context_router, prefix="/geospatial-context", tags=["Geospatial Context Intelligence"])
 
 
 

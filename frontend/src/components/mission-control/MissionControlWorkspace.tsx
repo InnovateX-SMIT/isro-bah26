@@ -3,8 +3,10 @@ import { MissionControlProfile } from "@/lib/types/mission-control";
 import MissionControlStatusBar from "./MissionControlStatusBar";
 import DatasetOverviewPanel from "./DatasetOverviewPanel";
 import IntelligenceSummaryPanel from "./IntelligenceSummaryPanel";
-import GeospatialMap from "../geospatial/GeospatialMap";
-import { MapPin, Compass, AlertCircle, Award, Anchor, Thermometer, Shield } from "lucide-react";
+import DatasetMap from "../geospatial/DatasetMap";
+import CoordinatePanel from "../geospatial/CoordinatePanel";
+import FootprintLayer from "../geospatial/FootprintLayer";
+import { MapPin, Compass, AlertCircle, Award, Anchor, Thermometer, Shield, CheckCircle, XCircle } from "lucide-react";
 
 interface MissionControlWorkspaceProps {
   profile: MissionControlProfile;
@@ -13,15 +15,88 @@ interface MissionControlWorkspaceProps {
 export default function MissionControlWorkspace({ profile }: MissionControlWorkspaceProps) {
   const { dataset, metadata, geospatial, location, context, status, summary } = profile;
 
+  // Audit checklist triggers
+  const hasCoordinates = geospatial && geospatial.center.lat !== undefined && geospatial.center.lon !== undefined;
+  const hasCrs = (geospatial && (geospatial.crs || geospatial.epsg)) || (metadata && (metadata.coordinate_system || metadata.epsg_code));
+  const hasFootprint = geospatial && geospatial.footprint && geospatial.footprint.length > 0;
+  const hasLocation = location && location.country !== undefined && location.country !== "Unknown";
+
+  // Footprint metrics
+  const areaSqKm = metadata && metadata.raster_width && metadata.raster_height && metadata.pixel_size_x && metadata.pixel_size_y
+    ? (metadata.raster_width * Math.abs(metadata.pixel_size_x) * metadata.raster_height * Math.abs(metadata.pixel_size_y)) / 1000000.0
+    : undefined;
+
+  const centroid = geospatial && geospatial.center
+    ? { lat: geospatial.center.lat, lon: geospatial.center.lon }
+    : undefined;
+
+  const bbox = geospatial
+    ? {
+        min_lat: geospatial.bounds.south,
+        min_lon: geospatial.bounds.west,
+        max_lat: geospatial.bounds.north,
+        max_lon: geospatial.bounds.east
+      }
+    : undefined;
+
   return (
     <div className="space-y-6 font-mono">
       {/* 1. Readiness status indicators matrix */}
       <MissionControlStatusBar status={status} />
 
-      {/* 2. Unified Operational Grid */}
+      {/* 2. Geospatial Intelligence Section - Checklist Audit */}
+      <div className="border border-border bg-card/25 p-4 space-y-3 font-mono text-[10px] relative overflow-hidden">
+        <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
+          AUDIT // GEOSPATIAL
+        </div>
+        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+          <Shield className="w-4 h-4 text-primary" />
+          GEOSPATIAL INTELLIGENCE CORE SYSTEM AUDIT
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+          <div className={`flex items-center justify-between p-2.5 border rounded-sm transition-all duration-300 ${
+            hasCoordinates 
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold" 
+              : "bg-amber-500/5 border-amber-500/20 text-amber-500/80"
+          }`}>
+            <span className="uppercase text-[9px] tracking-wide">Coordinates Identified</span>
+            {hasCoordinates ? <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" /> : <XCircle className="w-4 h-4 text-amber-500/50 shrink-0" />}
+          </div>
+
+          <div className={`flex items-center justify-between p-2.5 border rounded-sm transition-all duration-300 ${
+            hasCrs 
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold" 
+              : "bg-amber-500/5 border-amber-500/20 text-amber-500/80"
+          }`}>
+            <span className="uppercase text-[9px] tracking-wide">CRS Identified</span>
+            {hasCrs ? <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" /> : <XCircle className="w-4 h-4 text-amber-500/50 shrink-0" />}
+          </div>
+
+          <div className={`flex items-center justify-between p-2.5 border rounded-sm transition-all duration-300 ${
+            hasFootprint 
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold" 
+              : "bg-amber-500/5 border-amber-500/20 text-amber-500/80"
+          }`}>
+            <span className="uppercase text-[9px] tracking-wide">Footprint Generated</span>
+            {hasFootprint ? <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" /> : <XCircle className="w-4 h-4 text-amber-500/50 shrink-0" />}
+          </div>
+
+          <div className={`flex items-center justify-between p-2.5 border rounded-sm transition-all duration-300 ${
+            hasLocation 
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold" 
+              : "bg-amber-500/5 border-amber-500/20 text-amber-500/80"
+          }`}>
+            <span className="uppercase text-[9px] tracking-wide">Geographic Context Generated</span>
+            {hasLocation ? <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" /> : <XCircle className="w-4 h-4 text-amber-500/50 shrink-0" />}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Unified Operational Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         
-        {/* Left Column: Visual Map lock and boundaries coordinates */}
+        {/* Column 1: Map Intelligence & Coordinate Intelligence */}
         <div className="space-y-6">
           <div className="border border-border bg-card/25 p-4 space-y-4 relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
@@ -34,53 +109,46 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
 
             {/* Map Frame container */}
             <div className="h-[320px] relative border border-border bg-black/30">
-              <GeospatialMap
-                context={geospatial}
+              <DatasetMap
+                centerLat={geospatial?.center.lat}
+                centerLon={geospatial?.center.lon}
+                footprintCoords={geospatial?.footprint}
+                bbox={bbox}
+                crs={geospatial?.crs || metadata?.coordinate_system || undefined}
+                epsg={geospatial?.epsg || metadata?.epsg_code || undefined}
                 loading={status.geospatial === "missing" && status.metadata === "available"}
                 error={status.geospatial === "error" ? "Geospatial coordinate calculations failed" : null}
               />
             </div>
-
-            {/* Coordinate lock details overlay styling */}
-            <div className="border border-border/40 bg-background/30 p-2.5 text-[9px] space-y-1.5">
-              <div className="text-[8px] text-muted-foreground uppercase tracking-widest border-b border-border/30 pb-0.5">GEODETIC LOCK PARAMETERS</div>
-              {geospatial ? (
-                <>
-                  <div className="flex justify-between">
-                    <span>CENTER LATITUDE:</span>
-                    <span className="font-bold text-primary">{geospatial.center.lat.toFixed(6)}° N</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>CENTER LONGITUDE:</span>
-                    <span className="font-bold text-primary">{geospatial.center.lon.toFixed(6)}° E</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>NORTH LAT EXTENT:</span>
-                    <span className="font-bold text-slate-300">{geospatial.bounds.north.toFixed(4)}°</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>SOUTH LAT EXTENT:</span>
-                    <span className="font-bold text-slate-300">{geospatial.bounds.south.toFixed(4)}°</span>
-                  </div>
-                </>
-              ) : (
-                <div className="text-amber-500 text-center text-[8px] uppercase py-2">
-                  No geodetic lock. Coordinate bounds calculation pending metadata.
-                </div>
-              )}
-            </div>
           </div>
+
+          <CoordinatePanel
+            lat={geospatial?.center.lat}
+            lon={geospatial?.center.lon}
+            crs={geospatial?.crs || metadata?.coordinate_system || undefined}
+            projection={geospatial?.projection || metadata?.projection_name || undefined}
+            areaSqKm={areaSqKm}
+          />
         </div>
 
-        {/* Center Column: Dataset Specs and Summary */}
+        {/* Column 2: Dataset Specs and Summary */}
         <div className="space-y-6">
           <DatasetOverviewPanel metadata={metadata} status={status.metadata} />
           
           <IntelligenceSummaryPanel summary={summary} status={status} />
         </div>
 
-        {/* Right Column: Location Geocoding & Environmental Profile */}
+        {/* Column 3: Footprint Intelligence, Location Intelligence & Environmental Profile */}
         <div className="space-y-6">
+          
+          {/* Footprint Layer statistics panel */}
+          <FootprintLayer
+            footprintCoords={geospatial?.footprint}
+            areaSqKm={areaSqKm}
+            centroid={centroid}
+            bbox={bbox}
+          />
+
           {/* Location intelligence card */}
           <div className="border border-border bg-card/25 p-4 space-y-4 relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
@@ -105,9 +173,11 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
                   <span className="text-muted-foreground uppercase tracking-widest text-[8px]">DISTRICT LOCK:</span>
                   <span className="font-bold text-foreground uppercase">{location.district}</span>
                 </div>
-                <div className="border border-border/50 bg-background/30 p-2.5 flex items-center justify-between">
-                  <span className="text-muted-foreground uppercase tracking-widest text-[8px]">ADMIN REGION:</span>
-                  <span className="font-bold text-foreground uppercase">{location.administrative_region}</span>
+                <div className="border border-border/50 bg-background/30 p-2.5 p-y-2 flex flex-col space-y-1">
+                  <span className="text-muted-foreground uppercase tracking-widest text-[8px]">LOCATION SUMMARY:</span>
+                  <p className="font-bold text-foreground uppercase whitespace-pre-line text-[9px] leading-relaxed bg-black/20 p-2 border border-border/30">
+                    {location.location_summary}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -193,3 +263,4 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
     </div>
   );
 }
+

@@ -35,3 +35,8 @@ def health_check():
 
 # Include version 1 API routing
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+# Include Phase 4 geospatial API routing
+from app.api.v1.geospatial import geospatial_session_router
+app.include_router(geospatial_session_router, prefix="/api/geospatial", tags=["Geospatial Session Integration"])
+

@@ -45,9 +45,11 @@ While the session is `active`, the platform tracks and reports its sub-stage pro
 1. `DATASET_INSPECTED`
 2. `DATASET_VALIDATED`
 3. `METADATA_EXTRACTED`
-4. `TEMPORAL_CONTEXT_RETRIEVED`
-5. `RECONSTRUCTION_RUNNING`
-6. `CONFIDENCE_GENERATING`
+4. `GEOSPATIAL_CONTEXT_GENERATED`
+5. `TEMPORAL_CONTEXT_RETRIEVED`
+6. `RECONSTRUCTION_RUNNING`
+7. `CONFIDENCE_GENERATING`
+
 
 ### Active → Completed
 - **Condition**: All bands are successfully reconstructed, confidence heatmaps generated, and visualization previews written.

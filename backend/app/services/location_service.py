@@ -130,10 +130,19 @@ class LocationService:
             geo_region = "Global Terrestrial"
 
         # 6. Generate textual Location Summary dynamically
-        location_summary = (
-            f"LISS-IV scene located in the {geo_region} of {country}, "
-            f"within the state of {state} and intersecting the {district} district."
-        )
+        if resolved.get("resolved_by") in ("OfflineLocalProvider", "FallbackDefault"):
+            location_summary = (
+                "Geographic Region Available\n"
+                "Dataset located in:\n"
+                f"State: {state}\n"
+                f"Country: {country}"
+            )
+        else:
+            location_summary = (
+                f"LISS-IV scene located in the {geo_region} of {country}, "
+                f"within the state of {state} and intersecting the {district} district."
+            )
+
 
         # 7. Persist context inside SQLite
         context_data = {

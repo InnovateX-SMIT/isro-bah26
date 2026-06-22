@@ -22,7 +22,12 @@ class LocationResolver:
                 if result and result.get("country"):
                     # Log which resolver resolved this context
                     print(f"Location resolved successfully via provider: {provider.__class__.__name__}")
-                    return result
+                    return {
+                        "country": result.get("country"),
+                        "state": result.get("state"),
+                        "district": result.get("district"),
+                        "resolved_by": provider.__class__.__name__
+                    }
             except Exception as err:
                 print(f"Provider {provider.__class__.__name__} resolution failed: {err}")
 
@@ -30,5 +35,7 @@ class LocationResolver:
         return {
             "country": "India",
             "state": "Uttar Pradesh",
-            "district": "Mathura"
+            "district": "Mathura",
+            "resolved_by": "FallbackDefault"
         }
+

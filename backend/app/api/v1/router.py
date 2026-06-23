@@ -8,6 +8,7 @@ from app.api.v1.geospatial import router as geospatial_router
 from app.api.v1.location import router as location_router
 from app.api.v1.geospatial_context import router as geospatial_context_router
 from app.api.v1.mission_control import router as mission_control_router
+from app.api.v1.temporal import router as temporal_router
 
 api_router = APIRouter()
 
@@ -31,6 +32,7 @@ api_router.include_router(geospatial_router, prefix="/geospatial", tags=["Geospa
 api_router.include_router(location_router, prefix="/location", tags=["Location Intelligence"])
 api_router.include_router(geospatial_context_router, prefix="/geospatial-context", tags=["Geospatial Context Intelligence"])
 api_router.include_router(mission_control_router, prefix="/mission-control", tags=["Geospatial Mission Control"])
+api_router.include_router(temporal_router, prefix="/temporal", tags=["Temporal Provider Engine"])
 
 
 

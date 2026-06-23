@@ -1,0 +1,66 @@
+from typing import List
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.services.temporal_service import TemporalService
+from app.schemas.temporal_reference import (
+    ReferenceSelectionRequest,
+    ReferenceStackResponse,
+    SelectedReferenceResponse
+)
+
+router = APIRouter()
+
+def get_temporal_service() -> TemporalService:
+    """
+    Dependency provider instantiating the TemporalService.
+    """
+    return TemporalService()
+
+@router.post(
+    "/select/{session_id}",
+    response_model=ReferenceStackResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Run Reference Selection",
+    description="Evaluates all discovered candidates for this session, ranks them, selects the top N, and saves the stack."
+)
+def run_reference_selection(
+    session_id: str,
+    payload: ReferenceSelectionRequest,
+    db: Session = Depends(get_db),
+    service: TemporalService = Depends(get_temporal_service)
+):
+    return service.run_reference_selection(
+        session_id=session_id,
+        db=db,
+        num_references=payload.num_references,
+        custom_weights=payload.weights
+    )
+
+@router.get(
+    "/references/{session_id}",
+    response_model=ReferenceStackResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get Latest Reference Stack",
+    description="Retrieves the metadata and selected references of the latest reference stack generated for this session."
+)
+def get_reference_stack(
+    session_id: str,
+    db: Session = Depends(get_db),
+    service: TemporalService = Depends(get_temporal_service)
+):
+    return service.get_reference_stack(session_id=session_id, db=db)
+
+@router.get(
+    "/references/{session_id}/selected",
+    response_model=List[SelectedReferenceResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Get Selected References List",
+    description="Retrieves the detailed list of selected reference candidates along with scores and explanations."
+)
+def get_selected_references(
+    session_id: str,
+    db: Session = Depends(get_db),
+    service: TemporalService = Depends(get_temporal_service)
+):
+    return service.get_selected_references(session_id=session_id, db=db)

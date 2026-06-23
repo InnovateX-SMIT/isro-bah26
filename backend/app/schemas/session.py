@@ -11,6 +11,8 @@ class SessionStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     TEMPORAL_CONTEXT_RETRIEVED = "TEMPORAL_CONTEXT_RETRIEVED"
+    REFERENCE_SELECTION_COMPLETE = "REFERENCE_SELECTION_COMPLETE"
+
 
 
 class SessionBase(BaseModel):

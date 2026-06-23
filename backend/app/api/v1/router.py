@@ -10,8 +10,10 @@ from app.api.v1.geospatial_context import router as geospatial_context_router
 from app.api.v1.mission_control import router as mission_control_router
 from app.api.v1.temporal import router as temporal_router
 from app.api.v1.temporal_discovery import router as temporal_discovery_router
+from app.api.v1.temporal_reference import router as temporal_reference_router
 
 api_router = APIRouter()
+
 
 @api_router.get("/status", tags=["System Status"])
 def get_v1_status():
@@ -35,6 +37,8 @@ api_router.include_router(geospatial_context_router, prefix="/geospatial-context
 api_router.include_router(mission_control_router, prefix="/mission-control", tags=["Geospatial Mission Control"])
 api_router.include_router(temporal_router, prefix="/temporal", tags=["Temporal Provider Engine"])
 api_router.include_router(temporal_discovery_router, prefix="/temporal", tags=["Temporal Discovery Engine"])
+api_router.include_router(temporal_reference_router, prefix="/temporal", tags=["Temporal Reference Selection Engine"])
+
 
 
 

@@ -8,7 +8,12 @@ from app.schemas.temporal_discovery import (
     TemporalDiscoveryResponse,
     TemporalCandidateListResponse
 )
+from app.schemas.temporal_reference import (
+    ReferenceStackResponse,
+    SelectedReferenceResponse
+)
 from app.services.temporal.historical_discovery_service import HistoricalDiscoveryService
+
 
 class TemporalService:
     """
@@ -107,4 +112,39 @@ class TemporalService:
         """
         discovery_service = HistoricalDiscoveryService(db)
         return discovery_service.get_discovery_candidates(session_id)
+
+    def run_reference_selection(
+        self,
+        session_id: str,
+        db: Session,
+        num_references: int = 5,
+        custom_weights: Optional[dict] = None
+    ) -> ReferenceStackResponse:
+        """
+        Triggers weighted evaluation and ranks discovered candidates for reference selection.
+        """
+        from app.services.temporal.reference_selection_service import ReferenceSelectionService
+        selection_service = ReferenceSelectionService(db)
+        return selection_service.select_references(
+            session_id=session_id,
+            num_references=num_references,
+            custom_weights=custom_weights
+        )
+
+    def get_reference_stack(self, session_id: str, db: Session) -> ReferenceStackResponse:
+        """
+        Retrieves the latest generated reference stack details.
+        """
+        from app.services.temporal.reference_selection_service import ReferenceSelectionService
+        selection_service = ReferenceSelectionService(db)
+        return selection_service.get_latest_stack(session_id)
+
+    def get_selected_references(self, session_id: str, db: Session) -> list[SelectedReferenceResponse]:
+        """
+        Retrieves all selected references list with individual ranking reasons.
+        """
+        from app.services.temporal.reference_selection_service import ReferenceSelectionService
+        selection_service = ReferenceSelectionService(db)
+        return selection_service.get_selected_references_list(session_id)
+
 

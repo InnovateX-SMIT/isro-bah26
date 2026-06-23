@@ -48,7 +48,10 @@ def init_db():
     from app.models.geospatial_context_profile import GeospatialContextProfile
     from app.models.temporal_discovery import TemporalDiscovery
     from app.models.temporal_candidate import TemporalCandidate
+    from app.models.temporal_reference_stack import TemporalReferenceStack
+    from app.models.selected_reference import SelectedReference
     Base.metadata.create_all(bind=engine)
+
 
 
 

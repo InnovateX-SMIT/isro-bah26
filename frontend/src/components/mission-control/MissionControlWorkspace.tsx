@@ -274,6 +274,7 @@ export default function MissionControlWorkspace({ profile, onRefresh }: MissionC
         </div>
         <TemporalContextPanel
           dataset={dataset}
+          metadata={metadata}
           status={status.temporal || "missing"}
           onRefresh={onRefresh}
         />

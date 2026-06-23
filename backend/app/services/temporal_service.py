@@ -13,6 +13,10 @@ from app.schemas.temporal_reference import (
     SelectedReferenceResponse
 )
 from app.services.temporal.historical_discovery_service import HistoricalDiscoveryService
+from app.schemas.temporal_context import (
+    TemporalContextPackageResponse,
+    TemporalContextResponse
+)
 
 
 class TemporalService:
@@ -146,5 +150,38 @@ class TemporalService:
         from app.services.temporal.reference_selection_service import ReferenceSelectionService
         selection_service = ReferenceSelectionService(db)
         return selection_service.get_selected_references_list(session_id)
+
+    def generate_temporal_context(self, session_id: str, db: Session) -> TemporalContextPackageResponse:
+        """
+        Generates and saves the Temporal Context Package for the session.
+        """
+        from app.services.temporal.temporal_context_service import TemporalContextService
+        context_service = TemporalContextService(db)
+        return context_service.generate_temporal_context(session_id)
+
+    def get_temporal_context(self, session_id: str, db: Session) -> Optional[TemporalContextResponse]:
+        """
+        Retrieves the flat temporal context record for the session if it exists.
+        """
+        from app.services.temporal.temporal_context_service import TemporalContextService
+        context_service = TemporalContextService(db)
+        return context_service.get_temporal_context(session_id)
+
+    def get_temporal_context_package(self, session_id: str, db: Session) -> TemporalContextPackageResponse:
+        """
+        Retrieves the detailed Temporal Context Package for the session.
+        """
+        from app.services.temporal.temporal_context_service import TemporalContextService
+        context_service = TemporalContextService(db)
+        return context_service.get_temporal_context_package(session_id)
+
+    def get_temporal_summary(self, session_id: str, db: Session) -> str:
+        """
+        Retrieves the briefing summary of the temporal context package.
+        """
+        from app.services.temporal.temporal_context_service import TemporalContextService
+        context_service = TemporalContextService(db)
+        package = context_service.get_temporal_context_package(session_id)
+        return package.context_summary
 
 

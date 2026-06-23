@@ -5,6 +5,8 @@ from app.services.geospatial_service import GeospatialService
 from app.services.location_service import LocationService
 from app.services.geospatial_context_service import GeospatialContextService
 from app.schemas.mission_control import MissionControlResponse, MissionControlStatus
+from app.repositories.temporal_context_repository import TemporalContextRepository
+from app.schemas.temporal_context import TemporalContextResponse
 
 class MissionControlService:
     """
@@ -18,13 +20,15 @@ class MissionControlService:
         metadata_service: DatasetMetadataService,
         geospatial_service: GeospatialService,
         location_service: LocationService,
-        geospatial_context_service: GeospatialContextService
+        geospatial_context_service: GeospatialContextService,
+        temporal_context_repository: TemporalContextRepository
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
         self.geospatial_service = geospatial_service
         self.location_service = location_service
         self.geospatial_context_service = geospatial_context_service
+        self.temporal_context_repository = temporal_context_repository
 
     def get_mission_control_profile(self, dataset_id: str) -> MissionControlResponse:
         """
@@ -43,7 +47,8 @@ class MissionControlService:
             "metadata": "missing",
             "geospatial": "missing",
             "location": "missing",
-            "context": "missing"
+            "context": "missing",
+            "temporal": "missing"
         }
 
         data_dict = {
@@ -117,6 +122,16 @@ class MissionControlService:
         except Exception:
             status_dict["context"] = "error"
 
+        # 5.5 Extract or Fetch Temporal Context
+        temporal_context = None
+        try:
+            context_rec = self.temporal_context_repository.get_by_dataset(dataset_id)
+            if context_rec:
+                temporal_context = TemporalContextResponse.model_validate(context_rec)
+                status_dict["temporal"] = "available"
+        except Exception:
+            status_dict["temporal"] = "error"
+
         # 6. Generate dynamic human-readable operational briefing summary
         briefing = self._generate_briefing(
             dataset=dataset,
@@ -124,6 +139,7 @@ class MissionControlService:
             geospatial=data_dict["geospatial"],
             location=data_dict["location"],
             context=data_dict["context"],
+            temporal=temporal_context,
             status=status_dict
         )
 
@@ -133,11 +149,12 @@ class MissionControlService:
             geospatial=data_dict["geospatial"],
             location=data_dict["location"],
             context=data_dict["context"],
+            temporal=temporal_context,
             status=MissionControlStatus(**status_dict),
             summary=briefing
         )
 
-    def _generate_briefing(self, dataset, metadata, geospatial, location, context, status) -> str:
+    def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status) -> str:
         """
         Dynamically constructs a human-readable operational summary report.
         Omits or rephrases sections gracefully depending on available dataset fields.
@@ -188,5 +205,9 @@ class MissionControlService:
 
             if meta_parts:
                 parts.append("The scene was " + ", ".join(meta_parts) + ".")
+
+        # D. Temporal Intelligence Context
+        if status.get("temporal") == "available" and temporal:
+            parts.append(temporal.summary)
 
         return " ".join(parts)

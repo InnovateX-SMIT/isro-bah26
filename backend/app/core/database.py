@@ -50,7 +50,9 @@ def init_db():
     from app.models.temporal_candidate import TemporalCandidate
     from app.models.temporal_reference_stack import TemporalReferenceStack
     from app.models.selected_reference import SelectedReference
+    from app.models.temporal_context import TemporalContext
     Base.metadata.create_all(bind=engine)
+
 
 
 

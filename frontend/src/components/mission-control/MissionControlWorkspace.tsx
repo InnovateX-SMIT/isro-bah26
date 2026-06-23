@@ -6,13 +6,15 @@ import IntelligenceSummaryPanel from "./IntelligenceSummaryPanel";
 import DatasetMap from "../geospatial/DatasetMap";
 import CoordinatePanel from "../geospatial/CoordinatePanel";
 import FootprintLayer from "../geospatial/FootprintLayer";
+import TemporalContextPanel from "../temporal/TemporalContextPanel";
 import { MapPin, Compass, AlertCircle, Award, Anchor, Thermometer, Shield, CheckCircle, XCircle } from "lucide-react";
 
 interface MissionControlWorkspaceProps {
   profile: MissionControlProfile;
+  onRefresh?: () => void;
 }
 
-export default function MissionControlWorkspace({ profile }: MissionControlWorkspaceProps) {
+export default function MissionControlWorkspace({ profile, onRefresh }: MissionControlWorkspaceProps) {
   const { dataset, metadata, geospatial, location, context, status, summary } = profile;
 
   // Audit checklist triggers
@@ -259,6 +261,22 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
           </div>
         </div>
 
+      </div>
+
+      {/* 4. Temporal Intelligence Layer */}
+      <div className="border border-border bg-card/25 p-4 space-y-4 font-mono relative overflow-hidden">
+        <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
+          LAYER // TEMPORAL
+        </div>
+        <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 border-b border-border/40 pb-2">
+          <Shield className="w-4 h-4 text-primary" />
+          Temporal Intelligence Layer
+        </div>
+        <TemporalContextPanel
+          dataset={dataset}
+          status={status.temporal || "missing"}
+          onRefresh={onRefresh}
+        />
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ from app.api.v1.mission_control import router as mission_control_router
 from app.api.v1.temporal import router as temporal_router
 from app.api.v1.temporal_discovery import router as temporal_discovery_router
 from app.api.v1.temporal_reference import router as temporal_reference_router
+from app.api.v1.temporal_context import router as temporal_context_router
 
 api_router = APIRouter()
 
@@ -38,6 +39,7 @@ api_router.include_router(mission_control_router, prefix="/mission-control", tag
 api_router.include_router(temporal_router, prefix="/temporal", tags=["Temporal Provider Engine"])
 api_router.include_router(temporal_discovery_router, prefix="/temporal", tags=["Temporal Discovery Engine"])
 api_router.include_router(temporal_reference_router, prefix="/temporal", tags=["Temporal Reference Selection Engine"])
+api_router.include_router(temporal_context_router, prefix="/temporal", tags=["Temporal Context Generation Engine"])
 
 
 

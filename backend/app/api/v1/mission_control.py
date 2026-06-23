@@ -6,6 +6,7 @@ from app.repositories.dataset_metadata_repository import DatasetMetadataReposito
 from app.repositories.geospatial_repository import GeospatialRepository
 from app.repositories.location_repository import LocationRepository
 from app.repositories.geospatial_context_profile_repository import GeospatialContextProfileRepository
+from app.repositories.temporal_context_repository import TemporalContextRepository
 
 from app.services.dataset_metadata_service import DatasetMetadataService
 from app.services.geospatial_service import GeospatialService
@@ -27,6 +28,7 @@ def get_mission_control_service(db: Session = Depends(get_db)) -> MissionControl
     geospatial_repository = GeospatialRepository(db)
     location_repository = LocationRepository(db)
     context_repository = GeospatialContextProfileRepository(db)
+    temporal_context_repository = TemporalContextRepository(db)
 
     # Services
     metadata_service = DatasetMetadataService(metadata_repository, dataset_repository)
@@ -39,7 +41,8 @@ def get_mission_control_service(db: Session = Depends(get_db)) -> MissionControl
         metadata_service=metadata_service,
         geospatial_service=geospatial_service,
         location_service=location_service,
-        geospatial_context_service=context_service
+        geospatial_context_service=context_service,
+        temporal_context_repository=temporal_context_repository
     )
 
 @router.get(

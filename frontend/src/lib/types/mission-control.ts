@@ -3,6 +3,7 @@ import { DatasetMetadata } from "./dataset-metadata";
 import { GeospatialContext } from "./geospatial";
 import { LocationContext } from "./location";
 import { GeospatialContextProfile } from "./geospatial-context";
+import { TemporalContextResponse } from "./temporal-context";
 
 export type IntelligenceLayerStatus = "available" | "missing" | "error";
 
@@ -29,7 +30,7 @@ export interface MissionControlProfile {
   summary: string | null;
 
   // Future compatibility placeholders
-  temporal?: Record<string, any> | null;
+  temporal?: TemporalContextResponse | null;
   cloud?: Record<string, any> | null;
   reconstruction?: Record<string, any> | null;
   confidence?: Record<string, any> | null;

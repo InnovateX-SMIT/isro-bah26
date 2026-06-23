@@ -162,7 +162,7 @@ export default function MissionControlPage() {
         </div>
       ) : profile ? (
         /* 5. Operational workspace display */
-        <MissionControlWorkspace profile={profile} />
+        <MissionControlWorkspace profile={profile} onRefresh={handleSyncTelemetry} />
       ) : (
         /* Empty viewport fallback */
         !loadingDatasets && datasets.length > 0 && (

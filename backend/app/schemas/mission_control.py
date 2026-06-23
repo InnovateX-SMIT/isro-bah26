@@ -23,6 +23,8 @@ class MissionControlStatus(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+from app.schemas.temporal_context import TemporalContextResponse
+
 class MissionControlResponse(BaseModel):
     """
     Response schema returning the consolidated Mission Control Profile of a dataset.
@@ -36,9 +38,10 @@ class MissionControlResponse(BaseModel):
     summary: str | None = Field(None, description="Dynamically generated operational summary report")
 
     # Future compatibility data placeholders
-    temporal: dict | None = Field(default=None, description="Temporal Intelligence data placeholder")
+    temporal: TemporalContextResponse | None = Field(default=None, description="Temporal Intelligence context details")
     cloud: dict | None = Field(default=None, description="Cloud Intelligence data placeholder")
     reconstruction: dict | None = Field(default=None, description="Reconstruction Intelligence data placeholder")
     confidence: dict | None = Field(default=None, description="Confidence Intelligence data placeholder")
 
     model_config = ConfigDict(from_attributes=True)
+

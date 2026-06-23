@@ -10,6 +10,8 @@ class SessionStatus(str, Enum):
     ACTIVE = "active"
     COMPLETED = "completed"
     FAILED = "failed"
+    TEMPORAL_CONTEXT_RETRIEVED = "TEMPORAL_CONTEXT_RETRIEVED"
+
 
 class SessionBase(BaseModel):
     status: SessionStatus = Field(

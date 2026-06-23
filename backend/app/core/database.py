@@ -46,7 +46,10 @@ def init_db():
     from app.models.geospatial_context import GeospatialContext
     from app.models.location_context import LocationContext
     from app.models.geospatial_context_profile import GeospatialContextProfile
+    from app.models.temporal_discovery import TemporalDiscovery
+    from app.models.temporal_candidate import TemporalCandidate
     Base.metadata.create_all(bind=engine)
+
 
 
 

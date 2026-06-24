@@ -40,4 +40,5 @@ class AnalysisSession(Base):
 
     # Relationship to Datasets
     datasets = relationship("Dataset", back_populates="session", cascade="all, delete-orphan")
+    reconstruction_runs = relationship("ReconstructionRun", back_populates="session", cascade="all, delete-orphan")
 

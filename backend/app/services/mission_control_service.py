@@ -12,6 +12,7 @@ from app.repositories.cloud_classification_repository import CloudClassification
 from app.repositories.cloud_shadow_repository import CloudShadowRepository
 from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
 from app.repositories.cloud_analytics_repository import CloudAnalyticsRepository
+from app.repositories.reconstruction_repository import ReconstructionRepository
 
 
 class MissionControlService:
@@ -32,7 +33,8 @@ class MissionControlService:
         cloud_classification_repository: CloudClassificationRepository = None,
         cloud_shadow_repository: CloudShadowRepository = None,
         cloud_segmentation_repository: CloudSegmentationRepository = None,
-        cloud_analytics_repository: CloudAnalyticsRepository = None
+        cloud_analytics_repository: CloudAnalyticsRepository = None,
+        reconstruction_repository: ReconstructionRepository = None
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
@@ -45,6 +47,7 @@ class MissionControlService:
         self.cloud_shadow_repository = cloud_shadow_repository
         self.cloud_segmentation_repository = cloud_segmentation_repository
         self.cloud_analytics_repository = cloud_analytics_repository
+        self.reconstruction_repository = reconstruction_repository
 
 
 
@@ -67,7 +70,8 @@ class MissionControlService:
             "location": "missing",
             "context": "missing",
             "temporal": "missing",
-            "cloud": "not_run"
+            "cloud": "not_run",
+            "reconstruction": "not_started"
         }
 
         data_dict = {
@@ -76,7 +80,8 @@ class MissionControlService:
             "geospatial": None,
             "location": None,
             "context": None,
-            "cloud": None
+            "cloud": None,
+            "reconstruction": None
         }
 
 
@@ -249,7 +254,28 @@ class MissionControlService:
             except Exception:
                 status_dict["cloud"] = "error"
 
-
+        # 5.7 Extract or Fetch Reconstruction Run
+        reconstruction_run = None
+        if self.reconstruction_repository:
+            try:
+                run_rec = self.reconstruction_repository.get_by_dataset(dataset_id)
+                if run_rec:
+                    reconstruction_run = run_rec
+                    status_dict["reconstruction"] = "available"
+                    data_dict["reconstruction"] = {
+                        "id": run_rec.id,
+                        "session_id": run_rec.session_id,
+                        "dataset_id": run_rec.dataset_id,
+                        "reconstruction_status": run_rec.reconstruction_status,
+                        "reconstruction_strategy": run_rec.reconstruction_strategy,
+                        "summary": run_rec.summary,
+                        "created_at": run_rec.created_at,
+                        "updated_at": run_rec.updated_at
+                    }
+                else:
+                    status_dict["reconstruction"] = "not_started"
+            except Exception:
+                status_dict["reconstruction"] = "not_started"
 
         # 6. Generate dynamic human-readable operational briefing summary
         briefing = self._generate_briefing(
@@ -259,7 +285,8 @@ class MissionControlService:
             location=data_dict["location"],
             context=data_dict["context"],
             temporal=temporal_context,
-            status=status_dict
+            status=status_dict,
+            reconstruction=reconstruction_run
         )
 
         return MissionControlResponse(
@@ -270,12 +297,13 @@ class MissionControlService:
             context=data_dict["context"],
             temporal=temporal_context,
             cloud=data_dict["cloud"],
+            reconstruction=data_dict["reconstruction"],
             status=MissionControlStatus(**status_dict),
             summary=briefing
         )
 
 
-    def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status) -> str:
+    def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status, reconstruction=None) -> str:
         """
         Dynamically constructs a human-readable operational summary report.
         Omits or rephrases sections gracefully depending on available dataset fields.
@@ -330,5 +358,9 @@ class MissionControlService:
         # D. Temporal Intelligence Context
         if status.get("temporal") == "available" and temporal:
             parts.append(temporal.summary)
+
+        # E. Reconstruction Intelligence Context
+        if status.get("reconstruction") == "available" and reconstruction and reconstruction.summary:
+            parts.append(reconstruction.summary)
 
         return " ".join(parts)

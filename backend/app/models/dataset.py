@@ -83,5 +83,6 @@ class Dataset(Base):
 
     # Relationship to CloudDetection (one-to-one)
     cloud_detection = relationship("CloudDetection", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
+    reconstruction_runs = relationship("ReconstructionRun", back_populates="dataset", cascade="all, delete-orphan")
 
 

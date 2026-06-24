@@ -12,6 +12,7 @@ from app.repositories.cloud_classification_repository import CloudClassification
 from app.repositories.cloud_shadow_repository import CloudShadowRepository
 from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
 from app.repositories.cloud_analytics_repository import CloudAnalyticsRepository
+from app.repositories.reconstruction_repository import ReconstructionRepository
 
 from app.services.dataset_metadata_service import DatasetMetadataService
 from app.services.geospatial_service import GeospatialService
@@ -39,6 +40,7 @@ def get_mission_control_service(db: Session = Depends(get_db)) -> MissionControl
     cloud_shadow_repository = CloudShadowRepository(db)
     cloud_segmentation_repository = CloudSegmentationRepository(db)
     cloud_analytics_repository = CloudAnalyticsRepository(db)
+    reconstruction_repository = ReconstructionRepository(db)
 
     # Services
     metadata_service = DatasetMetadataService(metadata_repository, dataset_repository)
@@ -57,7 +59,8 @@ def get_mission_control_service(db: Session = Depends(get_db)) -> MissionControl
         cloud_classification_repository=cloud_classification_repository,
         cloud_shadow_repository=cloud_shadow_repository,
         cloud_segmentation_repository=cloud_segmentation_repository,
-        cloud_analytics_repository=cloud_analytics_repository
+        cloud_analytics_repository=cloud_analytics_repository,
+        reconstruction_repository=reconstruction_repository
     )
 
 @router.get(

@@ -17,6 +17,7 @@ from app.api.v1.cloud_classification import router as cloud_classification_route
 from app.api.v1.cloud_shadow import router as cloud_shadow_router
 from app.api.v1.cloud_segmentation import router as cloud_segmentation_router
 from app.api.v1.cloud_analytics import router as cloud_analytics_router
+from app.api.v1.reconstruction import router as reconstruction_router
 
 api_router = APIRouter()
 
@@ -49,3 +50,4 @@ api_router.include_router(cloud_classification_router, prefix="/cloud-classifica
 api_router.include_router(cloud_shadow_router, prefix="/cloud-shadow", tags=["Cloud Shadow Detection Engine"])
 api_router.include_router(cloud_segmentation_router, prefix="/cloud-segmentation", tags=["Cloud Segmentation Engine"])
 api_router.include_router(cloud_analytics_router, prefix="/cloud-analytics", tags=["Cloud Analytics Engine"])
+api_router.include_router(reconstruction_router, prefix="/reconstruction", tags=["Reconstruction Framework"])

@@ -56,6 +56,7 @@ def init_db():
     from app.models.cloud_shadow import CloudShadow
     from app.models.cloud_segmentation import CloudSegmentation
     from app.models.cloud_analytics import CloudAnalytics
+    from app.models.reconstruction_run import ReconstructionRun
     Base.metadata.create_all(bind=engine)
 
 

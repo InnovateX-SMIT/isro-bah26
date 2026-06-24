@@ -54,6 +54,7 @@ def init_db():
     from app.models.cloud_detection import CloudDetection
     from app.models.cloud_classification import CloudClassification
     from app.models.cloud_shadow import CloudShadow
+    from app.models.cloud_segmentation import CloudSegmentation
     Base.metadata.create_all(bind=engine)
 
 

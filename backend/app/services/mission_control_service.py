@@ -10,6 +10,7 @@ from app.schemas.temporal_context import TemporalContextResponse
 from app.repositories.cloud_detection_repository import CloudDetectionRepository
 from app.repositories.cloud_classification_repository import CloudClassificationRepository
 from app.repositories.cloud_shadow_repository import CloudShadowRepository
+from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
 
 
 class MissionControlService:
@@ -28,7 +29,8 @@ class MissionControlService:
         temporal_context_repository: TemporalContextRepository,
         cloud_detection_repository: CloudDetectionRepository = None,
         cloud_classification_repository: CloudClassificationRepository = None,
-        cloud_shadow_repository: CloudShadowRepository = None
+        cloud_shadow_repository: CloudShadowRepository = None,
+        cloud_segmentation_repository: CloudSegmentationRepository = None
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
@@ -39,6 +41,7 @@ class MissionControlService:
         self.cloud_detection_repository = cloud_detection_repository
         self.cloud_classification_repository = cloud_classification_repository
         self.cloud_shadow_repository = cloud_shadow_repository
+        self.cloud_segmentation_repository = cloud_segmentation_repository
 
 
 
@@ -165,7 +168,8 @@ class MissionControlService:
                             "created_at": cloud_rec.created_at,
                             "updated_at": cloud_rec.updated_at,
                             "classification": None,
-                            "shadow": None
+                            "shadow": None,
+                            "segmentation": None
                         }
                         
                         # Add Cloud Classification details if completed
@@ -200,9 +204,23 @@ class MissionControlService:
                                             "mean_shadow_to_cloud_area_ratio": shadow_rec.mean_shadow_to_cloud_area_ratio,
                                             "detection_method": shadow_rec.detection_method
                                         }
+
+                                        # Add Cloud Segmentation details if completed
+                                        if self.cloud_segmentation_repository:
+                                            seg_rec = self.cloud_segmentation_repository.get_by_dataset(dataset_id)
+                                            if seg_rec and seg_rec.segmentation_status == "completed":
+                                                data_dict["cloud"]["segmentation"] = {
+                                                    "segmentation_status": seg_rec.segmentation_status,
+                                                    "total_segmented_regions": seg_rec.total_segmented_regions,
+                                                    "segmented_area_percent": seg_rec.total_segmented_area_percent,
+                                                    "reconstruction_ready": seg_rec.reconstruction_ready,
+                                                    "largest_region": seg_rec.largest_region_pixels,
+                                                    "reconstruction_mask_available": seg_rec.reconstruction_mask_path is not None
+                                                }
                             else:
                                 data_dict["cloud"]["classification"] = None
                                 data_dict["cloud"]["shadow"] = None
+                                data_dict["cloud"]["segmentation"] = None
                     elif cloud_rec.detection_status == "failed":
                         status_dict["cloud"] = "error"
                     else:

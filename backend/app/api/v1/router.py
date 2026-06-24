@@ -15,6 +15,7 @@ from app.api.v1.temporal_context import router as temporal_context_router
 from app.api.v1.cloud_detection import router as cloud_detection_router
 from app.api.v1.cloud_classification import router as cloud_classification_router
 from app.api.v1.cloud_shadow import router as cloud_shadow_router
+from app.api.v1.cloud_segmentation import router as cloud_segmentation_router
 
 api_router = APIRouter()
 
@@ -45,3 +46,4 @@ api_router.include_router(temporal_context_router, prefix="/temporal", tags=["Te
 api_router.include_router(cloud_detection_router, prefix="/cloud-detection", tags=["Cloud Detection Engine"])
 api_router.include_router(cloud_classification_router, prefix="/cloud-classification", tags=["Cloud Classification Engine"])
 api_router.include_router(cloud_shadow_router, prefix="/cloud-shadow", tags=["Cloud Shadow Detection Engine"])
+api_router.include_router(cloud_segmentation_router, prefix="/cloud-segmentation", tags=["Cloud Segmentation Engine"])

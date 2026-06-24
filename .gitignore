@@ -45,3 +45,13 @@ datasets/demo/*
 !datasets/demo/.gitkeep
 datasets/uploaded/*
 !datasets/uploaded/.gitkeep
+datasets/cloud_detections/*
+!datasets/cloud_detections/.gitkeep
+datasets/cloud_classifications/*
+!datasets/cloud_classifications/.gitkeep
+datasets/cloud_shadows/*
+!datasets/cloud_shadows/.gitkeep
+datasets/cloud_segmentations/*
+!datasets/cloud_segmentations/.gitkeep
+datasets/previews/*
+!datasets/previews/.gitkeep

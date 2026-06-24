@@ -53,7 +53,9 @@ def init_db():
     from app.models.temporal_context import TemporalContext
     from app.models.cloud_detection import CloudDetection
     from app.models.cloud_classification import CloudClassification
+    from app.models.cloud_shadow import CloudShadow
     Base.metadata.create_all(bind=engine)
+
 
 
 

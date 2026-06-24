@@ -146,6 +146,15 @@ class DatasetService:
             except Exception as io_err:
                 print(f"Warning: Could not remove cloud classification directory {class_dir} on dataset purge: {io_err}")
 
+        # Clean up physical cloud shadow directory on disk if it exists
+        shadow_dir = os.path.join(workspace_root, "datasets", "cloud_shadows", dataset_id)
+        if os.path.exists(shadow_dir):
+            import shutil
+            try:
+                shutil.rmtree(shadow_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove cloud shadow directory {shadow_dir} on dataset purge: {io_err}")
+
         return self.repository.delete_dataset(dataset_id)
 
 

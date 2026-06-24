@@ -9,7 +9,7 @@ from app.repositories.temporal_context_repository import TemporalContextReposito
 from app.schemas.temporal_context import TemporalContextResponse
 from app.repositories.cloud_detection_repository import CloudDetectionRepository
 from app.repositories.cloud_classification_repository import CloudClassificationRepository
-
+from app.repositories.cloud_shadow_repository import CloudShadowRepository
 
 
 class MissionControlService:
@@ -27,7 +27,8 @@ class MissionControlService:
         geospatial_context_service: GeospatialContextService,
         temporal_context_repository: TemporalContextRepository,
         cloud_detection_repository: CloudDetectionRepository = None,
-        cloud_classification_repository: CloudClassificationRepository = None
+        cloud_classification_repository: CloudClassificationRepository = None,
+        cloud_shadow_repository: CloudShadowRepository = None
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
@@ -37,6 +38,7 @@ class MissionControlService:
         self.temporal_context_repository = temporal_context_repository
         self.cloud_detection_repository = cloud_detection_repository
         self.cloud_classification_repository = cloud_classification_repository
+        self.cloud_shadow_repository = cloud_shadow_repository
 
 
 
@@ -162,7 +164,8 @@ class MissionControlService:
                             "detection_method": cloud_rec.detection_method,
                             "created_at": cloud_rec.created_at,
                             "updated_at": cloud_rec.updated_at,
-                            "classification": None
+                            "classification": None,
+                            "shadow": None
                         }
                         
                         # Add Cloud Classification details if completed
@@ -181,6 +184,25 @@ class MissionControlService:
                                     "uncertain_area_percent": class_rec.uncertain_area_percent,
                                     "classification_method": class_rec.classification_method
                                 }
+                                
+                                # Add Cloud Shadow details if completed
+                                if self.cloud_shadow_repository:
+                                    shadow_rec = self.cloud_shadow_repository.get_by_dataset(dataset_id)
+                                    if shadow_rec and shadow_rec.shadow_detection_status == "completed":
+                                        data_dict["cloud"]["shadow"] = {
+                                            "shadow_id": shadow_rec.shadow_id,
+                                            "shadow_detection_status": shadow_rec.shadow_detection_status,
+                                            "solar_geometry_available": shadow_rec.solar_geometry_available,
+                                            "shadow_region_count": shadow_rec.shadow_region_count,
+                                            "total_shadow_area_percent": shadow_rec.total_shadow_area_percent,
+                                            "linked_shadow_region_count": shadow_rec.linked_shadow_region_count,
+                                            "unlinked_shadow_region_count": shadow_rec.unlinked_shadow_region_count,
+                                            "mean_shadow_to_cloud_area_ratio": shadow_rec.mean_shadow_to_cloud_area_ratio,
+                                            "detection_method": shadow_rec.detection_method
+                                        }
+                            else:
+                                data_dict["cloud"]["classification"] = None
+                                data_dict["cloud"]["shadow"] = None
                     elif cloud_rec.detection_status == "failed":
                         status_dict["cloud"] = "error"
                     else:

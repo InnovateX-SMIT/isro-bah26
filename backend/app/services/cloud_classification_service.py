@@ -18,17 +18,26 @@ class CloudClassificationService:
     and Uncertain classes based on probability stats and shape compactness.
     """
     
-    # Class threshold constants (exposed for visibility and tuning)
-    THETA_THICK_MEAN = 0.70
-    THETA_THICK_STD = 0.12
-    THETA_THICK_AREA = 100
+    # Percentiles for dynamic threshold calibration (exposed for visibility and tuning)
+    PCT_THICK_MEAN = 70
+    PCT_THICK_STD = 75
+    PCT_THICK_AREA = 40
+    PCT_CIRRUS_COMPACTNESS = 70
+    PCT_THIN_MEAN_MAX = 90
+    PCT_THIN_STD = 85
 
+    # Fallback default constants when region count is too low to compute percentiles reliably
+    FALLBACK_THICK_MEAN = 0.65
+    FALLBACK_THICK_STD = 0.18
+    FALLBACK_THICK_AREA = 50
+    FALLBACK_CIRRUS_COMPACTNESS = 30.0
+    FALLBACK_THIN_MEAN_MAX = 0.90
+    FALLBACK_THIN_STD = 0.25
+
+    # Absolute bounds for thin and cirrus clouds
     THETA_CIRRUS_MEAN_MAX = 0.60
-    THETA_CIRRUS_COMPACTNESS = 35.0
-
     THETA_THIN_MEAN_MIN = 0.35
-    THETA_THIN_MEAN_MAX = 0.75
-    THETA_THIN_STD = 0.22
+
 
     # Integer codes for georeferenced raster outputs
     CODE_BACKGROUND = 0
@@ -133,7 +142,55 @@ class CloudClassificationService:
             regions = regionprops(labeled_mask)
             valid_regions = [r for r in regions if r.area >= 16]
 
-            # 5. Classify regions
+            # 5. Extract features from each valid region
+            region_features = []
+            all_mean_probs = []
+            all_std_probs = []
+            all_compactnesses = []
+            all_areas = []
+
+            for r in valid_regions:
+                region_mask = (labeled_mask == r.label)
+                region_probs = prob_map[region_mask]
+
+                mean_prob = float(np.mean(region_probs))
+                std_prob = float(np.std(region_probs))
+                area_px = int(r.area)
+                perimeter = float(r.perimeter)
+                compactness = (perimeter ** 2) / area_px if area_px > 0 else 0.0
+
+                all_mean_probs.append(mean_prob)
+                all_std_probs.append(std_prob)
+                all_compactnesses.append(compactness)
+                all_areas.append(area_px)
+
+                region_features.append((r, mean_prob, std_prob, area_px, compactness, region_mask))
+
+            # Compute dynamic thresholds using percentiles
+            if len(all_mean_probs) >= 4:
+                thick_mean_threshold = float(np.percentile(all_mean_probs, self.PCT_THICK_MEAN))
+                thick_std_threshold = max(0.15, float(np.percentile(all_std_probs, self.PCT_THICK_STD)))
+                thick_area_threshold = max(50, int(np.percentile(all_areas, self.PCT_THICK_AREA)))
+
+                cirrus_compactness_threshold = max(20.0, float(np.percentile(all_compactnesses, self.PCT_CIRRUS_COMPACTNESS)))
+                thin_mean_max = max(0.85, float(np.percentile(all_mean_probs, self.PCT_THIN_MEAN_MAX)))
+                thin_std_threshold = max(0.20, float(np.percentile(all_std_probs, self.PCT_THIN_STD)))
+            else:
+                thick_mean_threshold = self.FALLBACK_THICK_MEAN
+                thick_std_threshold = self.FALLBACK_THICK_STD
+                thick_area_threshold = self.FALLBACK_THICK_AREA
+
+                cirrus_compactness_threshold = self.FALLBACK_CIRRUS_COMPACTNESS
+                thin_mean_max = self.FALLBACK_THIN_MEAN_MAX
+                thin_std_threshold = self.FALLBACK_THIN_STD
+
+            # Print or log calculated thresholds for debugging/explainability
+            print(f"DEBUG: Calibrated Cloud Classification Thresholds for dataset {dataset_id}:")
+            print(f" - Thick Mean: {thick_mean_threshold:.4f}, Thick Std: {thick_std_threshold:.4f}, Thick Area: {thick_area_threshold}")
+            print(f" - Cirrus Compactness: {cirrus_compactness_threshold:.4f}")
+            print(f" - Thin Mean Max: {thin_mean_max:.4f}, Thin Std: {thin_std_threshold:.4f}")
+
+            # 6. Classify regions
             region_details = []
             thick_count = 0
             thin_count = 0
@@ -147,31 +204,19 @@ class CloudClassificationService:
 
             class_raster = np.zeros_like(labeled_mask, dtype=np.uint8)
 
-            for r in valid_regions:
-                # Mask pixels belonging to this component
-                region_mask = (labeled_mask == r.label)
-                region_probs = prob_map[region_mask]
-
-                mean_prob = float(np.mean(region_probs))
-                std_prob = float(np.std(region_probs))
-                area_px = int(r.area)
-                
-                # Shape compactness (perimeter^2 / area)
-                perimeter = float(r.perimeter)
-                compactness = (perimeter ** 2) / area_px if area_px > 0 else 0.0
-
-                # 6. Apply rules
-                if mean_prob >= self.THETA_THICK_MEAN and std_prob <= self.THETA_THICK_STD and area_px >= self.THETA_THICK_AREA:
+            for r, mean_prob, std_prob, area_px, compactness, region_mask in region_features:
+                # Apply calibrated rules
+                if mean_prob >= thick_mean_threshold and std_prob <= thick_std_threshold and area_px >= thick_area_threshold:
                     cls_label = "Thick Cloud"
                     code = self.CODE_THICK
                     thick_count += 1
                     thick_area += area_px
-                elif mean_prob <= self.THETA_CIRRUS_MEAN_MAX and compactness >= self.THETA_CIRRUS_COMPACTNESS:
+                elif mean_prob <= self.THETA_CIRRUS_MEAN_MAX and compactness >= cirrus_compactness_threshold:
                     cls_label = "Cirrus Cloud"
                     code = self.CODE_CIRRUS
                     cirrus_count += 1
                     cirrus_area += area_px
-                elif self.THETA_THIN_MEAN_MIN <= mean_prob <= self.THETA_THIN_MEAN_MAX and std_prob <= self.THETA_THIN_STD:
+                elif self.THETA_THIN_MEAN_MIN <= mean_prob <= thin_mean_max and std_prob <= thin_std_threshold:
                     cls_label = "Thin Cloud"
                     code = self.CODE_THIN
                     thin_count += 1
@@ -191,6 +236,7 @@ class CloudClassificationService:
                     "area_px": area_px,
                     "compactness": compactness
                 })
+
 
             # Calculate area percentages
             total_cloud_area = thick_area + thin_area + cirrus_area + uncertain_area

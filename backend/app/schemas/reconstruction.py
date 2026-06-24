@@ -12,6 +12,10 @@ class ReconstructionRunResponse(BaseModel):
     reconstruction_status: str = Field(..., description="Lifecycle status: PENDING, RUNNING, COMPLETED, FAILED")
     reconstruction_strategy: Optional[str] = Field(None, description="The chosen reconstruction strategy")
     summary: Optional[str] = Field(None, description="Explainable reconstruction summary")
+    output_image_path: Optional[str] = Field(None, description="Path relative to workspace root of generated image GeoTIFF")
+    preview_image_path: Optional[str] = Field(None, description="Path relative to workspace root of generated preview PNG")
+    reconstruction_method: Optional[str] = Field(None, description="Reconstruction method/algorithm used")
+    execution_time_ms: Optional[int] = Field(None, description="Execution time in milliseconds")
     created_at: datetime = Field(..., description="Timestamp when run was initialized")
     updated_at: datetime = Field(..., description="Timestamp of last update")
 

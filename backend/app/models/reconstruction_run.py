@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, String, DateTime, ForeignKey, Text, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -45,6 +45,26 @@ class ReconstructionRun(Base):
         Text,
         nullable=True,
         doc="Explainability summary of the reconstruction run"
+    )
+    output_image_path = Column(
+        String,
+        nullable=True,
+        doc="Path relative to workspace root of generated reconstructed image GeoTIFF"
+    )
+    preview_image_path = Column(
+        String,
+        nullable=True,
+        doc="Path relative to workspace root of generated reconstruction preview PNG"
+    )
+    reconstruction_method = Column(
+        String,
+        nullable=True,
+        doc="Reconstruction algorithm method used (e.g. cv2.INPAINT_TELEA)"
+    )
+    execution_time_ms = Column(
+        Integer,
+        nullable=True,
+        doc="Execution time of the reconstruction pipeline run in milliseconds"
     )
     created_at = Column(
         DateTime(timezone=True),

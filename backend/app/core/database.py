@@ -60,6 +60,27 @@ def init_db():
     from app.models.temporal_fusion_run import TemporalFusionRun
     Base.metadata.create_all(bind=engine)
 
+    # Ensure new reconstruction_runs columns are present for Phase 7C compatibility
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            # Check existing columns
+            res = conn.execute(text("PRAGMA table_info(reconstruction_runs)"))
+            cols = [row[1] for row in res.fetchall()]
+            if cols:
+                if "output_image_path" not in cols:
+                    conn.execute(text("ALTER TABLE reconstruction_runs ADD COLUMN output_image_path VARCHAR"))
+                if "preview_image_path" not in cols:
+                    conn.execute(text("ALTER TABLE reconstruction_runs ADD COLUMN preview_image_path VARCHAR"))
+                if "reconstruction_method" not in cols:
+                    conn.execute(text("ALTER TABLE reconstruction_runs ADD COLUMN reconstruction_method VARCHAR"))
+                if "execution_time_ms" not in cols:
+                    conn.execute(text("ALTER TABLE reconstruction_runs ADD COLUMN execution_time_ms INTEGER"))
+                conn.commit()
+    except Exception as e:
+        print(f"Migration warning for reconstruction_runs: {e}")
+
+
 
 
 

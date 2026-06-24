@@ -274,6 +274,10 @@ class MissionControlService:
                         "reconstruction_status": run_rec.reconstruction_status,
                         "reconstruction_strategy": run_rec.reconstruction_strategy,
                         "summary": run_rec.summary,
+                        "output_image_path": run_rec.output_image_path,
+                        "preview_image_path": run_rec.preview_image_path,
+                        "reconstruction_method": run_rec.reconstruction_method,
+                        "execution_time_ms": run_rec.execution_time_ms,
                         "created_at": run_rec.created_at,
                         "updated_at": run_rec.updated_at
                     }

@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, status, Response
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import Optional
+from pydantic import BaseModel, Field
 
 from app.core.database import get_db
 from app.repositories.reconstruction_repository import ReconstructionRepository
@@ -15,6 +17,7 @@ from app.repositories.cloud_detection_repository import CloudDetectionRepository
 from app.repositories.cloud_classification_repository import CloudClassificationRepository
 from app.repositories.cloud_shadow_repository import CloudShadowRepository
 from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
+from app.repositories.temporal_fusion_repository import TemporalFusionRepository
 
 from app.services.reconstruction_service import ReconstructionService
 from app.schemas.reconstruction import (
@@ -43,7 +46,8 @@ def get_reconstruction_service(db: Session = Depends(get_db)) -> ReconstructionS
         cloud_detection_repo=CloudDetectionRepository(db),
         cloud_classification_repo=CloudClassificationRepository(db),
         cloud_shadow_repo=CloudShadowRepository(db),
-        cloud_segmentation_repo=CloudSegmentationRepository(db)
+        cloud_segmentation_repo=CloudSegmentationRepository(db),
+        temporal_fusion_repo=TemporalFusionRepository(db)
     )
 
 @router.post(
@@ -99,3 +103,42 @@ def delete_reconstruction(
 ):
     service.delete_reconstruction_runs(session_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+class ReconstructionOutputResponse(BaseModel):
+    session_id: str
+    output_image_path: Optional[str] = Field(None, description="Path to generated reconstructed TIFF image")
+    preview_image_path: Optional[str] = Field(None, description="Path to generated preview PNG image")
+    reconstruction_method: Optional[str] = Field(None, description="Inpaint algorithm method used")
+    execution_time_ms: Optional[int] = Field(None, description="Pipeline run duration in milliseconds")
+
+@router.get(
+    "/{session_id}/output",
+    response_model=ReconstructionOutputResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get Reconstruction Output Info",
+    description="Retrieves the file paths and processing metadata for the completed reconstruction run."
+)
+def get_reconstruction_output(
+    session_id: str,
+    service: ReconstructionService = Depends(get_reconstruction_service)
+):
+    run = service.get_latest_run(session_id)
+    return ReconstructionOutputResponse(
+        session_id=run.session_id,
+        output_image_path=run.output_image_path,
+        preview_image_path=run.preview_image_path,
+        reconstruction_method=run.reconstruction_method,
+        execution_time_ms=run.execution_time_ms
+    )
+
+@router.get(
+    "/{session_id}/preview",
+    summary="Get Reconstruction Preview Image",
+    description="Serves the raw generated preview PNG file of the completed reconstruction run."
+)
+def get_reconstruction_preview_image(
+    session_id: str,
+    service: ReconstructionService = Depends(get_reconstruction_service)
+):
+    img_path = service.get_preview_image_path(session_id)
+    return FileResponse(img_path, media_type="image/png")

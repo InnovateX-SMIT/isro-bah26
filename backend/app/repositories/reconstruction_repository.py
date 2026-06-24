@@ -63,16 +63,28 @@ class ReconstructionRepository:
         self,
         run_id: str,
         status: str,
-        summary: Optional[str] = None
+        summary: Optional[str] = None,
+        output_image_path: Optional[str] = None,
+        preview_image_path: Optional[str] = None,
+        reconstruction_method: Optional[str] = None,
+        execution_time_ms: Optional[int] = None
     ) -> Optional[ReconstructionRun]:
         """
-        Updates the status and optional summary of a reconstruction run.
+        Updates the status and optional summary/metadata of a reconstruction run.
         """
         run = self.get_by_id(run_id)
         if run:
             run.reconstruction_status = status
             if summary is not None:
                 run.summary = summary
+            if output_image_path is not None:
+                run.output_image_path = output_image_path
+            if preview_image_path is not None:
+                run.preview_image_path = preview_image_path
+            if reconstruction_method is not None:
+                run.reconstruction_method = reconstruction_method
+            if execution_time_ms is not None:
+                run.execution_time_ms = execution_time_ms
             self.db.commit()
             self.db.refresh(run)
         return run

@@ -128,4 +128,14 @@ class DatasetService:
             except Exception as io_err:
                 print(f"Warning: Could not remove preview directory {preview_dir} on dataset purge: {io_err}")
 
+        # Clean up physical cloud detection directory on disk if it exists
+        cloud_dir = os.path.join(workspace_root, "datasets", "cloud_detections", dataset_id)
+        if os.path.exists(cloud_dir):
+            import shutil
+            try:
+                shutil.rmtree(cloud_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove cloud detection directory {cloud_dir} on dataset purge: {io_err}")
+
         return self.repository.delete_dataset(dataset_id)
+

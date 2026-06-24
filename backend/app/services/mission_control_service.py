@@ -7,6 +7,8 @@ from app.services.geospatial_context_service import GeospatialContextService
 from app.schemas.mission_control import MissionControlResponse, MissionControlStatus
 from app.repositories.temporal_context_repository import TemporalContextRepository
 from app.schemas.temporal_context import TemporalContextResponse
+from app.repositories.cloud_detection_repository import CloudDetectionRepository
+
 
 class MissionControlService:
     """
@@ -21,7 +23,8 @@ class MissionControlService:
         geospatial_service: GeospatialService,
         location_service: LocationService,
         geospatial_context_service: GeospatialContextService,
-        temporal_context_repository: TemporalContextRepository
+        temporal_context_repository: TemporalContextRepository,
+        cloud_detection_repository: CloudDetectionRepository = None
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
@@ -29,6 +32,8 @@ class MissionControlService:
         self.location_service = location_service
         self.geospatial_context_service = geospatial_context_service
         self.temporal_context_repository = temporal_context_repository
+        self.cloud_detection_repository = cloud_detection_repository
+
 
     def get_mission_control_profile(self, dataset_id: str) -> MissionControlResponse:
         """
@@ -48,7 +53,8 @@ class MissionControlService:
             "geospatial": "missing",
             "location": "missing",
             "context": "missing",
-            "temporal": "missing"
+            "temporal": "missing",
+            "cloud": "not_run"
         }
 
         data_dict = {
@@ -56,8 +62,10 @@ class MissionControlService:
             "metadata": None,
             "geospatial": None,
             "location": None,
-            "context": None
+            "context": None,
+            "cloud": None
         }
+
 
         # 2. Extract or Fetch Metadata Intelligence
         try:
@@ -132,6 +140,32 @@ class MissionControlService:
         except Exception:
             status_dict["temporal"] = "error"
 
+        # 5.6 Extract or Fetch Cloud Detection
+        if self.cloud_detection_repository:
+            try:
+                cloud_rec = self.cloud_detection_repository.get_by_dataset(dataset_id)
+                if cloud_rec:
+                    if cloud_rec.detection_status == "completed":
+                        status_dict["cloud"] = "available"
+                        data_dict["cloud"] = {
+                            "detection_id": cloud_rec.detection_id,
+                            "dataset_id": cloud_rec.dataset_id,
+                            "detection_status": cloud_rec.detection_status,
+                            "cloud_coverage_percent": cloud_rec.cloud_coverage_percent,
+                            "mean_cloud_probability": cloud_rec.mean_cloud_probability,
+                            "candidate_region_count": cloud_rec.candidate_region_count,
+                            "detection_method": cloud_rec.detection_method,
+                            "created_at": cloud_rec.created_at,
+                            "updated_at": cloud_rec.updated_at
+                        }
+                    elif cloud_rec.detection_status == "failed":
+                        status_dict["cloud"] = "error"
+                    else:
+                        status_dict["cloud"] = "not_run"
+            except Exception:
+                status_dict["cloud"] = "error"
+
+
         # 6. Generate dynamic human-readable operational briefing summary
         briefing = self._generate_briefing(
             dataset=dataset,
@@ -150,9 +184,11 @@ class MissionControlService:
             location=data_dict["location"],
             context=data_dict["context"],
             temporal=temporal_context,
+            cloud=data_dict["cloud"],
             status=MissionControlStatus(**status_dict),
             summary=briefing
         )
+
 
     def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status) -> str:
         """

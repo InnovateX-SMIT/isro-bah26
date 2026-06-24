@@ -81,3 +81,7 @@ class Dataset(Base):
     # Relationship to GeospatialContextProfile (one-to-one)
     geospatial_context_profile = relationship("GeospatialContextProfile", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
 
+    # Relationship to CloudDetection (one-to-one)
+    cloud_detection = relationship("CloudDetection", back_populates="dataset", uselist=False, cascade="all, delete-orphan")
+
+

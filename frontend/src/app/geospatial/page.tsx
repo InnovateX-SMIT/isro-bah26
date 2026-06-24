@@ -1,266 +1,170 @@
 "use client"
 
-import React, { useEffect, useState } from "react";
-import { Dataset } from "@/lib/types/dataset";
-import { DatasetMetadata } from "@/lib/types/dataset-metadata";
-import { GeospatialContext } from "@/lib/types/geospatial";
-import { getRegisteredDatasets } from "@/lib/dataset-api";
-import { getDatasetMetadata } from "@/lib/dataset-metadata-api";
-import { getGeospatialContext } from "@/lib/geospatial-api";
-import { getDatasetLocationContext } from "@/lib/location-api";
-import { getGeospatialContextProfile } from "@/lib/geospatial-context-api";
-import { LocationContext } from "@/lib/types/location";
-import { GeospatialContextProfile } from "@/lib/types/geospatial-context";
-import GeospatialMap from "@/components/geospatial/GeospatialMap";
-import DatasetInfoPanel from "@/components/geospatial/DatasetInfoPanel";
-import DatasetBoundsLayer from "@/components/geospatial/DatasetBoundsLayer";
-import LocationIntelligencePanel from "@/components/location/LocationIntelligencePanel";
-import GeospatialContextPanel from "@/components/context/GeospatialContextPanel";
-import { RefreshCw, MapPin, Database, Loader2, Compass, AlertCircle } from "lucide-react";
+import React, { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { Dataset } from "@/lib/types/dataset"
+import { getRegisteredDatasets } from "@/lib/dataset-api"
+import { Database, MapPin, Loader2, Compass, ArrowRight } from "lucide-react"
 
 export default function GeospatialPage() {
-  const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
-  const [metadata, setMetadata] = useState<DatasetMetadata | null>(null);
-  const [context, setContext] = useState<GeospatialContext | null>(null);
-  const [location, setLocation] = useState<LocationContext | null>(null);
-  const [profile, setProfile] = useState<GeospatialContextProfile | null>(null);
-
-  // States
-  const [loadingDatasets, setLoadingDatasets] = useState<boolean>(true);
-  const [loadingContext, setLoadingContext] = useState<boolean>(false);
-  const [loadingLocation, setLoadingLocation] = useState<boolean>(false);
-  const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const router = useRouter()
+  const [datasets, setDatasets] = useState<Dataset[]>([])
+  const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null)
+  const [loadingDatasets, setLoadingDatasets] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
 
   // Load registered datasets
-  const fetchDatasets = async (showLoading = true) => {
-    if (showLoading) setLoadingDatasets(true);
+  const fetchDatasets = async () => {
+    setLoadingDatasets(true)
+    setError(null)
     try {
-      const list = await getRegisteredDatasets();
-      setDatasets(list);
+      const list = await getRegisteredDatasets()
+      setDatasets(list)
       // Auto select the first dataset if available
-      if (list.length > 0 && !selectedDataset) {
-        handleSelectDataset(list[0]);
+      if (list.length > 0) {
+        setSelectedDataset(list[0])
       }
     } catch (err: any) {
-      console.error(err);
-      setError("Failed to fetch registered datasets from backend database.");
+      console.error(err)
+      setError("Failed to fetch registered datasets from platform database.")
     } finally {
-      if (showLoading) setLoadingDatasets(false);
+      setLoadingDatasets(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchDatasets(true);
-  }, []);
+    fetchDatasets()
+  }, [])
 
-  const handleSelectDataset = async (dataset: Dataset) => {
-    setSelectedDataset(dataset);
-    setMetadata(null);
-    setContext(null);
-    setLocation(null);
-    setProfile(null);
-    setLoadingContext(true);
-    setLoadingLocation(true);
-    setLoadingProfile(true);
-    setError(null);
-
-    try {
-      // 1. Fetch metadata (essential for dimension / resolution calculation)
-      try {
-        const meta = await getDatasetMetadata(dataset.dataset_id);
-        setMetadata(meta);
-      } catch (metaErr: any) {
-        // If metadata is 404/not extracted yet
-        if (metaErr.message && metaErr.message.includes("404")) {
-          setMetadata(null);
-        } else {
-          console.error("Metadata load error:", metaErr);
-        }
-      }
-
-      // 2. Fetch Geospatial Context (calls lazy generator on backend)
-      const geoContext = await getGeospatialContext(dataset.dataset_id);
-      setContext(geoContext);
-
-      // 3. Fetch Location Context (resolves administrative boundaries)
-      try {
-        const locContext = await getDatasetLocationContext(dataset.dataset_id);
-        setLocation(locContext);
-      } catch (locErr: any) {
-        console.error("Location lock error:", locErr);
-        setLocation(null);
-      }
-
-      // 4. Fetch Geospatial Context Profile (resolves environment details)
-      try {
-        const geoProfile = await getGeospatialContextProfile(dataset.dataset_id);
-        setProfile(geoProfile);
-      } catch (profErr: any) {
-        console.error("Context profile error:", profErr);
-        setProfile(null);
-      }
-
-      setSuccess(`Geospatial lock established on UTM zone EPSG:${geoContext.epsg}`);
-      setTimeout(() => setSuccess(null), 4000);
-
-    } catch (geoErr: any) {
-      console.error("Geospatial context error:", geoErr);
-      setContext(null);
-      setError(geoErr.message || "Failed to resolve geospatial intelligence coordinates.");
-    } finally {
-      setLoadingContext(false);
-      setLoadingLocation(false);
-      setLoadingProfile(false);
-    }
-  };
-
-  const handleRefresh = async () => {
-    setError(null);
-    setSuccess(null);
-    await fetchDatasets(true);
+  const handleOpenWorkspace = () => {
     if (selectedDataset) {
-      const updated = datasets.find(d => d.dataset_id === selectedDataset.dataset_id);
-      if (updated) {
-        await handleSelectDataset(updated);
-      }
+      router.push(`/geospatial/${selectedDataset.dataset_id}/workspace`)
     }
-  };
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-mono text-slate-100 pb-12">
       {/* Page Header */}
-      <div className="flex items-center justify-between border-b border-border pb-4 font-mono">
+      <div className="flex items-center justify-between border-b border-border pb-4">
         <div>
           <h1 className="text-xl font-bold tracking-wider text-primary uppercase">
             GEOSPATIAL INTELLIGENCE RADAR
           </h1>
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mt-0.5">
-            Resolve geographical footprints, map bounds, and projection telemetry for satellite imagery
-          </p>
         </div>
-        <button
-          disabled={loadingDatasets}
-          onClick={handleRefresh}
-          className="inline-flex items-center space-x-1.5 text-xs text-primary hover:underline uppercase disabled:opacity-50"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loadingDatasets ? "animate-spin" : ""}`} />
-          <span>Refresh Feed</span>
-        </button>
+        <div className="flex items-center space-x-2 text-xs border border-border px-3 py-1.5 bg-muted/30">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="text-muted-foreground uppercase text-[10px]">RADAR: ACTIVE</span>
+        </div>
       </div>
 
-      {/* Top Banner Status */}
-      {success && (
-        <div className="border border-primary/30 bg-primary/5 px-4 py-2.5 text-primary font-mono text-xs flex items-center space-x-2 shadow-[0_0_10px_-5px_rgba(6,182,212,0.3)]">
-          <Compass className="w-4 h-4 animate-spin-slow" />
-          <span className="font-bold uppercase tracking-wider">{success}</span>
-        </div>
-      )}
-
-      {error && !loadingContext && (
-        <div className="border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-destructive font-mono text-xs flex items-center space-x-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+      {error && (
+        <div className="border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-destructive text-xs">
           <span className="font-bold uppercase tracking-wider">{error}</span>
         </div>
       )}
 
-      {/* Split Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+      {/* Main Grid Selection Panel */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
         
-        {/* Dataset Registry List Selection Panel */}
-        <div className="lg:col-span-1 border border-border bg-card/25 p-4 space-y-4 relative overflow-hidden font-mono">
-          <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
-            REGISTRY // NODE
+        {/* Left/Middle Column: Dataset Selection Registry */}
+        <div className="md:col-span-2 border border-border bg-card/25 p-5 space-y-4 relative overflow-hidden rounded-sm">
+          <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2.5 py-0.5 text-[8px] text-primary tracking-widest uppercase">
+            REGISTRY // SATELLITE NODES
           </div>
           <h2 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
             <Database className="w-4 h-4 text-primary" />
-            Select Node Lock
+            Select Satellite Node Target
           </h2>
-          <p className="text-[10px] text-muted-foreground leading-normal">
-            Select a dataset from the registered database to project bounds onto the visual surface.
+          <p className="text-[11px] text-muted-foreground leading-normal">
+            Select an active registered imagery dataset from the SQLite engine registry database below.
           </p>
 
           {loadingDatasets ? (
-            <div className="flex items-center justify-center space-x-2 py-6 text-xs text-muted-foreground">
+            <div className="flex items-center justify-center space-x-2 py-12 text-xs text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span>SCANNING REGISTRY...</span>
+              <span>SCANNING REGISTRY INDEX...</span>
             </div>
           ) : datasets.length === 0 ? (
-            <div className="text-[10px] text-amber-500 border border-amber-500/20 bg-amber-500/5 p-3 rounded-sm text-center uppercase">
-              No datasets registered. Register a dataset in the Data Inventory first.
+            <div className="text-[10px] text-amber-500 border border-amber-500/20 bg-amber-500/5 p-4 rounded-sm text-center uppercase">
+              No datasets registered. Register a demo scene in the Data Inventory panel first.
             </div>
           ) : (
-            <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-1">
               {datasets.map((ds) => {
-                const isSelected = selectedDataset?.dataset_id === ds.dataset_id;
+                const isSelected = selectedDataset?.dataset_id === ds.dataset_id
                 return (
                   <button
                     key={ds.dataset_id}
-                    onClick={() => handleSelectDataset(ds)}
-                    className={`w-full text-left p-2.5 border transition-all flex flex-col space-y-1 text-xs group ${
+                    onClick={() => setSelectedDataset(ds)}
+                    className={`w-full text-left p-3.5 border transition-all flex flex-col space-y-1.5 rounded-sm ${
                       isSelected
-                        ? "bg-primary/15 border-primary text-primary font-bold shadow-[0_0_8px_-2px_rgba(6,182,212,0.3)]"
+                        ? "bg-primary/15 border-primary text-primary font-bold shadow-[0_0_12px_-3px_rgba(6,182,212,0.3)]"
                         : "border-border/60 text-muted-foreground hover:bg-muted/10 hover:text-foreground"
                     }`}
                   >
-                    <div className="flex items-center space-x-1.5">
-                      <MapPin className={`w-3.5 h-3.5 ${isSelected ? "text-primary" : "text-muted-foreground group-hover:text-foreground"}`} />
-                      <span className="truncate uppercase font-bold text-foreground/90">{ds.dataset_name}</span>
+                    <div className="flex items-center space-x-2">
+                      <MapPin className={`w-4 h-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                      <span className="truncate uppercase font-bold text-foreground">{ds.dataset_name}</span>
                     </div>
-                    <span className="text-[8px] opacity-75 truncate pl-5 select-all">{ds.dataset_id.substring(0, 8)}...</span>
+                    <div className="text-[8px] pl-6 text-muted-foreground font-mono truncate select-all">{ds.dataset_path}</div>
                   </button>
-                );
+                )
               })}
             </div>
           )}
         </div>
 
-        {/* Map Visualization Viewport */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="h-[550px] relative">
-            <GeospatialMap
-              context={context}
-              loading={loadingContext}
-              error={error}
-            />
+        {/* Right Column: HUD Summary & Workspace Action */}
+        <div className="md:col-span-1 border border-border bg-card/25 p-5 space-y-6 relative overflow-hidden rounded-sm h-full flex flex-col justify-between">
+          <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2.5 py-0.5 text-[8px] text-primary tracking-widest uppercase">
+            HUD // WORKSPACE
           </div>
 
-          {/* Location Intelligence Panel */}
-          <LocationIntelligencePanel 
-            location={location} 
-            loading={loadingLocation} 
-          />
+          <div className="space-y-4">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+              <Compass className="w-4 h-4 text-primary" />
+              Target Lock Brief
+            </h2>
+            
+            {selectedDataset ? (
+              <div className="space-y-3 text-[11px] leading-relaxed">
+                <div className="bg-background/40 border border-border p-3 space-y-2">
+                  <div>
+                    <span className="text-[8px] text-muted-foreground uppercase block">LOCKED NODE NAME</span>
+                    <span className="font-bold text-foreground uppercase">{selectedDataset.dataset_name}</span>
+                  </div>
+                  <div>
+                    <span className="text-[8px] text-muted-foreground uppercase block">INGEST STATUS</span>
+                    <span className="text-emerald-400 font-bold uppercase">{selectedDataset.dataset_status}</span>
+                  </div>
+                  <div>
+                    <span className="text-[8px] text-muted-foreground uppercase block">SESSION ID</span>
+                    <span className="text-muted-foreground truncate block font-mono text-[9px]">{selectedDataset.analysis_session_id}</span>
+                  </div>
+                </div>
+                <p className="text-muted-foreground text-[10px]">
+                  Locking this node maps UTM grids, projection bounds, administrative limits, and environmental profile contexts.
+                </p>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-[10px] italic">
+                Awaiting node target lock selection.
+              </p>
+            )}
+          </div>
 
-          {/* Corner coordinates helper display */}
-          <DatasetBoundsLayer context={context} />
-        </div>
-
-        {/* HUD Telemetry Info Panel */}
-        <div className="lg:col-span-1">
-          <DatasetInfoPanel
-            dataset={selectedDataset}
-            metadata={metadata}
-            context={context}
-            loading={loadingContext}
-          />
+          {selectedDataset && (
+            <button
+              onClick={handleOpenWorkspace}
+              className="w-full mt-4 py-3 bg-primary text-primary-foreground font-bold tracking-widest uppercase text-xs flex items-center justify-center gap-2 hover:bg-primary/95 transition-all shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)] rounded-sm"
+            >
+              <span>Open Geospatial Workspace</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
       </div>
-
-      {/* Full width Geospatial Context Intelligence Panel */}
-      {selectedDataset && (
-        <div className="border-t border-border/60 pt-6 space-y-4">
-          <div className="font-mono text-xs font-bold text-primary uppercase tracking-widest">
-            // GEOSPATIAL CONTEXT ENVIRONMENTAL INTELLIGENCE
-          </div>
-          <GeospatialContextPanel 
-            profile={profile} 
-            loading={loadingProfile} 
-          />
-        </div>
-      )}
     </div>
-  );
+  )
 }

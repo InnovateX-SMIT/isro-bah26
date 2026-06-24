@@ -93,8 +93,8 @@ export default function MissionControlStatusBar({ status }: MissionControlStatus
                 <span className="uppercase tracking-wider truncate">{layer.name}</span>
               </div>
               <div className="flex items-center space-x-1.5 pl-2 shrink-0">
-                <span className="text-[7px] text-muted-foreground">OFFLINE</span>
-                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />
+                <span className="text-[7px] text-amber-500 font-bold">PHASE 6+</span>
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-500/50" />
               </div>
             </div>
           );

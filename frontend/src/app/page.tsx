@@ -4,9 +4,7 @@ import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { checkBackendHealth } from "@/lib/api"
 import { 
-  Terminal, ShieldCheck, ShieldAlert, Cpu, 
-  Database, Activity, ArrowRight, Layers, 
-  HelpCircle, Compass, Play, ServerCrash
+  ShieldCheck, Activity, Play, ServerCrash
 } from "lucide-react"
 
 export default function MissionControlLander() {
@@ -52,23 +50,6 @@ export default function MissionControlLander() {
     }
   }, [retryCount])
 
-  const workflowSteps = [
-    { num: "01", name: "Dataset Ingestion", desc: "Demo dataset preloaded or user uploads multi-band LISS-IV GeoTIFF.", icon: Database },
-    { num: "02", name: "Metadata Intelligence", desc: "Automatic extraction of bands, coordinates, projection systems, and sensor metadata.", icon: Layers },
-    { num: "03", name: "Historical Discovery", desc: "Discover and retrieve temporal reference observations of the target region.", icon: Compass },
-    { num: "04", name: "Cloud Segmentation", desc: "AI-based cloud mask and shadow generation using deep neural networks.", icon: ShieldAlert },
-    { num: "05", name: "Generative Inpainting", desc: "Reconstruct occluded terrains using multi-temporal fusion models.", icon: Cpu },
-    { num: "06", name: "Confidence Evaluation", desc: "Estimate pixel-level restoration reliability scoring and output GeoTIFF.", icon: ShieldCheck }
-  ]
-
-  const techStack = [
-    { category: "Frontend Core", items: ["Next.js (App Router)", "TypeScript", "TailwindCSS", "shadcn/ui"] },
-    { category: "Backend Engine", items: ["FastAPI (Asynchronous)", "Python 3.14", "Uvicorn"] },
-    { category: "Storage Layer", items: ["SQLite (SQLAlchemy 2.0)", "Local-First Session Cache"] },
-    { category: "GIS & Reconstruction", items: ["GDAL & Rasterio Foundation", "PyTorch Core AI Models", "OpenCV & NumPy"] },
-    { category: "DevOps Orchestration", items: ["Docker Containerization", "Docker Compose Orchestration"] }
-  ]
-
   return (
     <div className="space-y-12 pb-12">
       {/* 1. Hero Section */}
@@ -91,10 +72,6 @@ export default function MissionControlLander() {
               Generative AI-Based Cloud Removal and Reconstruction for LISS-IV Satellite Imagery
             </p>
           </div>
-
-          <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
-            A local-first, modular mission control platform utilizing historical references and deep generative neural networks to restore analysis-ready geospatial features underneath dense cloud cover.
-          </p>
 
           <div className="flex flex-wrap items-center gap-4 pt-2">
             <Link 
@@ -152,65 +129,25 @@ export default function MissionControlLander() {
         )}
       </section>
 
-      {/* 3. Project Overview */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="border border-border bg-card/10 p-6 space-y-4 relative overflow-hidden">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-primary font-mono">Mission Summary</h2>
-          <h3 className="text-lg font-bold text-foreground">Explainable Generative Sat-Inpainting</h3>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            The platform is engineered around the LISS-IV remote sensing standards. Instead of classical black-box image inpainting, the platform establishes physical geospatial explainability: extracting satellite metadata projections, validating bands dynamically, checking temporal historical orbits, generating cloud confidence scores, and preserving actual coordinate spatial alignments.
-          </p>
-        </div>
-
-        <div className="border border-border bg-card/10 p-6 space-y-4 relative overflow-hidden">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-primary font-mono">Local-First Storage</h2>
-          <h3 className="text-lg font-bold text-foreground">SQLite Session Management</h3>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            All user sessions, processed dataset logs, coordinates footprint history, and AI metrics are recorded inside a local-first SQLite relational node. This layout removes infrastructure hosting complexities during operational hackathon presentations and permits instant session restore.
-          </p>
-        </div>
-      </section>
-
       {/* 4. Workflow Overview */}
       <section className="space-y-4">
         <div className="border-b border-border pb-2">
           <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-mono">End-to-End Operational Pipeline</h2>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 font-mono">
-          {workflowSteps.map((step, i) => (
-            <div key={i} className="border border-border bg-card/40 hover:bg-card/70 p-4 space-y-2.5 transition-colors relative overflow-hidden group">
-              <div className="absolute top-2 right-2 text-primary/10 group-hover:text-primary/20 text-4xl font-extrabold transition-colors">
-                {step.num}
-              </div>
-              <step.icon className="w-5 h-5 text-primary" />
-              <div className="space-y-1">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/90">{step.name}</h3>
-                <p className="text-[11px] text-muted-foreground leading-relaxed font-sans">{step.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 5. Technology Overview */}
-      <section className="space-y-4">
-        <div className="border-b border-border pb-2">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-mono">Architectural Technology Matrix</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {techStack.map((stack, i) => (
-            <div key={i} className="border border-border bg-card/20 p-4 space-y-3 font-mono text-[11px]">
-              <h3 className="text-primary font-bold uppercase border-b border-border pb-1.5">{stack.category}</h3>
-              <ul className="space-y-1.5 text-muted-foreground">
-                {stack.items.map((item, idx) => (
-                  <li key={idx} className="flex items-center space-x-1.5">
-                    <span className="w-1 h-1 bg-primary/60 rounded-full shrink-0"></span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+        <div className="flex flex-wrap items-center justify-between gap-4 p-4 border border-border bg-card/25 font-mono text-xs">
+          {[
+            { num: "01", name: "Dataset Ingestion" },
+            { num: "02", name: "Metadata Intelligence" },
+            { num: "03", name: "Historical Discovery" },
+            { num: "04", name: "Cloud Intelligence" },
+            { num: "05", name: "Reconstruction" },
+            { num: "06", name: "Confidence" }
+          ].map((step, i) => (
+            <div key={i} className="flex items-center space-x-2">
+              <span className="text-primary font-bold">{step.num}</span>
+              <span className="text-foreground font-bold tracking-wide uppercase">{step.name}</span>
+              {i < 5 && <span className="text-muted-foreground/45 ml-4">·</span>}
             </div>
           ))}
         </div>

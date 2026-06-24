@@ -306,9 +306,6 @@ function AnalysisSessionDashboard() {
           <h1 className="text-xl font-bold tracking-wider text-primary font-mono uppercase">
             ANALYSIS COMMAND CENTER
           </h1>
-          <p className="text-xs text-muted-foreground uppercase tracking-widest font-mono">
-            Manage reconstruction analysis sessions and begin new geospatial investigations
-          </p>
         </div>
         <div className="flex items-center space-x-2 text-xs border border-border px-3 py-1.5 bg-muted/30 font-mono">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>

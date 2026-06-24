@@ -28,36 +28,29 @@ export default function MissionControlHeader({
           GEOSPATIAL MISSION CONTROL
         </h1>
         <p className="text-xs text-muted-foreground uppercase tracking-widest">
-          Unified stateless aggregation & telemetry console for registered Earth Observation imagery
+          Command hub for satellite image reconstruction, telemetry alignment, and context consolidation
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 text-[10px]">
-        {/* Node Lock Status Info */}
-        <div className="border border-border/80 bg-background/50 px-3 py-1.5 rounded-sm flex items-center gap-2">
+        {/* Unified Active Dataset Control Panel */}
+        <div className="border border-border/80 bg-background/50 px-3 py-1.5 rounded-sm flex items-center gap-3">
           <Cpu className="w-3.5 h-3.5 text-primary" />
-          <div>
-            <span className="text-muted-foreground">ACTIVE LOCK:</span>{" "}
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground font-bold uppercase tracking-wider text-[9px]">ACTIVE DATASET CONTROL:</span>
             <span className="font-bold text-foreground uppercase">{datasetName}</span>
+            <span className="text-muted-foreground/45">|</span>
+            <span className="font-mono text-slate-300 select-all">{datasetId.substring(0, 8)}...</span>
           </div>
-          <div className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+          <button
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="inline-flex items-center justify-center space-x-1 px-2.5 py-1 border border-primary/30 hover:border-primary/80 bg-primary/10 hover:bg-primary/20 text-primary transition-all duration-200 uppercase disabled:opacity-50 font-bold tracking-wider text-[8.5px] rounded-sm ml-2"
+          >
+            <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
+            <span>Sync</span>
+          </button>
         </div>
-
-        {/* Short ID Badge */}
-        <div className="border border-border/80 bg-background/50 px-3 py-1.5 rounded-sm">
-          <span className="text-muted-foreground">LOCK REF:</span>{" "}
-          <span className="font-bold text-slate-300 select-all">{datasetId.substring(0, 8)}...</span>
-        </div>
-
-        {/* Refresh Feed */}
-        <button
-          onClick={onRefresh}
-          disabled={isLoading}
-          className="inline-flex items-center justify-center space-x-1.5 px-3 py-1.5 border border-primary/30 hover:border-primary/80 bg-primary/10 hover:bg-primary/20 text-primary transition-all duration-200 uppercase disabled:opacity-50 font-bold tracking-wider rounded-sm shadow-[0_0_8px_-2px_rgba(6,182,212,0.2)]"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
-          <span>Sync telemetry</span>
-        </button>
       </div>
     </div>
   );

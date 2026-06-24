@@ -55,3 +55,5 @@ datasets/cloud_segmentations/*
 !datasets/cloud_segmentations/.gitkeep
 datasets/previews/*
 !datasets/previews/.gitkeep
+datasets/cloud_analytics/*
+!datasets/cloud_analytics/.gitkeep

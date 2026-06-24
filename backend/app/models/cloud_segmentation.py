@@ -116,3 +116,4 @@ class CloudSegmentation(Base):
     # Relationships
     dataset = relationship("Dataset")
     cloud_shadow = relationship("CloudShadow", back_populates="cloud_segmentation")
+    cloud_analytics = relationship("CloudAnalytics", back_populates="cloud_segmentation", uselist=False, cascade="all, delete-orphan")

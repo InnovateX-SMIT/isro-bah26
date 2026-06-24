@@ -11,6 +11,7 @@ from app.repositories.cloud_detection_repository import CloudDetectionRepository
 from app.repositories.cloud_classification_repository import CloudClassificationRepository
 from app.repositories.cloud_shadow_repository import CloudShadowRepository
 from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
+from app.repositories.cloud_analytics_repository import CloudAnalyticsRepository
 
 
 class MissionControlService:
@@ -30,7 +31,8 @@ class MissionControlService:
         cloud_detection_repository: CloudDetectionRepository = None,
         cloud_classification_repository: CloudClassificationRepository = None,
         cloud_shadow_repository: CloudShadowRepository = None,
-        cloud_segmentation_repository: CloudSegmentationRepository = None
+        cloud_segmentation_repository: CloudSegmentationRepository = None,
+        cloud_analytics_repository: CloudAnalyticsRepository = None
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
@@ -42,6 +44,7 @@ class MissionControlService:
         self.cloud_classification_repository = cloud_classification_repository
         self.cloud_shadow_repository = cloud_shadow_repository
         self.cloud_segmentation_repository = cloud_segmentation_repository
+        self.cloud_analytics_repository = cloud_analytics_repository
 
 
 
@@ -169,7 +172,8 @@ class MissionControlService:
                             "updated_at": cloud_rec.updated_at,
                             "classification": None,
                             "shadow": None,
-                            "segmentation": None
+                            "segmentation": None,
+                            "analytics": None
                         }
                         
                         # Add Cloud Classification details if completed
@@ -217,10 +221,27 @@ class MissionControlService:
                                                     "largest_region": seg_rec.largest_region_pixels,
                                                     "reconstruction_mask_available": seg_rec.reconstruction_mask_path is not None
                                                 }
+
+                                                # Add Cloud Analytics details if completed
+                                                if self.cloud_analytics_repository:
+                                                    analytics_rec = self.cloud_analytics_repository.get_by_dataset(dataset_id)
+                                                    if analytics_rec and analytics_rec.analytics_status == "completed":
+                                                        data_dict["cloud"]["analytics"] = {
+                                                            "analytics_status": analytics_rec.analytics_status,
+                                                            "cloud_coverage": analytics_rec.total_cloud_coverage_percent,
+                                                            "shadow_coverage": analytics_rec.total_shadow_coverage_percent,
+                                                            "complexity_score": analytics_rec.scene_cloud_complexity_score,
+                                                            "difficulty": analytics_rec.scene_reconstruction_difficulty,
+                                                            "burden_index": analytics_rec.cloud_burden_index,
+                                                            "cloud_intelligence_score": analytics_rec.cloud_intelligence_score,
+                                                            "reconstruction_readiness": analytics_rec.reconstruction_readiness,
+                                                            "high_priority_objects": analytics_rec.high_priority_objects
+                                                        }
                             else:
                                 data_dict["cloud"]["classification"] = None
                                 data_dict["cloud"]["shadow"] = None
                                 data_dict["cloud"]["segmentation"] = None
+                                data_dict["cloud"]["analytics"] = None
                     elif cloud_rec.detection_status == "failed":
                         status_dict["cloud"] = "error"
                     else:

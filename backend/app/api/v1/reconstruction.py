@@ -197,3 +197,67 @@ def get_reconstruction_optimized_preview_image(
 ):
     img_path = service.get_optimized_preview_image_path(session_id)
     return FileResponse(img_path, media_type="image/png")
+
+@router.post(
+    "/evaluate/{session_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Run Reconstruction Evaluation",
+    description="Runs quantitative and qualitative evaluation scoring (0-100) on optimized outputs."
+)
+def run_reconstruction_evaluation(
+    session_id: str,
+    service: ReconstructionService = Depends(get_reconstruction_service)
+):
+    return service.run_evaluation(session_id=session_id)
+
+@router.get(
+    "/{session_id}/evaluation",
+    status_code=status.HTTP_200_OK,
+    summary="Get Reconstruction Evaluation Results",
+    description="Retrieves the comprehensive evaluation report containing all metrics and assessments."
+)
+def get_reconstruction_evaluation(
+    session_id: str,
+    service: ReconstructionService = Depends(get_reconstruction_service)
+):
+    return service.get_evaluation_report(session_id)
+
+@router.get(
+    "/{session_id}/evaluation/metrics",
+    status_code=status.HTTP_200_OK,
+    summary="Get Reconstruction Evaluation Metrics",
+    description="Retrieves raw quality metric scores for all evaluated categories."
+)
+def get_reconstruction_evaluation_metrics(
+    session_id: str,
+    service: ReconstructionService = Depends(get_reconstruction_service)
+):
+    return service.get_evaluation_metrics(session_id)
+
+@router.get(
+    "/{session_id}/evaluation/scorecard",
+    status_code=status.HTTP_200_OK,
+    summary="Get Reconstruction Evaluation Scorecard",
+    description="Retrieves standard letter grades scorecard for Hackathon demonstrations."
+)
+def get_reconstruction_evaluation_scorecard(
+    session_id: str,
+    service: ReconstructionService = Depends(get_reconstruction_service)
+):
+    return service.get_evaluation_scorecard(session_id)
+
+@router.get(
+    "/{session_id}/evaluation/status",
+    status_code=status.HTTP_200_OK,
+    summary="Get Reconstruction Evaluation Status",
+    description="Retrieves status of evaluation (whether completed or missing)."
+)
+def get_reconstruction_evaluation_status(
+    session_id: str,
+    service: ReconstructionService = Depends(get_reconstruction_service)
+):
+    try:
+        service.get_evaluation_report(session_id)
+        return {"session_id": session_id, "evaluation_status": "COMPLETED"}
+    except Exception:
+        return {"session_id": session_id, "evaluation_status": "NOT_STARTED"}

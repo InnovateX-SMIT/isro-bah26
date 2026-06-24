@@ -479,3 +479,149 @@ class ReconstructionService:
                 detail="Physical optimized preview file not found on disk."
             )
         return abs_path
+
+    def run_evaluation(self, session_id: str) -> Dict[str, Any]:
+        """
+        Executes Reconstruction Evaluation (Phase 7E) based on optimized outputs.
+        """
+        session = self.session_repo.get_by_id(session_id)
+        if not session:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Analysis Session {session_id} not found."
+            )
+
+        run = self.reconstruction_repo.get_latest_by_session(session_id)
+        if not run or run.reconstruction_status != "COMPLETED":
+            raise HTTPException(
+                status_code=400,
+                detail=f"No completed reconstruction run found for session {session_id}. Run reconstruction first."
+            )
+            
+        if not run.optimization_status or run.optimization_status != "COMPLETED":
+             raise HTTPException(
+                status_code=400,
+                detail=f"Completed optimization run not found for session {session_id}. Run optimization first."
+            )
+
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+
+            dataset = self.dataset_repo.get_dataset(run.dataset_id)
+            dataset_path = os.path.abspath(os.path.join(workspace_root, dataset.dataset_path))
+            
+            mask_rel_path = f"datasets/cloud_segmentations/{run.dataset_id}/reconstruction_mask.tif"
+            mask_path = os.path.abspath(os.path.join(workspace_root, mask_rel_path))
+            
+            reconstructed_image_path = os.path.abspath(os.path.join(workspace_root, run.output_image_path))
+            optimized_image_path = os.path.abspath(os.path.join(workspace_root, run.optimized_output_path))
+            
+            output_rel_dir = f"datasets/reconstruction_evaluations/{run.dataset_id}"
+            output_dir = os.path.abspath(os.path.join(workspace_root, output_rel_dir))
+
+            # Fetch metadata, geospatial, temporal, cloud profiles for the evaluation report info
+            metadata = self.metadata_repo.get_by_dataset(run.dataset_id)
+            geo_context = self.geospatial_repo.get_by_dataset(run.dataset_id)
+            geo_profile = self.geospatial_profile_repo.get_by_dataset(run.dataset_id)
+            temporal_context = self.temporal_context_repo.get_by_dataset(run.dataset_id)
+            cloud_analytics = self.cloud_analytics_repo.get_by_dataset(run.dataset_id)
+            
+            # Format sub-profiles safely
+            metadata_profile = {
+                "coordinate_system": metadata.coordinate_system if metadata else None,
+                "epsg_code": metadata.epsg_code if metadata else None,
+                "raster_width": metadata.raster_width if metadata else None,
+                "raster_height": metadata.raster_height if metadata else None,
+                "acquisition_date": metadata.acquisition_date if metadata else None,
+            }
+            geospatial_profile = {
+                "center_lat": geo_context.center_lat if geo_context else None,
+                "center_lon": geo_context.center_lon if geo_context else None,
+                "terrain_type": geo_profile.terrain_type if geo_profile else None,
+                "environment_type": geo_profile.environment_type if geo_profile else None,
+            }
+            temporal_profile = {
+                "reference_count": temporal_context.reference_count if temporal_context else None,
+                "average_cloud_cover": temporal_context.average_cloud_cover if temporal_context else None,
+            }
+            cloud_profile = {
+                "cloud_coverage_percent": cloud_analytics.total_cloud_coverage_percent if cloud_analytics else None,
+                "shadow_coverage_percent": cloud_analytics.total_shadow_coverage_percent if cloud_analytics else None,
+                "complexity_score": cloud_analytics.scene_cloud_complexity_score if cloud_analytics else None,
+            }
+            
+            # Retrieve temporal relevance score
+            temporal_relevance = 85.0
+            try:
+                fusion_run = self.temporal_fusion_repo.get_latest_by_session(session_id)
+                if fusion_run and fusion_run.fusion_status == "COMPLETED":
+                    temporal_relevance = max(10.0, min(100.0, 100.0 - temporal_context.average_cloud_cover - (temporal_context.average_temporal_distance * 0.1)))
+            except Exception:
+                pass
+
+            from app.services.reconstruction.evaluation.reconstruction_evaluator import execute_evaluation
+            results = execute_evaluation(
+                optimized_image_path=optimized_image_path,
+                reconstructed_image_path=reconstructed_image_path,
+                mask_path=mask_path,
+                dataset_path=dataset_path,
+                output_dir=output_dir,
+                dataset_id=run.dataset_id,
+                temporal_relevance=temporal_relevance,
+                metadata_profile=metadata_profile,
+                geospatial_profile=geospatial_profile,
+                temporal_profile=temporal_profile,
+                cloud_profile=cloud_profile,
+                reconstruction_run_strategy=run.reconstruction_strategy or "DEFAULT",
+                optimization_method=run.optimization_method or "DEFAULT"
+            )
+            return results
+
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Reconstruction evaluation execution failed: {str(e)}"
+            )
+
+    def get_evaluation_report(self, session_id: str) -> Dict[str, Any]:
+        run = self.get_latest_run(session_id)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+        report_path = os.path.abspath(os.path.join(workspace_root, f"datasets/reconstruction_evaluations/{run.dataset_id}/evaluation_report.json"))
+        
+        if not os.path.exists(report_path):
+            raise HTTPException(
+                status_code=404,
+                detail="Evaluation report not found. Run evaluation first."
+            )
+        with open(report_path, "r") as f:
+            return json.load(f)
+
+    def get_evaluation_metrics(self, session_id: str) -> Dict[str, Any]:
+        run = self.get_latest_run(session_id)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+        metrics_path = os.path.abspath(os.path.join(workspace_root, f"datasets/reconstruction_evaluations/{run.dataset_id}/quality_metrics.json"))
+        
+        if not os.path.exists(metrics_path):
+            raise HTTPException(
+                status_code=404,
+                detail="Quality metrics report not found. Run evaluation first."
+            )
+        with open(metrics_path, "r") as f:
+            return json.load(f)
+
+    def get_evaluation_scorecard(self, session_id: str) -> Dict[str, Any]:
+        run = self.get_latest_run(session_id)
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+        scorecard_path = os.path.abspath(os.path.join(workspace_root, f"datasets/reconstruction_evaluations/{run.dataset_id}/reconstruction_scorecard.json"))
+        
+        if not os.path.exists(scorecard_path):
+            raise HTTPException(
+                status_code=404,
+                detail="Reconstruction scorecard report not found. Run evaluation first."
+            )
+        with open(scorecard_path, "r") as f:
+            return json.load(f)

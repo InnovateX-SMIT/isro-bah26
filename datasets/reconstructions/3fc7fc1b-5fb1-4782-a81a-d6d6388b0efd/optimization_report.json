@@ -1,0 +1,19 @@
+{
+    "optimization_methods": [
+        "boundary_feathering_linear",
+        "edge_preserving_guided_filter",
+        "spectral_radiometric_statistics_matching"
+    ],
+    "execution_time_ms": 1584,
+    "metrics": {
+        "boundary_discontinuity_before": 34.904046376546226,
+        "boundary_discontinuity_after": 9.615598996480307,
+        "improvement_percent": 72.45133445920038
+    },
+    "metadata": {
+        "timestamp_utc": "2026-06-24T18:45:46Z",
+        "guided_filter_radius": 4,
+        "guided_filter_epsilon": 0.01,
+        "boundary_kernel_size": 15
+    }
+}

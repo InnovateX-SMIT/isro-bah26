@@ -1,3 +1,5 @@
+import os
+import json
 from fastapi import HTTPException
 from app.repositories.dataset_repository import DatasetRepository
 from app.services.dataset_metadata_service import DatasetMetadataService
@@ -267,6 +269,34 @@ class MissionControlService:
                 if run_rec:
                     reconstruction_run = run_rec
                     status_dict["reconstruction"] = "available"
+                    # Check for evaluation files to dynamically append scorecard details
+                    current_dir = os.path.dirname(os.path.abspath(__file__))
+                    workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+                    summary_path = os.path.join(workspace_root, f"datasets/reconstruction_evaluations/{dataset_id}/evaluation_summary.json")
+                    metrics_path = os.path.join(workspace_root, f"datasets/reconstruction_evaluations/{dataset_id}/quality_metrics.json")
+                    
+                    evaluation_completed = False
+                    overall_score = None
+                    evaluation_summary = None
+                    evaluation_timestamp = None
+                    reconstruction_readiness = False
+                    evaluation_metrics = None
+                    
+                    if os.path.exists(summary_path) and os.path.exists(metrics_path):
+                        try:
+                            with open(summary_path, "r") as f:
+                                summary_payload = json.load(f)
+                            with open(metrics_path, "r") as f:
+                                metrics_payload = json.load(f)
+                            evaluation_completed = True
+                            overall_score = float(summary_payload.get("overall_score", 0))
+                            evaluation_summary = summary_payload.get("summary_text", "")
+                            evaluation_timestamp = summary_payload.get("timestamp_utc", "")
+                            reconstruction_readiness = overall_score >= 70.0
+                            evaluation_metrics = metrics_payload
+                        except Exception:
+                            pass
+                            
                     data_dict["reconstruction"] = {
                         "id": run_rec.id,
                         "session_id": run_rec.session_id,
@@ -283,6 +313,12 @@ class MissionControlService:
                         "optimization_method": run_rec.optimization_method,
                         "optimized_output_path": run_rec.optimized_output_path,
                         "optimized_preview_path": run_rec.optimized_preview_path,
+                        "evaluation_completed": evaluation_completed,
+                        "overall_score": overall_score,
+                        "evaluation_summary": evaluation_summary,
+                        "evaluation_timestamp": evaluation_timestamp,
+                        "reconstruction_readiness": reconstruction_readiness,
+                        "evaluation_metrics": evaluation_metrics,
                         "created_at": run_rec.created_at,
                         "updated_at": run_rec.updated_at
                     }
@@ -406,6 +442,20 @@ class MissionControlService:
                 parts.append(reconstruction.summary)
             if getattr(reconstruction, "optimization_status", None) == "COMPLETED":
                 parts.append(f"Reconstruction optimization complete using {reconstruction.optimization_method}. Optimized reconstruction output is fully available.")
+            
+            # Check for evaluation summary and append it if completed
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+            summary_path = os.path.join(workspace_root, f"datasets/reconstruction_evaluations/{dataset.dataset_id}/evaluation_summary.json")
+            if os.path.exists(summary_path):
+                try:
+                    with open(summary_path, "r") as f:
+                        summary_payload = json.load(f)
+                    eval_summary_text = summary_payload.get("summary_text")
+                    if eval_summary_text:
+                        parts.append(eval_summary_text)
+                except Exception:
+                    pass
 
         # F. Temporal Fusion Intelligence Context
         if status.get("temporal_fusion") == "available" and temporal_fusion and temporal_fusion.guidance_summary:

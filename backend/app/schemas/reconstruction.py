@@ -16,6 +16,11 @@ class ReconstructionRunResponse(BaseModel):
     preview_image_path: Optional[str] = Field(None, description="Path relative to workspace root of generated preview PNG")
     reconstruction_method: Optional[str] = Field(None, description="Reconstruction method/algorithm used")
     execution_time_ms: Optional[int] = Field(None, description="Execution time in milliseconds")
+    optimization_status: Optional[str] = Field(None, description="Optimization lifecycle status: PENDING, RUNNING, COMPLETED, FAILED")
+    optimization_timestamp: Optional[datetime] = Field(None, description="Timestamp when optimization was completed")
+    optimization_method: Optional[str] = Field(None, description="Optimization method algorithm used")
+    optimized_output_path: Optional[str] = Field(None, description="Path relative to workspace root of optimized reconstructed image GeoTIFF")
+    optimized_preview_path: Optional[str] = Field(None, description="Path relative to workspace root of optimized preview PNG")
     created_at: datetime = Field(..., description="Timestamp when run was initialized")
     updated_at: datetime = Field(..., description="Timestamp of last update")
 
@@ -56,3 +61,13 @@ class ReconstructionRunRequest(BaseModel):
     Request payload to trigger/run reconstruction pipeline.
     """
     strategy: str = Field("DEFAULT", description="Reconstruction strategy option (e.g. DEFAULT)")
+
+class OptimizationResponse(BaseModel):
+    """
+    Comprehensive response returned when running the reconstruction optimization.
+    Includes the database run details and the dynamic report payload.
+    """
+    run: ReconstructionRunResponse = Field(..., description="Reconstruction run details containing optimization info")
+    report: Dict[str, Any] = Field(..., description="The dynamic optimization report payload")
+
+    model_config = ConfigDict(from_attributes=True)

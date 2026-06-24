@@ -278,6 +278,11 @@ class MissionControlService:
                         "preview_image_path": run_rec.preview_image_path,
                         "reconstruction_method": run_rec.reconstruction_method,
                         "execution_time_ms": run_rec.execution_time_ms,
+                        "optimization_status": run_rec.optimization_status,
+                        "optimization_timestamp": run_rec.optimization_timestamp,
+                        "optimization_method": run_rec.optimization_method,
+                        "optimized_output_path": run_rec.optimized_output_path,
+                        "optimized_preview_path": run_rec.optimized_preview_path,
                         "created_at": run_rec.created_at,
                         "updated_at": run_rec.updated_at
                     }
@@ -396,8 +401,11 @@ class MissionControlService:
             parts.append(temporal.summary)
 
         # E. Reconstruction Intelligence Context
-        if status.get("reconstruction") == "available" and reconstruction and reconstruction.summary:
-            parts.append(reconstruction.summary)
+        if status.get("reconstruction") == "available" and reconstruction:
+            if reconstruction.summary:
+                parts.append(reconstruction.summary)
+            if getattr(reconstruction, "optimization_status", None) == "COMPLETED":
+                parts.append(f"Reconstruction optimization complete using {reconstruction.optimization_method}. Optimized reconstruction output is fully available.")
 
         # F. Temporal Fusion Intelligence Context
         if status.get("temporal_fusion") == "available" and temporal_fusion and temporal_fusion.guidance_summary:

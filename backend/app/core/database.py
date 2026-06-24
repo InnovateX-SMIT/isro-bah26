@@ -76,6 +76,16 @@ def init_db():
                     conn.execute(text("ALTER TABLE reconstruction_runs ADD COLUMN reconstruction_method VARCHAR"))
                 if "execution_time_ms" not in cols:
                     conn.execute(text("ALTER TABLE reconstruction_runs ADD COLUMN execution_time_ms INTEGER"))
+                if "optimization_status" not in cols:
+                    conn.execute(text("ALTER TABLE reconstruction_runs ADD COLUMN optimization_status VARCHAR"))
+                if "optimization_timestamp" not in cols:
+                    conn.execute(text("ALTER TABLE reconstruction_runs ADD COLUMN optimization_timestamp DATETIME"))
+                if "optimization_method" not in cols:
+                    conn.execute(text("ALTER TABLE reconstruction_runs ADD COLUMN optimization_method VARCHAR"))
+                if "optimized_output_path" not in cols:
+                    conn.execute(text("ALTER TABLE reconstruction_runs ADD COLUMN optimized_output_path VARCHAR"))
+                if "optimized_preview_path" not in cols:
+                    conn.execute(text("ALTER TABLE reconstruction_runs ADD COLUMN optimized_preview_path VARCHAR"))
                 conn.commit()
     except Exception as e:
         print(f"Migration warning for reconstruction_runs: {e}")

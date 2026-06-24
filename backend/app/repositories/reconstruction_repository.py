@@ -101,3 +101,30 @@ class ReconstructionRepository:
             self.db.commit()
             return True
         return False
+
+    def update_optimization(
+        self,
+        run_id: str,
+        optimization_status: str,
+        optimization_timestamp = None,
+        optimization_method: Optional[str] = None,
+        optimized_output_path: Optional[str] = None,
+        optimized_preview_path: Optional[str] = None
+    ) -> Optional[ReconstructionRun]:
+        """
+        Updates the optimization status and properties of a reconstruction run.
+        """
+        run = self.get_by_id(run_id)
+        if run:
+            run.optimization_status = optimization_status
+            if optimization_timestamp is not None:
+                run.optimization_timestamp = optimization_timestamp
+            if optimization_method is not None:
+                run.optimization_method = optimization_method
+            if optimized_output_path is not None:
+                run.optimized_output_path = optimized_output_path
+            if optimized_preview_path is not None:
+                run.optimized_preview_path = optimized_preview_path
+            self.db.commit()
+            self.db.refresh(run)
+        return run

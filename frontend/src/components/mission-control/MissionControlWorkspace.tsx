@@ -25,6 +25,7 @@ interface MissionControlWorkspaceProps {
 
 export default function MissionControlWorkspace({ profile }: MissionControlWorkspaceProps) {
   const { dataset, metadata, geospatial, location, context, status } = profile
+  const [showOptimized, setShowOptimized] = React.useState(true)
 
   // Audit checklist triggers
   const hasCoordinates = geospatial && geospatial.center.lat !== undefined && geospatial.center.lon !== undefined
@@ -204,7 +205,9 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
           <div className="border border-border bg-card/20 p-5 rounded-sm flex flex-col justify-between space-y-4 hover:border-primary/50 transition-colors">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[8px] text-primary font-bold tracking-widest uppercase">MODULE // ACTIVE</span>
+                <span className="text-[8px] text-primary font-bold tracking-widest uppercase">
+                  {profile.reconstruction.optimization_status === "COMPLETED" ? "MODULE // OPTIMIZED" : "MODULE // ACTIVE"}
+                </span>
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
               </div>
               <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 uppercase">
@@ -214,15 +217,43 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 Generative multi-temporal diffusion networks to reconstruct topography hidden under clouds.
               </p>
+
+              {profile.reconstruction.optimization_status === "COMPLETED" && (
+                <div className="flex gap-2 my-2">
+                  <button 
+                    onClick={() => setShowOptimized(false)}
+                    className={`px-2 py-0.5 text-[8.5px] font-bold border transition-colors ${!showOptimized ? 'bg-primary text-background border-primary' : 'bg-transparent text-foreground border-border'}`}
+                  >
+                    BASELINE
+                  </button>
+                  <button 
+                    onClick={() => setShowOptimized(true)}
+                    className={`px-2 py-0.5 text-[8.5px] font-bold border transition-colors ${showOptimized ? 'bg-primary text-background border-primary' : 'bg-transparent text-foreground border-border'}`}
+                  >
+                    OPTIMIZED
+                  </button>
+                </div>
+              )}
+
               <div className="bg-background/40 p-2.5 text-[9px] text-slate-300 border border-border/40 space-y-1">
-                <div>Status: <span className="text-emerald-400 font-bold uppercase">{profile.reconstruction.reconstruction_status}</span></div>
-                <div>Method: <span className="font-mono text-primary">{profile.reconstruction.reconstruction_method || "N/A"}</span></div>
+                <div>Status: <span className="text-emerald-400 font-bold uppercase">
+                  {showOptimized && profile.reconstruction.optimization_status === "COMPLETED" 
+                    ? "OPTIMIZED" 
+                    : profile.reconstruction.reconstruction_status}
+                </span></div>
+                <div>Method: <span className="font-mono text-primary">
+                  {showOptimized && profile.reconstruction.optimization_status === "COMPLETED" 
+                    ? (profile.reconstruction.optimization_method || "N/A") 
+                    : (profile.reconstruction.reconstruction_method || "N/A")}
+                </span></div>
                 <div>Time: {profile.reconstruction.execution_time_ms ? `${profile.reconstruction.execution_time_ms} ms` : "N/A"}</div>
               </div>
               {/* Preview image */}
               <div className="mt-3 border border-border rounded overflow-hidden bg-black/40 h-[100px] flex items-center justify-center relative">
                 <img
-                  src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/reconstruction/${profile.reconstruction.session_id}/preview`}
+                  src={showOptimized && profile.reconstruction.optimization_status === "COMPLETED"
+                    ? `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/reconstruction/${profile.reconstruction.session_id}/optimized-preview`
+                    : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/reconstruction/${profile.reconstruction.session_id}/preview`}
                   alt="Reconstruction Preview"
                   className="max-h-full max-w-full object-contain"
                 />

@@ -66,6 +66,31 @@ class ReconstructionRun(Base):
         nullable=True,
         doc="Execution time of the reconstruction pipeline run in milliseconds"
     )
+    optimization_status = Column(
+        String,
+        nullable=True,
+        doc="Optimization lifecycle status: PENDING, RUNNING, COMPLETED, FAILED"
+    )
+    optimization_timestamp = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Timestamp when optimization was completed"
+    )
+    optimization_method = Column(
+        String,
+        nullable=True,
+        doc="Optimization method algorithm used"
+    )
+    optimized_output_path = Column(
+        String,
+        nullable=True,
+        doc="Path relative to workspace root of optimized reconstructed image GeoTIFF"
+    )
+    optimized_preview_path = Column(
+        String,
+        nullable=True,
+        doc="Path relative to workspace root of optimized preview PNG"
+    )
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

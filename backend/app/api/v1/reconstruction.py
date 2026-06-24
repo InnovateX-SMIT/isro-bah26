@@ -24,7 +24,8 @@ from app.schemas.reconstruction import (
     ReconstructionResponse,
     ReconstructionRunResponse,
     ReconstructionSummaryResponse,
-    ReconstructionRunRequest
+    ReconstructionRunRequest,
+    OptimizationResponse
 )
 
 router = APIRouter()
@@ -141,4 +142,58 @@ def get_reconstruction_preview_image(
     service: ReconstructionService = Depends(get_reconstruction_service)
 ):
     img_path = service.get_preview_image_path(session_id)
+    return FileResponse(img_path, media_type="image/png")
+
+@router.post(
+    "/optimize/{session_id}",
+    response_model=OptimizationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Run Reconstruction Optimization",
+    description="Runs spatial, spectral, and edge optimization on the baseline reconstruction."
+)
+def run_optimization(
+    session_id: str,
+    service: ReconstructionService = Depends(get_reconstruction_service)
+):
+    return service.run_reconstruction_optimization(session_id=session_id)
+
+class ReconstructionOptimizedOutputResponse(BaseModel):
+    session_id: str
+    optimization_status: Optional[str] = Field(None, description="Optimization status")
+    optimization_timestamp: Optional[str] = Field(None, description="Completion timestamp")
+    optimization_method: Optional[str] = Field(None, description="Optimization method list")
+    optimized_output_path: Optional[str] = Field(None, description="Path to optimized TIFF image")
+    optimized_preview_path: Optional[str] = Field(None, description="Path to optimized preview PNG")
+
+@router.get(
+    "/{session_id}/optimized-output",
+    response_model=ReconstructionOptimizedOutputResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get Reconstruction Optimized Output Info",
+    description="Retrieves the file paths and optimization metadata for the optimized reconstruction run."
+)
+def get_reconstruction_optimized_output(
+    session_id: str,
+    service: ReconstructionService = Depends(get_reconstruction_service)
+):
+    run = service.get_latest_run(session_id)
+    return ReconstructionOptimizedOutputResponse(
+        session_id=run.session_id,
+        optimization_status=run.optimization_status,
+        optimization_timestamp=run.optimization_timestamp.isoformat() + "Z" if run.optimization_timestamp else None,
+        optimization_method=run.optimization_method,
+        optimized_output_path=run.optimized_output_path,
+        optimized_preview_path=run.optimized_preview_path
+    )
+
+@router.get(
+    "/{session_id}/optimized-preview",
+    summary="Get Reconstruction Optimized Preview Image",
+    description="Serves the raw generated optimized preview PNG file."
+)
+def get_reconstruction_optimized_preview_image(
+    session_id: str,
+    service: ReconstructionService = Depends(get_reconstruction_service)
+):
+    img_path = service.get_optimized_preview_image_path(session_id)
     return FileResponse(img_path, media_type="image/png")

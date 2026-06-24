@@ -367,3 +367,115 @@ class ReconstructionService:
                 detail="Physical reconstruction preview file not found on disk."
             )
         return abs_path
+
+    def run_reconstruction_optimization(self, session_id: str) -> Dict[str, Any]:
+        """
+        Executes the reconstruction optimization workflow (Phase 7D):
+        1. Fetch the latest completed reconstruction run.
+        2. Set optimization status to RUNNING.
+        3. Invoke the reconstruction optimizer to post-process.
+        4. Record optimized paths, timestamp, and method to the database.
+        5. Return database record and report.
+        """
+        session = self.session_repo.get_by_id(session_id)
+        if not session:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Analysis Session {session_id} not found."
+            )
+
+        run = self.reconstruction_repo.get_latest_by_session(session_id)
+        if not run or run.reconstruction_status != "COMPLETED":
+            raise HTTPException(
+                status_code=400,
+                detail=f"No completed reconstruction run found for session {session_id}. Run reconstruction first."
+            )
+
+        self.reconstruction_repo.update_optimization(
+            run_id=run.id,
+            optimization_status="RUNNING"
+        )
+
+        try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+
+            dataset = self.dataset_repo.get_dataset(run.dataset_id)
+            dataset_path = os.path.abspath(os.path.join(workspace_root, dataset.dataset_path))
+            
+            mask_rel_path = f"datasets/cloud_segmentations/{run.dataset_id}/reconstruction_mask.tif"
+            mask_path = os.path.abspath(os.path.join(workspace_root, mask_rel_path))
+            
+            rec_image_path = os.path.abspath(os.path.join(workspace_root, run.output_image_path))
+            output_rel_dir = f"datasets/reconstructions/{run.dataset_id}"
+            output_dir = os.path.abspath(os.path.join(workspace_root, output_rel_dir))
+
+            from app.services.reconstruction.optimization.reconstruction_optimizer import optimize_reconstruction_pipeline
+            result = optimize_reconstruction_pipeline(
+                reconstructed_image_path=rec_image_path,
+                mask_path=mask_path,
+                dataset_path=dataset_path,
+                output_dir=output_dir
+            )
+
+            from datetime import datetime
+            opt_method = "+".join(result["report"]["optimization_methods"])
+            
+            updated_run = self.reconstruction_repo.update_optimization(
+                run_id=run.id,
+                optimization_status="COMPLETED",
+                optimization_timestamp=datetime.utcnow(),
+                optimization_method=opt_method,
+                optimized_output_path=f"{output_rel_dir}/optimized_reconstruction.tif",
+                optimized_preview_path=f"{output_rel_dir}/optimized_preview.png"
+            )
+
+            return {
+                "run": updated_run,
+                "report": result["report"]
+            }
+
+        except Exception as e:
+            self.reconstruction_repo.update_optimization(
+                run_id=run.id,
+                optimization_status="FAILED"
+            )
+            raise HTTPException(
+                status_code=500,
+                detail=f"Reconstruction optimization failed: {str(e)}"
+            )
+
+    def get_optimized_preview_image_path(self, session_id: str) -> str:
+        """
+        Resolves the absolute file path of the optimized preview PNG.
+        """
+        session = self.session_repo.get_by_id(session_id)
+        if not session:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Analysis Session {session_id} not found."
+            )
+        
+        run = self.reconstruction_repo.get_latest_by_session(session_id)
+        if not run or run.optimization_status != "COMPLETED":
+            raise HTTPException(
+                status_code=404,
+                detail=f"Completed optimized reconstruction run not found for session {session_id}."
+            )
+
+        if not run.optimized_preview_path:
+             raise HTTPException(
+                status_code=404,
+                detail="Optimized preview image path is not registered."
+            )
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+        abs_path = os.path.abspath(os.path.join(workspace_root, run.optimized_preview_path))
+
+        if not os.path.exists(abs_path):
+            raise HTTPException(
+                status_code=404,
+                detail="Physical optimized preview file not found on disk."
+            )
+        return abs_path

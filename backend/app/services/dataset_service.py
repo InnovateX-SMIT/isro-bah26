@@ -128,4 +128,51 @@ class DatasetService:
             except Exception as io_err:
                 print(f"Warning: Could not remove preview directory {preview_dir} on dataset purge: {io_err}")
 
+        # Clean up physical cloud detection directory on disk if it exists
+        cloud_dir = os.path.join(workspace_root, "datasets", "cloud_detections", dataset_id)
+        if os.path.exists(cloud_dir):
+            import shutil
+            try:
+                shutil.rmtree(cloud_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove cloud detection directory {cloud_dir} on dataset purge: {io_err}")
+
+        # Clean up physical cloud classification directory on disk if it exists
+        class_dir = os.path.join(workspace_root, "datasets", "cloud_classifications", dataset_id)
+        if os.path.exists(class_dir):
+            import shutil
+            try:
+                shutil.rmtree(class_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove cloud classification directory {class_dir} on dataset purge: {io_err}")
+
+        # Clean up physical cloud shadow directory on disk if it exists
+        shadow_dir = os.path.join(workspace_root, "datasets", "cloud_shadows", dataset_id)
+        if os.path.exists(shadow_dir):
+            import shutil
+            try:
+                shutil.rmtree(shadow_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove cloud shadow directory {shadow_dir} on dataset purge: {io_err}")
+
+        # Clean up physical cloud segmentation directory on disk if it exists
+        seg_dir = os.path.join(workspace_root, "datasets", "cloud_segmentations", dataset_id)
+        if os.path.exists(seg_dir):
+            import shutil
+            try:
+                shutil.rmtree(seg_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove cloud segmentation directory {seg_dir} on dataset purge: {io_err}")
+
+        # Clean up physical cloud analytics directory on disk if it exists
+        analytics_dir = os.path.join(workspace_root, "datasets", "cloud_analytics", dataset_id)
+        if os.path.exists(analytics_dir):
+            import shutil
+            try:
+                shutil.rmtree(analytics_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove cloud analytics directory {analytics_dir} on dataset purge: {io_err}")
+
         return self.repository.delete_dataset(dataset_id)
+
+

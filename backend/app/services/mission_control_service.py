@@ -7,6 +7,12 @@ from app.services.geospatial_context_service import GeospatialContextService
 from app.schemas.mission_control import MissionControlResponse, MissionControlStatus
 from app.repositories.temporal_context_repository import TemporalContextRepository
 from app.schemas.temporal_context import TemporalContextResponse
+from app.repositories.cloud_detection_repository import CloudDetectionRepository
+from app.repositories.cloud_classification_repository import CloudClassificationRepository
+from app.repositories.cloud_shadow_repository import CloudShadowRepository
+from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
+from app.repositories.cloud_analytics_repository import CloudAnalyticsRepository
+
 
 class MissionControlService:
     """
@@ -21,7 +27,12 @@ class MissionControlService:
         geospatial_service: GeospatialService,
         location_service: LocationService,
         geospatial_context_service: GeospatialContextService,
-        temporal_context_repository: TemporalContextRepository
+        temporal_context_repository: TemporalContextRepository,
+        cloud_detection_repository: CloudDetectionRepository = None,
+        cloud_classification_repository: CloudClassificationRepository = None,
+        cloud_shadow_repository: CloudShadowRepository = None,
+        cloud_segmentation_repository: CloudSegmentationRepository = None,
+        cloud_analytics_repository: CloudAnalyticsRepository = None
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
@@ -29,6 +40,13 @@ class MissionControlService:
         self.location_service = location_service
         self.geospatial_context_service = geospatial_context_service
         self.temporal_context_repository = temporal_context_repository
+        self.cloud_detection_repository = cloud_detection_repository
+        self.cloud_classification_repository = cloud_classification_repository
+        self.cloud_shadow_repository = cloud_shadow_repository
+        self.cloud_segmentation_repository = cloud_segmentation_repository
+        self.cloud_analytics_repository = cloud_analytics_repository
+
+
 
     def get_mission_control_profile(self, dataset_id: str) -> MissionControlResponse:
         """
@@ -48,7 +66,8 @@ class MissionControlService:
             "geospatial": "missing",
             "location": "missing",
             "context": "missing",
-            "temporal": "missing"
+            "temporal": "missing",
+            "cloud": "not_run"
         }
 
         data_dict = {
@@ -56,8 +75,10 @@ class MissionControlService:
             "metadata": None,
             "geospatial": None,
             "location": None,
-            "context": None
+            "context": None,
+            "cloud": None
         }
+
 
         # 2. Extract or Fetch Metadata Intelligence
         try:
@@ -132,6 +153,104 @@ class MissionControlService:
         except Exception:
             status_dict["temporal"] = "error"
 
+        # 5.6 Extract or Fetch Cloud Detection
+        if self.cloud_detection_repository:
+            try:
+                cloud_rec = self.cloud_detection_repository.get_by_dataset(dataset_id)
+                if cloud_rec:
+                    if cloud_rec.detection_status == "completed":
+                        status_dict["cloud"] = "available"
+                        data_dict["cloud"] = {
+                            "detection_id": cloud_rec.detection_id,
+                            "dataset_id": cloud_rec.dataset_id,
+                            "detection_status": cloud_rec.detection_status,
+                            "cloud_coverage_percent": cloud_rec.cloud_coverage_percent,
+                            "mean_cloud_probability": cloud_rec.mean_cloud_probability,
+                            "candidate_region_count": cloud_rec.candidate_region_count,
+                            "detection_method": cloud_rec.detection_method,
+                            "created_at": cloud_rec.created_at,
+                            "updated_at": cloud_rec.updated_at,
+                            "classification": None,
+                            "shadow": None,
+                            "segmentation": None,
+                            "analytics": None
+                        }
+                        
+                        # Add Cloud Classification details if completed
+                        if self.cloud_classification_repository:
+                            class_rec = self.cloud_classification_repository.get_by_dataset(dataset_id)
+                            if class_rec and class_rec.classification_status == "completed":
+                                data_dict["cloud"]["classification"] = {
+                                    "classification_id": class_rec.classification_id,
+                                    "thick_cloud_region_count": class_rec.thick_cloud_region_count,
+                                    "thin_cloud_region_count": class_rec.thin_cloud_region_count,
+                                    "cirrus_cloud_region_count": class_rec.cirrus_cloud_region_count,
+                                    "uncertain_region_count": class_rec.uncertain_region_count,
+                                    "thick_cloud_area_percent": class_rec.thick_cloud_area_percent,
+                                    "thin_cloud_area_percent": class_rec.thin_cloud_area_percent,
+                                    "cirrus_cloud_area_percent": class_rec.cirrus_cloud_area_percent,
+                                    "uncertain_area_percent": class_rec.uncertain_area_percent,
+                                    "classification_method": class_rec.classification_method
+                                }
+                                
+                                # Add Cloud Shadow details if completed
+                                if self.cloud_shadow_repository:
+                                    shadow_rec = self.cloud_shadow_repository.get_by_dataset(dataset_id)
+                                    if shadow_rec and shadow_rec.shadow_detection_status == "completed":
+                                        data_dict["cloud"]["shadow"] = {
+                                            "shadow_id": shadow_rec.shadow_id,
+                                            "shadow_detection_status": shadow_rec.shadow_detection_status,
+                                            "solar_geometry_available": shadow_rec.solar_geometry_available,
+                                            "shadow_region_count": shadow_rec.shadow_region_count,
+                                            "total_shadow_area_percent": shadow_rec.total_shadow_area_percent,
+                                            "linked_shadow_region_count": shadow_rec.linked_shadow_region_count,
+                                            "unlinked_shadow_region_count": shadow_rec.unlinked_shadow_region_count,
+                                            "mean_shadow_to_cloud_area_ratio": shadow_rec.mean_shadow_to_cloud_area_ratio,
+                                            "detection_method": shadow_rec.detection_method
+                                        }
+
+                                        # Add Cloud Segmentation details if completed
+                                        if self.cloud_segmentation_repository:
+                                            seg_rec = self.cloud_segmentation_repository.get_by_dataset(dataset_id)
+                                            if seg_rec and seg_rec.segmentation_status == "completed":
+                                                data_dict["cloud"]["segmentation"] = {
+                                                    "segmentation_status": seg_rec.segmentation_status,
+                                                    "total_segmented_regions": seg_rec.total_segmented_regions,
+                                                    "segmented_area_percent": seg_rec.total_segmented_area_percent,
+                                                    "reconstruction_ready": seg_rec.reconstruction_ready,
+                                                    "largest_region": seg_rec.largest_region_pixels,
+                                                    "reconstruction_mask_available": seg_rec.reconstruction_mask_path is not None
+                                                }
+
+                                                # Add Cloud Analytics details if completed
+                                                if self.cloud_analytics_repository:
+                                                    analytics_rec = self.cloud_analytics_repository.get_by_dataset(dataset_id)
+                                                    if analytics_rec and analytics_rec.analytics_status == "completed":
+                                                        data_dict["cloud"]["analytics"] = {
+                                                            "analytics_status": analytics_rec.analytics_status,
+                                                            "cloud_coverage": analytics_rec.total_cloud_coverage_percent,
+                                                            "shadow_coverage": analytics_rec.total_shadow_coverage_percent,
+                                                            "complexity_score": analytics_rec.scene_cloud_complexity_score,
+                                                            "difficulty": analytics_rec.scene_reconstruction_difficulty,
+                                                            "burden_index": analytics_rec.cloud_burden_index,
+                                                            "cloud_intelligence_score": analytics_rec.cloud_intelligence_score,
+                                                            "reconstruction_readiness": analytics_rec.reconstruction_readiness,
+                                                            "high_priority_objects": analytics_rec.high_priority_objects
+                                                        }
+                            else:
+                                data_dict["cloud"]["classification"] = None
+                                data_dict["cloud"]["shadow"] = None
+                                data_dict["cloud"]["segmentation"] = None
+                                data_dict["cloud"]["analytics"] = None
+                    elif cloud_rec.detection_status == "failed":
+                        status_dict["cloud"] = "error"
+                    else:
+                        status_dict["cloud"] = "not_run"
+            except Exception:
+                status_dict["cloud"] = "error"
+
+
+
         # 6. Generate dynamic human-readable operational briefing summary
         briefing = self._generate_briefing(
             dataset=dataset,
@@ -150,9 +269,11 @@ class MissionControlService:
             location=data_dict["location"],
             context=data_dict["context"],
             temporal=temporal_context,
+            cloud=data_dict["cloud"],
             status=MissionControlStatus(**status_dict),
             summary=briefing
         )
+
 
     def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status) -> str:
         """

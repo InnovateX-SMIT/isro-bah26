@@ -7,6 +7,11 @@ from app.repositories.geospatial_repository import GeospatialRepository
 from app.repositories.location_repository import LocationRepository
 from app.repositories.geospatial_context_profile_repository import GeospatialContextProfileRepository
 from app.repositories.temporal_context_repository import TemporalContextRepository
+from app.repositories.cloud_detection_repository import CloudDetectionRepository
+from app.repositories.cloud_classification_repository import CloudClassificationRepository
+from app.repositories.cloud_shadow_repository import CloudShadowRepository
+from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
+from app.repositories.cloud_analytics_repository import CloudAnalyticsRepository
 
 from app.services.dataset_metadata_service import DatasetMetadataService
 from app.services.geospatial_service import GeospatialService
@@ -29,6 +34,11 @@ def get_mission_control_service(db: Session = Depends(get_db)) -> MissionControl
     location_repository = LocationRepository(db)
     context_repository = GeospatialContextProfileRepository(db)
     temporal_context_repository = TemporalContextRepository(db)
+    cloud_detection_repository = CloudDetectionRepository(db)
+    cloud_classification_repository = CloudClassificationRepository(db)
+    cloud_shadow_repository = CloudShadowRepository(db)
+    cloud_segmentation_repository = CloudSegmentationRepository(db)
+    cloud_analytics_repository = CloudAnalyticsRepository(db)
 
     # Services
     metadata_service = DatasetMetadataService(metadata_repository, dataset_repository)
@@ -42,7 +52,12 @@ def get_mission_control_service(db: Session = Depends(get_db)) -> MissionControl
         geospatial_service=geospatial_service,
         location_service=location_service,
         geospatial_context_service=context_service,
-        temporal_context_repository=temporal_context_repository
+        temporal_context_repository=temporal_context_repository,
+        cloud_detection_repository=cloud_detection_repository,
+        cloud_classification_repository=cloud_classification_repository,
+        cloud_shadow_repository=cloud_shadow_repository,
+        cloud_segmentation_repository=cloud_segmentation_repository,
+        cloud_analytics_repository=cloud_analytics_repository
     )
 
 @router.get(

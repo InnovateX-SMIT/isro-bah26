@@ -51,7 +51,15 @@ def init_db():
     from app.models.temporal_reference_stack import TemporalReferenceStack
     from app.models.selected_reference import SelectedReference
     from app.models.temporal_context import TemporalContext
+    from app.models.cloud_detection import CloudDetection
+    from app.models.cloud_classification import CloudClassification
+    from app.models.cloud_shadow import CloudShadow
+    from app.models.cloud_segmentation import CloudSegmentation
+    from app.models.cloud_analytics import CloudAnalytics
     Base.metadata.create_all(bind=engine)
+
+
+
 
 
 

@@ -13,6 +13,7 @@ from app.repositories.cloud_shadow_repository import CloudShadowRepository
 from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
 from app.repositories.cloud_analytics_repository import CloudAnalyticsRepository
 from app.repositories.reconstruction_repository import ReconstructionRepository
+from app.repositories.temporal_fusion_repository import TemporalFusionRepository
 
 
 class MissionControlService:
@@ -34,7 +35,8 @@ class MissionControlService:
         cloud_shadow_repository: CloudShadowRepository = None,
         cloud_segmentation_repository: CloudSegmentationRepository = None,
         cloud_analytics_repository: CloudAnalyticsRepository = None,
-        reconstruction_repository: ReconstructionRepository = None
+        reconstruction_repository: ReconstructionRepository = None,
+        temporal_fusion_repository: TemporalFusionRepository = None
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
@@ -48,6 +50,7 @@ class MissionControlService:
         self.cloud_segmentation_repository = cloud_segmentation_repository
         self.cloud_analytics_repository = cloud_analytics_repository
         self.reconstruction_repository = reconstruction_repository
+        self.temporal_fusion_repository = temporal_fusion_repository
 
 
 
@@ -71,7 +74,8 @@ class MissionControlService:
             "context": "missing",
             "temporal": "missing",
             "cloud": "not_run",
-            "reconstruction": "not_started"
+            "reconstruction": "not_started",
+            "temporal_fusion": "not_started"
         }
 
         data_dict = {
@@ -81,7 +85,8 @@ class MissionControlService:
             "location": None,
             "context": None,
             "cloud": None,
-            "reconstruction": None
+            "reconstruction": None,
+            "temporal_fusion": None
         }
 
 
@@ -277,6 +282,31 @@ class MissionControlService:
             except Exception:
                 status_dict["reconstruction"] = "not_started"
 
+        # 5.8 Extract or Fetch Temporal Fusion Run
+        temporal_fusion_run = None
+        if self.temporal_fusion_repository:
+            try:
+                fusion_rec = self.temporal_fusion_repository.get_by_dataset(dataset_id)
+                if fusion_rec:
+                    temporal_fusion_run = fusion_rec
+                    status_dict["temporal_fusion"] = "available"
+                    data_dict["temporal_fusion"] = {
+                        "id": fusion_rec.id,
+                        "session_id": fusion_rec.session_id,
+                        "dataset_id": fusion_rec.dataset_id,
+                        "reconstruction_run_id": fusion_rec.reconstruction_run_id,
+                        "fusion_status": fusion_rec.fusion_status,
+                        "reference_count": fusion_rec.reference_count,
+                        "fusion_strategy": fusion_rec.fusion_strategy,
+                        "guidance_summary": fusion_rec.guidance_summary,
+                        "created_at": fusion_rec.created_at,
+                        "updated_at": fusion_rec.updated_at
+                    }
+                else:
+                    status_dict["temporal_fusion"] = "not_started"
+            except Exception:
+                status_dict["temporal_fusion"] = "not_started"
+
         # 6. Generate dynamic human-readable operational briefing summary
         briefing = self._generate_briefing(
             dataset=dataset,
@@ -286,7 +316,8 @@ class MissionControlService:
             context=data_dict["context"],
             temporal=temporal_context,
             status=status_dict,
-            reconstruction=reconstruction_run
+            reconstruction=reconstruction_run,
+            temporal_fusion=temporal_fusion_run
         )
 
         return MissionControlResponse(
@@ -298,12 +329,13 @@ class MissionControlService:
             temporal=temporal_context,
             cloud=data_dict["cloud"],
             reconstruction=data_dict["reconstruction"],
+            temporal_fusion=data_dict["temporal_fusion"],
             status=MissionControlStatus(**status_dict),
             summary=briefing
         )
 
 
-    def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status, reconstruction=None) -> str:
+    def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status, reconstruction=None, temporal_fusion=None) -> str:
         """
         Dynamically constructs a human-readable operational summary report.
         Omits or rephrases sections gracefully depending on available dataset fields.
@@ -362,5 +394,9 @@ class MissionControlService:
         # E. Reconstruction Intelligence Context
         if status.get("reconstruction") == "available" and reconstruction and reconstruction.summary:
             parts.append(reconstruction.summary)
+
+        # F. Temporal Fusion Intelligence Context
+        if status.get("temporal_fusion") == "available" and temporal_fusion and temporal_fusion.guidance_summary:
+            parts.append(temporal_fusion.guidance_summary)
 
         return " ".join(parts)

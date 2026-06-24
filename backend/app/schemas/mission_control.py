@@ -19,6 +19,7 @@ class MissionControlStatus(BaseModel):
     temporal: str = Field(default="missing", description="Status of the Temporal layer (future compatibility)")
     cloud: str = Field(default="missing", description="Status of the Cloud layer (future compatibility)")
     reconstruction: str = Field(default="missing", description="Status of the Reconstruction layer (future compatibility)")
+    temporal_fusion: str = Field(default="missing", description="Status of the Temporal Fusion layer")
     confidence: str = Field(default="missing", description="Status of the Confidence layer (future compatibility)")
 
     model_config = ConfigDict(from_attributes=True)
@@ -41,6 +42,7 @@ class MissionControlResponse(BaseModel):
     temporal: TemporalContextResponse | None = Field(default=None, description="Temporal Intelligence context details")
     cloud: dict | None = Field(default=None, description="Cloud Intelligence data placeholder")
     reconstruction: dict | None = Field(default=None, description="Reconstruction Intelligence data placeholder")
+    temporal_fusion: dict | None = Field(default=None, description="Temporal Fusion Intelligence data placeholder")
     confidence: dict | None = Field(default=None, description="Confidence Intelligence data placeholder")
 
     model_config = ConfigDict(from_attributes=True)

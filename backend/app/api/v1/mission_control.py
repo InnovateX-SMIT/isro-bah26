@@ -8,6 +8,7 @@ from app.repositories.location_repository import LocationRepository
 from app.repositories.geospatial_context_profile_repository import GeospatialContextProfileRepository
 from app.repositories.temporal_context_repository import TemporalContextRepository
 from app.repositories.cloud_detection_repository import CloudDetectionRepository
+from app.repositories.cloud_classification_repository import CloudClassificationRepository
 
 from app.services.dataset_metadata_service import DatasetMetadataService
 from app.services.geospatial_service import GeospatialService
@@ -31,6 +32,7 @@ def get_mission_control_service(db: Session = Depends(get_db)) -> MissionControl
     context_repository = GeospatialContextProfileRepository(db)
     temporal_context_repository = TemporalContextRepository(db)
     cloud_detection_repository = CloudDetectionRepository(db)
+    cloud_classification_repository = CloudClassificationRepository(db)
 
     # Services
     metadata_service = DatasetMetadataService(metadata_repository, dataset_repository)
@@ -45,7 +47,8 @@ def get_mission_control_service(db: Session = Depends(get_db)) -> MissionControl
         location_service=location_service,
         geospatial_context_service=context_service,
         temporal_context_repository=temporal_context_repository,
-        cloud_detection_repository=cloud_detection_repository
+        cloud_detection_repository=cloud_detection_repository,
+        cloud_classification_repository=cloud_classification_repository
     )
 
 @router.get(

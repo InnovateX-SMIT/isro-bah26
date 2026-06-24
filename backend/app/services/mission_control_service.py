@@ -8,6 +8,8 @@ from app.schemas.mission_control import MissionControlResponse, MissionControlSt
 from app.repositories.temporal_context_repository import TemporalContextRepository
 from app.schemas.temporal_context import TemporalContextResponse
 from app.repositories.cloud_detection_repository import CloudDetectionRepository
+from app.repositories.cloud_classification_repository import CloudClassificationRepository
+
 
 
 class MissionControlService:
@@ -24,7 +26,8 @@ class MissionControlService:
         location_service: LocationService,
         geospatial_context_service: GeospatialContextService,
         temporal_context_repository: TemporalContextRepository,
-        cloud_detection_repository: CloudDetectionRepository = None
+        cloud_detection_repository: CloudDetectionRepository = None,
+        cloud_classification_repository: CloudClassificationRepository = None
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
@@ -33,6 +36,8 @@ class MissionControlService:
         self.geospatial_context_service = geospatial_context_service
         self.temporal_context_repository = temporal_context_repository
         self.cloud_detection_repository = cloud_detection_repository
+        self.cloud_classification_repository = cloud_classification_repository
+
 
 
     def get_mission_control_profile(self, dataset_id: str) -> MissionControlResponse:
@@ -156,14 +161,33 @@ class MissionControlService:
                             "candidate_region_count": cloud_rec.candidate_region_count,
                             "detection_method": cloud_rec.detection_method,
                             "created_at": cloud_rec.created_at,
-                            "updated_at": cloud_rec.updated_at
+                            "updated_at": cloud_rec.updated_at,
+                            "classification": None
                         }
+                        
+                        # Add Cloud Classification details if completed
+                        if self.cloud_classification_repository:
+                            class_rec = self.cloud_classification_repository.get_by_dataset(dataset_id)
+                            if class_rec and class_rec.classification_status == "completed":
+                                data_dict["cloud"]["classification"] = {
+                                    "classification_id": class_rec.classification_id,
+                                    "thick_cloud_region_count": class_rec.thick_cloud_region_count,
+                                    "thin_cloud_region_count": class_rec.thin_cloud_region_count,
+                                    "cirrus_cloud_region_count": class_rec.cirrus_cloud_region_count,
+                                    "uncertain_region_count": class_rec.uncertain_region_count,
+                                    "thick_cloud_area_percent": class_rec.thick_cloud_area_percent,
+                                    "thin_cloud_area_percent": class_rec.thin_cloud_area_percent,
+                                    "cirrus_cloud_area_percent": class_rec.cirrus_cloud_area_percent,
+                                    "uncertain_area_percent": class_rec.uncertain_area_percent,
+                                    "classification_method": class_rec.classification_method
+                                }
                     elif cloud_rec.detection_status == "failed":
                         status_dict["cloud"] = "error"
                     else:
                         status_dict["cloud"] = "not_run"
             except Exception:
                 status_dict["cloud"] = "error"
+
 
 
         # 6. Generate dynamic human-readable operational briefing summary

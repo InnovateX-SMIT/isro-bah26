@@ -52,7 +52,9 @@ def init_db():
     from app.models.selected_reference import SelectedReference
     from app.models.temporal_context import TemporalContext
     from app.models.cloud_detection import CloudDetection
+    from app.models.cloud_classification import CloudClassification
     Base.metadata.create_all(bind=engine)
+
 
 
 

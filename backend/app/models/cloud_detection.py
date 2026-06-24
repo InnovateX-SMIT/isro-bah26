@@ -73,3 +73,5 @@ class CloudDetection(Base):
 
     # Relationships
     dataset = relationship("Dataset", back_populates="cloud_detection")
+    cloud_classification = relationship("CloudClassification", back_populates="cloud_detection", uselist=False, cascade="all, delete-orphan")
+

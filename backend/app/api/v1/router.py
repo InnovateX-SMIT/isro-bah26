@@ -13,6 +13,7 @@ from app.api.v1.temporal_discovery import router as temporal_discovery_router
 from app.api.v1.temporal_reference import router as temporal_reference_router
 from app.api.v1.temporal_context import router as temporal_context_router
 from app.api.v1.cloud_detection import router as cloud_detection_router
+from app.api.v1.cloud_classification import router as cloud_classification_router
 
 api_router = APIRouter()
 
@@ -41,3 +42,4 @@ api_router.include_router(temporal_discovery_router, prefix="/temporal", tags=["
 api_router.include_router(temporal_reference_router, prefix="/temporal", tags=["Temporal Reference Selection Engine"])
 api_router.include_router(temporal_context_router, prefix="/temporal", tags=["Temporal Context Generation Engine"])
 api_router.include_router(cloud_detection_router, prefix="/cloud-detection", tags=["Cloud Detection Engine"])
+api_router.include_router(cloud_classification_router, prefix="/cloud-classification", tags=["Cloud Classification Engine"])

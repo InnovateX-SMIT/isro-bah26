@@ -67,6 +67,7 @@ def init_db():
     from app.models.reconstruction_run import ReconstructionRun
     from app.models.temporal_fusion_run import TemporalFusionRun
     from app.models.confidence_estimation import ConfidenceEstimation
+    from app.models.reliability_score import ReliabilityScore
     Base.metadata.create_all(bind=engine)
 
     # Ensure new reconstruction_runs columns are present for Phase 7C compatibility

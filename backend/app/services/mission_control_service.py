@@ -14,9 +14,26 @@ from app.repositories.cloud_classification_repository import CloudClassification
 from app.repositories.cloud_shadow_repository import CloudShadowRepository
 from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
 from app.repositories.cloud_analytics_repository import CloudAnalyticsRepository
+import os
+import json
+from fastapi import HTTPException
+from app.repositories.dataset_repository import DatasetRepository
+from app.services.dataset_metadata_service import DatasetMetadataService
+from app.services.geospatial_service import GeospatialService
+from app.services.location_service import LocationService
+from app.services.geospatial_context_service import GeospatialContextService
+from app.schemas.mission_control import MissionControlResponse, MissionControlStatus
+from app.repositories.temporal_context_repository import TemporalContextRepository
+from app.schemas.temporal_context import TemporalContextResponse
+from app.repositories.cloud_detection_repository import CloudDetectionRepository
+from app.repositories.cloud_classification_repository import CloudClassificationRepository
+from app.repositories.cloud_shadow_repository import CloudShadowRepository
+from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
+from app.repositories.cloud_analytics_repository import CloudAnalyticsRepository
 from app.repositories.reconstruction_repository import ReconstructionRepository
 from app.repositories.temporal_fusion_repository import TemporalFusionRepository
 from app.repositories.confidence_repository import ConfidenceRepository
+from app.repositories.reliability_repository import ReliabilityRepository
 
 
 class MissionControlService:
@@ -40,7 +57,8 @@ class MissionControlService:
         cloud_analytics_repository: CloudAnalyticsRepository = None,
         reconstruction_repository: ReconstructionRepository = None,
         temporal_fusion_repository: TemporalFusionRepository = None,
-        confidence_repository: ConfidenceRepository = None
+        confidence_repository: ConfidenceRepository = None,
+        reliability_repository: ReliabilityRepository = None
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
@@ -56,6 +74,7 @@ class MissionControlService:
         self.reconstruction_repository = reconstruction_repository
         self.temporal_fusion_repository = temporal_fusion_repository
         self.confidence_repository = confidence_repository
+        self.reliability_repository = reliability_repository
 
 
 
@@ -81,7 +100,8 @@ class MissionControlService:
             "cloud": "not_run",
             "reconstruction": "not_started",
             "temporal_fusion": "not_started",
-            "confidence": "missing"
+            "confidence": "missing",
+            "reliability": "missing"
         }
 
         data_dict = {
@@ -93,7 +113,8 @@ class MissionControlService:
             "cloud": None,
             "reconstruction": None,
             "temporal_fusion": None,
-            "confidence": None
+            "confidence": None,
+            "reliability": None
         }
 
 
@@ -384,6 +405,32 @@ class MissionControlService:
             except Exception:
                 status_dict["confidence"] = "error"
 
+        # 5.10 Extract or Fetch Reliability Score
+        reliability_est = None
+        if self.reliability_repository:
+            try:
+                rel_rec = self.reliability_repository.get_by_dataset(dataset_id)
+                if rel_rec:
+                    reliability_est = rel_rec
+                    status_dict["reliability"] = "available" if rel_rec.reliability_status == "completed" else rel_rec.reliability_status
+                    data_dict["reliability"] = {
+                        "reliability_id": rel_rec.reliability_id,
+                        "confidence_estimation_id": rel_rec.confidence_estimation_id,
+                        "dataset_id": rel_rec.dataset_id,
+                        "reliability_status": rel_rec.reliability_status,
+                        "dataset_reliability_score": rel_rec.dataset_reliability_score,
+                        "dataset_reliability_tier": rel_rec.dataset_reliability_tier,
+                        "reconstruction_reliability_score": rel_rec.reconstruction_reliability_score,
+                        "scoring_basis": rel_rec.scoring_basis,
+                        "scoring_method": rel_rec.scoring_method,
+                        "created_at": rel_rec.created_at,
+                        "updated_at": rel_rec.updated_at
+                    }
+                else:
+                    status_dict["reliability"] = "missing"
+            except Exception:
+                status_dict["reliability"] = "error"
+
         # 6. Generate dynamic human-readable operational briefing summary
         briefing = self._generate_briefing(
             dataset=dataset,
@@ -395,7 +442,8 @@ class MissionControlService:
             status=status_dict,
             reconstruction=reconstruction_run,
             temporal_fusion=temporal_fusion_run,
-            confidence=confidence_est
+            confidence=confidence_est,
+            reliability=reliability_est
         )
 
         return MissionControlResponse(
@@ -409,12 +457,13 @@ class MissionControlService:
             reconstruction=data_dict["reconstruction"],
             temporal_fusion=data_dict["temporal_fusion"],
             confidence=data_dict["confidence"],
+            reliability=data_dict["reliability"],
             status=MissionControlStatus(**status_dict),
             summary=briefing
         )
 
 
-    def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status, reconstruction=None, temporal_fusion=None, confidence=None) -> str:
+    def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status, reconstruction=None, temporal_fusion=None, confidence=None, reliability=None) -> str:
         """
         Dynamically constructs a human-readable operational summary report.
         Omits or rephrases sections gracefully depending on available dataset fields.
@@ -500,5 +549,12 @@ class MissionControlService:
             mean_score = confidence.mean_confidence_score if isinstance(confidence, dict) else getattr(confidence, "mean_confidence_score", None)
             if mean_score is not None:
                 parts.append(f"Reconstruction confidence estimation complete with a mean score of {mean_score}%.")
+
+        # H. Reliability Scoring Intelligence Context
+        if status.get("reliability") == "available" and reliability:
+            tier = reliability.dataset_reliability_tier if isinstance(reliability, dict) else getattr(reliability, "dataset_reliability_tier", None)
+            score = reliability.dataset_reliability_score if isinstance(reliability, dict) else getattr(reliability, "dataset_reliability_score", None)
+            if tier and score is not None:
+                parts.append(f"Reconstruction reliability is rated as {tier} with a dataset score of {score}%.")
 
         return " ".join(parts)

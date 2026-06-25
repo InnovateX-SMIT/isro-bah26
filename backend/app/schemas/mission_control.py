@@ -21,6 +21,7 @@ class MissionControlStatus(BaseModel):
     reconstruction: str = Field(default="missing", description="Status of the Reconstruction layer (future compatibility)")
     temporal_fusion: str = Field(default="missing", description="Status of the Temporal Fusion layer")
     confidence: str = Field(default="missing", description="Status of the Confidence layer (future compatibility)")
+    reliability: str = Field(default="missing", description="Status of the Reliability layer")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -44,6 +45,7 @@ class MissionControlResponse(BaseModel):
     reconstruction: dict | None = Field(default=None, description="Reconstruction Intelligence data placeholder")
     temporal_fusion: dict | None = Field(default=None, description="Temporal Fusion Intelligence data placeholder")
     confidence: dict | None = Field(default=None, description="Confidence Intelligence data placeholder")
+    reliability: dict | None = Field(default=None, description="Reliability Intelligence data placeholder")
 
     model_config = ConfigDict(from_attributes=True)
 

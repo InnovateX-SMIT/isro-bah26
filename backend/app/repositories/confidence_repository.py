@@ -10,6 +10,16 @@ class ConfidenceRepository:
     def __init__(self, db: Session):
         self.db = db
 
+    def get_by_id(self, confidence_id: str) -> Optional[ConfidenceEstimation]:
+        """
+        Retrieves confidence estimation by confidence ID (primary key).
+        """
+        return (
+            self.db.query(ConfidenceEstimation)
+            .filter(ConfidenceEstimation.confidence_id == confidence_id)
+            .first()
+        )
+
     def get_by_reconstruction_run(self, run_id: str) -> Optional[ConfidenceEstimation]:
         """
         Retrieves confidence estimation by reconstruction run ID.

@@ -16,6 +16,7 @@ from app.repositories.cloud_segmentation_repository import CloudSegmentationRepo
 from app.repositories.cloud_analytics_repository import CloudAnalyticsRepository
 from app.repositories.reconstruction_repository import ReconstructionRepository
 from app.repositories.temporal_fusion_repository import TemporalFusionRepository
+from app.repositories.confidence_repository import ConfidenceRepository
 
 
 class MissionControlService:
@@ -38,7 +39,8 @@ class MissionControlService:
         cloud_segmentation_repository: CloudSegmentationRepository = None,
         cloud_analytics_repository: CloudAnalyticsRepository = None,
         reconstruction_repository: ReconstructionRepository = None,
-        temporal_fusion_repository: TemporalFusionRepository = None
+        temporal_fusion_repository: TemporalFusionRepository = None,
+        confidence_repository: ConfidenceRepository = None
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
@@ -53,6 +55,7 @@ class MissionControlService:
         self.cloud_analytics_repository = cloud_analytics_repository
         self.reconstruction_repository = reconstruction_repository
         self.temporal_fusion_repository = temporal_fusion_repository
+        self.confidence_repository = confidence_repository
 
 
 
@@ -77,7 +80,8 @@ class MissionControlService:
             "temporal": "missing",
             "cloud": "not_run",
             "reconstruction": "not_started",
-            "temporal_fusion": "not_started"
+            "temporal_fusion": "not_started",
+            "confidence": "missing"
         }
 
         data_dict = {
@@ -88,7 +92,8 @@ class MissionControlService:
             "context": None,
             "cloud": None,
             "reconstruction": None,
-            "temporal_fusion": None
+            "temporal_fusion": None,
+            "confidence": None
         }
 
 
@@ -352,6 +357,33 @@ class MissionControlService:
             except Exception:
                 status_dict["temporal_fusion"] = "not_started"
 
+        # 5.9 Extract or Fetch Confidence Estimation
+        confidence_est = None
+        if self.confidence_repository:
+            try:
+                conf_rec = self.confidence_repository.get_by_dataset(dataset_id)
+                if conf_rec:
+                    confidence_est = conf_rec
+                    status_dict["confidence"] = "available" if conf_rec.confidence_status == "completed" else conf_rec.confidence_status
+                    data_dict["confidence"] = {
+                        "confidence_id": conf_rec.confidence_id,
+                        "reconstruction_run_id": conf_rec.reconstruction_run_id,
+                        "dataset_id": conf_rec.dataset_id,
+                        "confidence_status": conf_rec.confidence_status,
+                        "mean_confidence_score": conf_rec.mean_confidence_score,
+                        "low_confidence_area_percent": conf_rec.low_confidence_area_percent,
+                        "confidence_map_path": conf_rec.confidence_map_path,
+                        "confidence_preview_path": conf_rec.confidence_preview_path,
+                        "inference_basis": conf_rec.inference_basis,
+                        "confidence_method": conf_rec.confidence_method,
+                        "created_at": conf_rec.created_at,
+                        "updated_at": conf_rec.updated_at
+                    }
+                else:
+                    status_dict["confidence"] = "missing"
+            except Exception:
+                status_dict["confidence"] = "error"
+
         # 6. Generate dynamic human-readable operational briefing summary
         briefing = self._generate_briefing(
             dataset=dataset,
@@ -362,7 +394,8 @@ class MissionControlService:
             temporal=temporal_context,
             status=status_dict,
             reconstruction=reconstruction_run,
-            temporal_fusion=temporal_fusion_run
+            temporal_fusion=temporal_fusion_run,
+            confidence=confidence_est
         )
 
         return MissionControlResponse(
@@ -375,12 +408,13 @@ class MissionControlService:
             cloud=data_dict["cloud"],
             reconstruction=data_dict["reconstruction"],
             temporal_fusion=data_dict["temporal_fusion"],
+            confidence=data_dict["confidence"],
             status=MissionControlStatus(**status_dict),
             summary=briefing
         )
 
 
-    def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status, reconstruction=None, temporal_fusion=None) -> str:
+    def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status, reconstruction=None, temporal_fusion=None, confidence=None) -> str:
         """
         Dynamically constructs a human-readable operational summary report.
         Omits or rephrases sections gracefully depending on available dataset fields.
@@ -460,5 +494,11 @@ class MissionControlService:
         # F. Temporal Fusion Intelligence Context
         if status.get("temporal_fusion") == "available" and temporal_fusion and temporal_fusion.guidance_summary:
             parts.append(temporal_fusion.guidance_summary)
+
+        # G. Confidence Estimation Intelligence Context
+        if status.get("confidence") == "available" and confidence:
+            mean_score = confidence.mean_confidence_score if isinstance(confidence, dict) else getattr(confidence, "mean_confidence_score", None)
+            if mean_score is not None:
+                parts.append(f"Reconstruction confidence estimation complete with a mean score of {mean_score}%.")
 
         return " ".join(parts)

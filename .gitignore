@@ -64,3 +64,7 @@ datasets/reconstructions/*
 
 datasets/reconstruction_evaluations/*
 !datasets/reconstruction_evaluations/.gitkeep
+
+# Confidence outputs
+datasets/confidence_estimations/*
+!datasets/confidence_estimations/.gitkeep

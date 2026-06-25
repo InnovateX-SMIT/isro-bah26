@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
 from app.core.config import settings
 
@@ -11,6 +11,14 @@ engine = create_engine(
     settings.SQLALCHEMY_DATABASE_URL,
     connect_args=connect_args
 )
+
+# Enable foreign keys for SQLite
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if settings.SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 SessionLocal = sessionmaker(
     autocommit=False,
@@ -58,6 +66,7 @@ def init_db():
     from app.models.cloud_analytics import CloudAnalytics
     from app.models.reconstruction_run import ReconstructionRun
     from app.models.temporal_fusion_run import TemporalFusionRun
+    from app.models.confidence_estimation import ConfidenceEstimation
     Base.metadata.create_all(bind=engine)
 
     # Ensure new reconstruction_runs columns are present for Phase 7C compatibility

@@ -19,6 +19,7 @@ from app.api.v1.cloud_segmentation import router as cloud_segmentation_router
 from app.api.v1.cloud_analytics import router as cloud_analytics_router
 from app.api.v1.reconstruction import router as reconstruction_router
 from app.api.v1.temporal_fusion import router as temporal_fusion_router
+from app.api.v1.confidence import router as confidence_router
 
 api_router = APIRouter()
 
@@ -53,3 +54,4 @@ api_router.include_router(cloud_segmentation_router, prefix="/cloud-segmentation
 api_router.include_router(cloud_analytics_router, prefix="/cloud-analytics", tags=["Cloud Analytics Engine"])
 api_router.include_router(reconstruction_router, prefix="/reconstruction", tags=["Reconstruction Framework"])
 api_router.include_router(temporal_fusion_router, prefix="/temporal-fusion", tags=["Temporal Fusion Engine"])
+api_router.include_router(confidence_router, prefix="/confidence", tags=["Confidence Intelligence Engine"])

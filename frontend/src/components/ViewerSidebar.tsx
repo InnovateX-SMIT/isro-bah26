@@ -21,7 +21,7 @@ import { DatasetMetadata } from "@/lib/types/dataset-metadata"
 interface ViewerSidebarProps {
   dataset: Dataset
   metadata: DatasetMetadata | null
-  mode: "dataset" | "cloud" | "temporal" | "reconstruction" | "confidence"
+  mode: "dataset" | "cloud" | "temporal" | "reconstruction" | "confidence" | "comparison"
   isOpen?: boolean
   setIsOpen?: (open: boolean) => void
 }
@@ -76,11 +76,21 @@ export default function ViewerSidebar({
     { label: "Confidence Report", href: `/datasets/${datasetId}/confidence/report`, icon: FileText },
   ]
 
+  const comparisonLinks = [
+    { label: "Comparison Hub", href: `/datasets/${datasetId}/comparison`, icon: Compass },
+    { label: "Original vs Recon", href: `/datasets/${datasetId}/comparison/original-vs-reconstruction`, icon: ImageIcon },
+    { label: "Cloud vs Recon", href: `/datasets/${datasetId}/comparison/cloud-vs-reconstruction`, icon: Activity },
+    { label: "Reference vs Recon", href: `/datasets/${datasetId}/comparison/reference-vs-reconstruction`, icon: Clock },
+    { label: "Confidence vs Recon", href: `/datasets/${datasetId}/comparison/confidence-vs-reconstruction`, icon: Shield },
+    { label: "Analysis Workspace", href: `/datasets/${datasetId}/comparison/workspace`, icon: Sparkles },
+  ]
+
   let links = datasetLinks
   if (mode === "cloud") links = cloudLinks
   else if (mode === "temporal") links = temporalLinks
   else if (mode === "reconstruction") links = reconstructionLinks
   else if (mode === "confidence") links = confidenceLinks
+  else if (mode === "comparison") links = comparisonLinks
 
   if (!isOpen) {
     return (
@@ -104,6 +114,7 @@ export default function ViewerSidebar({
           {mode === "temporal" && "TEMPORAL SIDEBAR"}
           {mode === "reconstruction" && "RECONSTRUCTION SIDEBAR"}
           {mode === "confidence" && "CONFIDENCE SIDEBAR"}
+          {mode === "comparison" && "COMPARISON SIDEBAR"}
         </span>
         {setIsOpen && (
           <button
@@ -159,13 +170,23 @@ export default function ViewerSidebar({
         </Link>
         <Link
           href={`/datasets/${datasetId}/confidence`}
-          className={`py-1.5 border rounded-sm transition-all col-span-2 ${
+          className={`py-1.5 border rounded-sm transition-all ${
             mode === "confidence"
               ? "border-primary bg-primary/10 text-primary"
               : "border-border/60 bg-muted/10 text-muted-foreground hover:bg-muted/20"
           }`}
         >
           Confidence
+        </Link>
+        <Link
+          href={`/datasets/${datasetId}/comparison`}
+          className={`py-1.5 border rounded-sm transition-all ${
+            mode === "comparison"
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border/60 bg-muted/10 text-muted-foreground hover:bg-muted/20"
+          }`}
+        >
+          Comparison
         </Link>
       </div>
 

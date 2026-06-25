@@ -15,7 +15,8 @@ import {
   FolderOpen,
   X,
   Compass,
-  CloudSun
+  CloudSun,
+  Sparkles
 } from "lucide-react"
 import {
   getDemoDatasets,
@@ -400,6 +401,15 @@ function DatasetsDashboard() {
                             >
                               <CloudSun className="w-3.5 h-3.5" />
                               Cloud
+                            </button>
+
+                            {/* Comparison Workspace */}
+                            <button
+                              onClick={() => router.push(`/datasets/${ds.dataset_id}/comparison`)}
+                              className="px-3 py-1 bg-violet-500/10 text-violet-400 hover:bg-violet-500 hover:text-white border border-violet-500/25 hover:border-violet-500 transition-all font-bold tracking-widest uppercase text-[9px] flex items-center gap-1"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              Comparison
                             </button>
 
                             {/* Open Session */}

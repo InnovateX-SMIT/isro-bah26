@@ -135,8 +135,36 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
               </div>
             </div>
           </div>
-          <Link href={`/dataset/${dataset.dataset_id}/geospatial`} className="inline-flex items-center justify-between bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all">
+          <Link href={`/mission-control/geospatial?dataset=${dataset.dataset_id}`} className="inline-flex items-center justify-between bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all">
             Open Geospatial Console
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* SUBPAGE B: Briefing & Context */}
+        <div className="border border-border bg-card/20 p-5 rounded-sm flex flex-col justify-between space-y-4 hover:border-primary/50 transition-colors">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[8px] text-primary font-bold tracking-widest uppercase">MODULE // ACTIVE</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            </div>
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 uppercase">
+              <MapPin className="w-4 h-4 text-primary" />
+              Briefing & Context
+            </h3>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Consolidate physical administrative locks, physiographic terrain properties, and ecological profiles.
+            </p>
+            {location && (
+              <div className="bg-background/40 p-2.5 text-[9px] text-slate-300 border border-border/40 space-y-1">
+                <div className="truncate">Country: {location.country || "India"}</div>
+                <div className="truncate">Province: {location.state || "Unknown"}</div>
+                <div className="truncate">District: {location.district || "Unknown"}</div>
+              </div>
+            )}
+          </div>
+          <Link href={`/mission-control/briefing?dataset=${dataset.dataset_id}`} className="inline-flex items-center justify-between bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all">
+            Open Briefing & Context
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -176,7 +204,7 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
               </div>
             </div>
           </div>
-          <Link href={`/dataset/${dataset.dataset_id}/temporal`} className="inline-flex items-center justify-between bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all">
+          <Link href={`/mission-control/temporal?dataset=${dataset.dataset_id}`} className="inline-flex items-center justify-between bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all">
             Open Temporal Console
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>

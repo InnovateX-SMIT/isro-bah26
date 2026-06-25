@@ -13,7 +13,7 @@ export default function ClientSidebar() {
     { label: "Analysis Pipeline", href: "/analysis", icon: Cpu },
     { label: "Mission Control", href: "/mission-control", icon: Shield },
     { label: "Data Inventory", href: "/datasets", icon: Database },
-    { label: "Geospatial Map", href: "/geospatial", icon: Globe },
+    { label: "Geospatial Map", href: "/mission-control/geospatial", icon: Globe },
     { label: "Analytics Dashboard", href: "/dashboard", icon: BarChart3 },
     { label: "System Settings", href: "/settings", icon: Settings },
   ]

@@ -37,10 +37,10 @@ export default function MissionControlStatusBar({ status }: MissionControlStatus
     { key: "location", name: "Location Intel", icon: MapPin },
     { key: "context", name: "Context Intel", icon: Compass },
     { key: "temporal", name: "Temporal Intel", icon: Clock },
+    { key: "cloud", name: "Cloud Intel", icon: Cloud },
   ] as const;
 
   const futureLayers = [
-    { key: "cloud", name: "Cloud Intel", icon: Cloud },
     { key: "reconstruction", name: "Reconstruction", icon: Cpu },
     { key: "confidence", name: "Confidence Intel", icon: Activity },
   ] as const;

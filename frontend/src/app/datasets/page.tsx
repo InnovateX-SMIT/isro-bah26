@@ -13,7 +13,9 @@ import {
   AlertTriangle,
   FileCode2,
   FolderOpen,
-  X
+  X,
+  Compass,
+  CloudSun
 } from "lucide-react"
 import {
   getDemoDatasets,
@@ -380,6 +382,24 @@ function DatasetsDashboard() {
                             >
                               <FileCode2 className="w-3.5 h-3.5" />
                               Inspect
+                            </button>
+
+                            {/* Original Dataset Viewer */}
+                            <button
+                              onClick={() => router.push(`/datasets/${ds.dataset_id}/viewer`)}
+                              className="px-3 py-1 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/30 hover:border-primary transition-all font-bold tracking-widest uppercase text-[9px] flex items-center gap-1"
+                            >
+                              <Compass className="w-3.5 h-3.5" />
+                              Viewer
+                            </button>
+
+                            {/* Cloud Intelligence Viewer */}
+                            <button
+                              onClick={() => router.push(`/datasets/${ds.dataset_id}/cloud`)}
+                              className="px-3 py-1 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white border border-emerald-500/25 hover:border-emerald-500 transition-all font-bold tracking-widest uppercase text-[9px] flex items-center gap-1"
+                            >
+                              <CloudSun className="w-3.5 h-3.5" />
+                              Cloud
                             </button>
 
                             {/* Open Session */}

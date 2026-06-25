@@ -210,24 +210,38 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
           </Link>
         </div>
 
-        {/* FUTURE PHASE: Cloud Intelligence */}
-        <div className="border border-border bg-card/10 p-5 rounded-sm flex flex-col justify-between space-y-4 opacity-50 relative select-none">
+        {/* SUBPAGE C: Cloud Intelligence */}
+        <div className="border border-border bg-card/20 p-5 rounded-sm flex flex-col justify-between space-y-4 hover:border-primary/50 transition-colors">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[8px] text-amber-500/80 font-mono font-bold tracking-widest uppercase">PHASE 6+ // STANDBY</span>
-              <Lock className="w-3 h-3 text-muted-foreground" />
+              <span className="text-[8px] text-primary font-bold tracking-widest uppercase">
+                {status.cloud === "available" ? "MODULE // ACTIVE" : "MODULE // COMPILATION PENDING"}
+              </span>
+              <span className={`w-2 h-2 rounded-full ${status.cloud === "available" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`}></span>
             </div>
             <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 uppercase">
-              <Cloud className="w-4 h-4 text-muted-foreground" />
+              <Cloud className="w-4 h-4 text-primary" />
               Cloud Intelligence
             </h3>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Neural network segmentation to identify and generate pixel level transparency masks.
+              Consolidated cloud probability mapping, solar projection vector shadows, and multi-class segmented masks.
             </p>
-            <div className="bg-background/40 p-2 py-1 text-[8.5px] border border-border text-center text-amber-500 font-bold uppercase tracking-wider">
-              Not Yet Implemented / Phase 6+
-            </div>
+            {status.cloud === "available" && profile.cloud ? (
+              <div className="bg-background/40 p-2.5 text-[9px] text-slate-300 border border-border/40 space-y-1">
+                <div>Burden Index: <span className="text-amber-400 font-bold">{(profile.cloud.analytics?.burden_index || 0).toFixed(1)}/100</span></div>
+                <div>Cloud Cover: {(profile.cloud.cloud_coverage_percent || 0).toFixed(1)}%</div>
+                <div>Objects: {profile.cloud.candidate_region_count || 0} regions</div>
+              </div>
+            ) : (
+              <div className="bg-background/40 p-2 py-1 text-[8.5px] border border-border text-center text-amber-500 font-bold uppercase tracking-wider">
+                Run cloud pipeline inside workspace
+              </div>
+            )}
           </div>
+          <Link href={`/datasets/${dataset.dataset_id}/cloud`} className="inline-flex items-center justify-between bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all">
+            Open Cloud Workspace
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
         {/* Terrain Reconstruction: Active or Placeholder */}

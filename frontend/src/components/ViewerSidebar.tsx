@@ -11,7 +11,9 @@ import {
   ChevronRight,
   Shield,
   Clock,
-  CloudSun
+  CloudSun,
+  Cpu,
+  Sparkles
 } from "lucide-react"
 import { Dataset } from "@/lib/types/dataset"
 import { DatasetMetadata } from "@/lib/types/dataset-metadata"
@@ -19,7 +21,7 @@ import { DatasetMetadata } from "@/lib/types/dataset-metadata"
 interface ViewerSidebarProps {
   dataset: Dataset
   metadata: DatasetMetadata | null
-  mode: "dataset" | "cloud"
+  mode: "dataset" | "cloud" | "temporal" | "reconstruction"
   isOpen?: boolean
   setIsOpen?: (open: boolean) => void
 }
@@ -50,7 +52,25 @@ export default function ViewerSidebar({
     { label: "Operational Analytics", href: `/datasets/${datasetId}/cloud/analytics`, icon: FileText },
   ]
 
-  const links = mode === "dataset" ? datasetLinks : cloudLinks
+  const temporalLinks = [
+    { label: "Temporal Overview", href: `/datasets/${datasetId}/temporal`, icon: Clock },
+    { label: "Historical Stack", href: `/datasets/${datasetId}/temporal/references`, icon: Layers },
+    { label: "Chronological Orbit", href: `/datasets/${datasetId}/temporal/timeline`, icon: Clock },
+    { label: "Temporal Metadata", href: `/datasets/${datasetId}/temporal/metadata`, icon: FileText },
+  ]
+
+  const reconstructionLinks = [
+    { label: "Reconstruct Overview", href: `/datasets/${datasetId}/reconstruction`, icon: Cpu },
+    { label: "Baseline Frame", href: `/datasets/${datasetId}/reconstruction/result`, icon: ImageIcon },
+    { label: "Optimized Output", href: `/datasets/${datasetId}/reconstruction/optimized`, icon: Sparkles },
+    { label: "Quality Scorecard", href: `/datasets/${datasetId}/reconstruction/evaluation`, icon: FileText },
+    { label: "Reconstruct Metadata", href: `/datasets/${datasetId}/reconstruction/metadata`, icon: FileText },
+  ]
+
+  let links = datasetLinks
+  if (mode === "cloud") links = cloudLinks
+  else if (mode === "temporal") links = temporalLinks
+  else if (mode === "reconstruction") links = reconstructionLinks
 
   if (!isOpen) {
     return (
@@ -69,7 +89,10 @@ export default function ViewerSidebar({
       {/* Sidebar Header */}
       <div className="p-4 border-b border-border/60 flex items-center justify-between">
         <span className="text-[10px] text-primary font-bold tracking-widest uppercase">
-          {mode === "dataset" ? "DATASET VIEWER SIDEBAR" : "CLOUD INTEL SIDEBAR"}
+          {mode === "dataset" && "DATASET VIEWER SIDEBAR"}
+          {mode === "cloud" && "CLOUD INTEL SIDEBAR"}
+          {mode === "temporal" && "TEMPORAL SIDEBAR"}
+          {mode === "reconstruction" && "RECONSTRUCTION SIDEBAR"}
         </span>
         {setIsOpen && (
           <button
@@ -82,7 +105,7 @@ export default function ViewerSidebar({
       </div>
 
       {/* Mode Toggle Switch */}
-      <div className="p-4 border-b border-border/40 grid grid-cols-2 gap-2 text-center text-[10px] uppercase font-bold tracking-wider">
+      <div className="p-4 border-b border-border/40 grid grid-cols-2 gap-2 text-center text-[9px] uppercase font-bold tracking-wider">
         <Link
           href={`/datasets/${datasetId}/viewer`}
           className={`py-1.5 border rounded-sm transition-all ${
@@ -102,6 +125,26 @@ export default function ViewerSidebar({
           }`}
         >
           Cloud Intel
+        </Link>
+        <Link
+          href={`/datasets/${datasetId}/temporal`}
+          className={`py-1.5 border rounded-sm transition-all ${
+            mode === "temporal"
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border/60 bg-muted/10 text-muted-foreground hover:bg-muted/20"
+          }`}
+        >
+          Temporal
+        </Link>
+        <Link
+          href={`/datasets/${datasetId}/reconstruction`}
+          className={`py-1.5 border rounded-sm transition-all ${
+            mode === "reconstruction"
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border/60 bg-muted/10 text-muted-foreground hover:bg-muted/20"
+          }`}
+        >
+          Reconstruct
         </Link>
       </div>
 

@@ -57,3 +57,10 @@ datasets/previews/*
 !datasets/previews/.gitkeep
 datasets/cloud_analytics/*
 !datasets/cloud_analytics/.gitkeep
+
+# Reconstruction outputs
+datasets/reconstructions/*
+!datasets/reconstructions/.gitkeep
+
+datasets/reconstruction_evaluations/*
+!datasets/reconstruction_evaluations/.gitkeep

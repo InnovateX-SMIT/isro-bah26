@@ -390,24 +390,38 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
           </div>
         )}
 
-        {/* FUTURE PHASE: Confidence Evaluation */}
-        <div className="border border-border bg-card/10 p-5 rounded-sm flex flex-col justify-between space-y-4 opacity-50 relative select-none">
+        {/* SUBPAGE F: Confidence Evaluation */}
+        <div className="border border-border bg-card/20 p-5 rounded-sm flex flex-col justify-between space-y-4 hover:border-primary/50 transition-colors">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[8px] text-amber-500/80 font-mono font-bold tracking-widest uppercase">PHASE 6+ // STANDBY</span>
-              <Lock className="w-3 h-3 text-muted-foreground" />
+              <span className="text-[8px] text-primary font-bold tracking-widest uppercase">
+                {status.confidence === "available" ? "MODULE // ACTIVE" : "MODULE // COMPILATION PENDING"}
+              </span>
+              <span className={`w-2 h-2 rounded-full ${status.confidence === "available" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`}></span>
             </div>
             <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5 uppercase">
-              <Activity className="w-4 h-4 text-muted-foreground" />
+              <Activity className="w-4 h-4 text-primary" />
               Confidence Rating
             </h3>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Calculates pixel restoration uncertainty rates and output quality metrics.
+              Calculates pixel restoration uncertainty rates, reliability tiers, and overall quality metrics.
             </p>
-            <div className="bg-background/40 p-2 py-1 text-[8.5px] border border-border text-center text-amber-500 font-bold uppercase tracking-wider">
-              Not Yet Implemented / Phase 6+
-            </div>
+            {status.confidence === "available" && profile.confidence ? (
+              <div className="bg-background/40 p-2.5 text-[9px] text-slate-300 border border-border/40 space-y-1">
+                <div>Mean Confidence: <span className="text-emerald-400 font-bold">{(profile.confidence.mean_confidence_score !== null && profile.confidence.mean_confidence_score !== undefined) ? `${(profile.confidence.mean_confidence_score * 100).toFixed(1)}%` : "N/A"}</span></div>
+                <div>Low Confidence Area: {(profile.confidence.low_confidence_area_percent !== null && profile.confidence.low_confidence_area_percent !== undefined) ? `${(profile.confidence.low_confidence_area_percent).toFixed(1)}%` : "N/A"}</div>
+                <div>Status: <span className="text-emerald-400 uppercase font-bold">{profile.confidence.confidence_status || "COMPLETED"}</span></div>
+              </div>
+            ) : (
+              <div className="bg-background/40 p-2 py-1 text-[8.5px] border border-border text-center text-amber-500 font-bold uppercase tracking-wider">
+                Run confidence pipeline inside workspace
+              </div>
+            )}
           </div>
+          <Link href={`/datasets/${dataset.dataset_id}/confidence`} className="inline-flex items-center justify-between bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all mt-3">
+            Open Confidence Hub
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
       </div>

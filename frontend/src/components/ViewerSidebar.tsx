@@ -21,7 +21,7 @@ import { DatasetMetadata } from "@/lib/types/dataset-metadata"
 interface ViewerSidebarProps {
   dataset: Dataset
   metadata: DatasetMetadata | null
-  mode: "dataset" | "cloud" | "temporal" | "reconstruction"
+  mode: "dataset" | "cloud" | "temporal" | "reconstruction" | "confidence"
   isOpen?: boolean
   setIsOpen?: (open: boolean) => void
 }
@@ -67,10 +67,20 @@ export default function ViewerSidebar({
     { label: "Reconstruct Metadata", href: `/datasets/${datasetId}/reconstruction/metadata`, icon: FileText },
   ]
 
+  const confidenceLinks = [
+    { label: "Confidence Overview", href: `/datasets/${datasetId}/confidence`, icon: Shield },
+    { label: "Confidence Heatmap", href: `/datasets/${datasetId}/confidence/heatmap`, icon: ImageIcon },
+    { label: "Confidence Overlay", href: `/datasets/${datasetId}/confidence/overlay`, icon: Layers },
+    { label: "Reliability Map", href: `/datasets/${datasetId}/confidence/reliability`, icon: Activity },
+    { label: "Confidence Analytics", href: `/datasets/${datasetId}/confidence/analytics`, icon: FileText },
+    { label: "Confidence Report", href: `/datasets/${datasetId}/confidence/report`, icon: FileText },
+  ]
+
   let links = datasetLinks
   if (mode === "cloud") links = cloudLinks
   else if (mode === "temporal") links = temporalLinks
   else if (mode === "reconstruction") links = reconstructionLinks
+  else if (mode === "confidence") links = confidenceLinks
 
   if (!isOpen) {
     return (
@@ -93,6 +103,7 @@ export default function ViewerSidebar({
           {mode === "cloud" && "CLOUD INTEL SIDEBAR"}
           {mode === "temporal" && "TEMPORAL SIDEBAR"}
           {mode === "reconstruction" && "RECONSTRUCTION SIDEBAR"}
+          {mode === "confidence" && "CONFIDENCE SIDEBAR"}
         </span>
         {setIsOpen && (
           <button
@@ -145,6 +156,16 @@ export default function ViewerSidebar({
           }`}
         >
           Reconstruct
+        </Link>
+        <Link
+          href={`/datasets/${datasetId}/confidence`}
+          className={`py-1.5 border rounded-sm transition-all col-span-2 ${
+            mode === "confidence"
+              ? "border-primary bg-primary/10 text-primary"
+              : "border-border/60 bg-muted/10 text-muted-foreground hover:bg-muted/20"
+          }`}
+        >
+          Confidence
         </Link>
       </div>
 

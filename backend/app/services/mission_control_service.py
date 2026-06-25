@@ -34,6 +34,8 @@ from app.repositories.reconstruction_repository import ReconstructionRepository
 from app.repositories.temporal_fusion_repository import TemporalFusionRepository
 from app.repositories.confidence_repository import ConfidenceRepository
 from app.repositories.reliability_repository import ReliabilityRepository
+from app.repositories.confidence_heatmap_repository import ConfidenceHeatmapRepository
+from app.repositories.confidence_analytics_repository import ConfidenceAnalyticsRepository
 
 
 class MissionControlService:
@@ -58,7 +60,9 @@ class MissionControlService:
         reconstruction_repository: ReconstructionRepository = None,
         temporal_fusion_repository: TemporalFusionRepository = None,
         confidence_repository: ConfidenceRepository = None,
-        reliability_repository: ReliabilityRepository = None
+        reliability_repository: ReliabilityRepository = None,
+        heatmap_repository: ConfidenceHeatmapRepository = None,
+        analytics_repository: ConfidenceAnalyticsRepository = None
     ):
         self.dataset_repository = dataset_repository
         self.metadata_service = metadata_service
@@ -75,6 +79,8 @@ class MissionControlService:
         self.temporal_fusion_repository = temporal_fusion_repository
         self.confidence_repository = confidence_repository
         self.reliability_repository = reliability_repository
+        self.heatmap_repository = heatmap_repository
+        self.analytics_repository = analytics_repository
 
 
 
@@ -101,7 +107,9 @@ class MissionControlService:
             "reconstruction": "not_started",
             "temporal_fusion": "not_started",
             "confidence": "missing",
-            "reliability": "missing"
+            "reliability": "missing",
+            "confidence_heatmap": "missing",
+            "confidence_analytics": "missing"
         }
 
         data_dict = {
@@ -114,7 +122,9 @@ class MissionControlService:
             "reconstruction": None,
             "temporal_fusion": None,
             "confidence": None,
-            "reliability": None
+            "reliability": None,
+            "confidence_heatmap": None,
+            "confidence_analytics": None
         }
 
 
@@ -431,6 +441,63 @@ class MissionControlService:
             except Exception:
                 status_dict["reliability"] = "error"
 
+        # 5.11 Extract or Fetch Confidence Heatmap
+        confidence_heatmap = None
+        if self.heatmap_repository and reliability_est:
+            try:
+                heatmap_rec = self.heatmap_repository.get_by_reliability_score(reliability_est.reliability_id)
+                if heatmap_rec:
+                    confidence_heatmap = heatmap_rec
+                    status_dict["confidence_heatmap"] = "available" if heatmap_rec.heatmap_status == "completed" else heatmap_rec.heatmap_status
+                    data_dict["confidence_heatmap"] = {
+                        "heatmap_id": heatmap_rec.heatmap_id,
+                        "reliability_score_id": heatmap_rec.reliability_score_id,
+                        "dataset_id": heatmap_rec.dataset_id,
+                        "heatmap_status": heatmap_rec.heatmap_status,
+                        "confidence_overlay_path": heatmap_rec.confidence_overlay_path,
+                        "reliability_map_path": heatmap_rec.reliability_map_path,
+                        "legend_json": heatmap_rec.legend_json,
+                        "basis": heatmap_rec.basis,
+                        "heatmap_method": heatmap_rec.heatmap_method,
+                        "created_at": heatmap_rec.created_at,
+                        "updated_at": heatmap_rec.updated_at
+                    }
+                else:
+                    status_dict["confidence_heatmap"] = "missing"
+            except Exception:
+                status_dict["confidence_heatmap"] = "error"
+        else:
+            status_dict["confidence_heatmap"] = "missing"
+
+        # 5.12 Extract or Fetch Confidence Analytics
+        confidence_analytics = None
+        if self.analytics_repository and confidence_heatmap:
+            try:
+                analytics_rec = self.analytics_repository.get_by_confidence_heatmap(confidence_heatmap.heatmap_id)
+                if analytics_rec:
+                    confidence_analytics = analytics_rec
+                    status_dict["confidence_analytics"] = "available" if analytics_rec.analytics_status == "completed" else analytics_rec.analytics_status
+                    data_dict["confidence_analytics"] = {
+                        "analytics_id": analytics_rec.analytics_id,
+                        "confidence_heatmap_id": analytics_rec.confidence_heatmap_id,
+                        "dataset_id": analytics_rec.dataset_id,
+                        "analytics_status": analytics_rec.analytics_status,
+                        "confidence_report_path": analytics_rec.confidence_report_path,
+                        "confidence_summary_path": analytics_rec.confidence_summary_path,
+                        "reliability_scorecard_path": analytics_rec.reliability_scorecard_path,
+                        "headline_summary": analytics_rec.headline_summary,
+                        "report_basis": analytics_rec.report_basis,
+                        "analytics_method": analytics_rec.analytics_method,
+                        "created_at": analytics_rec.created_at,
+                        "updated_at": analytics_rec.updated_at
+                    }
+                else:
+                    status_dict["confidence_analytics"] = "missing"
+            except Exception:
+                status_dict["confidence_analytics"] = "error"
+        else:
+            status_dict["confidence_analytics"] = "missing"
+
         # 6. Generate dynamic human-readable operational briefing summary
         briefing = self._generate_briefing(
             dataset=dataset,
@@ -443,7 +510,9 @@ class MissionControlService:
             reconstruction=reconstruction_run,
             temporal_fusion=temporal_fusion_run,
             confidence=confidence_est,
-            reliability=reliability_est
+            reliability=reliability_est,
+            confidence_heatmap=confidence_heatmap,
+            confidence_analytics=confidence_analytics
         )
 
         return MissionControlResponse(
@@ -458,12 +527,14 @@ class MissionControlService:
             temporal_fusion=data_dict["temporal_fusion"],
             confidence=data_dict["confidence"],
             reliability=data_dict["reliability"],
+            confidence_heatmap=data_dict["confidence_heatmap"],
+            confidence_analytics=data_dict["confidence_analytics"],
             status=MissionControlStatus(**status_dict),
             summary=briefing
         )
 
 
-    def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status, reconstruction=None, temporal_fusion=None, confidence=None, reliability=None) -> str:
+    def _generate_briefing(self, dataset, metadata, geospatial, location, context, temporal, status, reconstruction=None, temporal_fusion=None, confidence=None, reliability=None, confidence_heatmap=None, confidence_analytics=None) -> str:
         """
         Dynamically constructs a human-readable operational summary report.
         Omits or rephrases sections gracefully depending on available dataset fields.
@@ -556,5 +627,11 @@ class MissionControlService:
             score = reliability.dataset_reliability_score if isinstance(reliability, dict) else getattr(reliability, "dataset_reliability_score", None)
             if tier and score is not None:
                 parts.append(f"Reconstruction reliability is rated as {tier} with a dataset score of {score}%.")
+
+        # I. Confidence Analytics Intelligence Context
+        if status.get("confidence_analytics") == "available" and confidence_analytics:
+            hl = confidence_analytics.headline_summary if isinstance(confidence_analytics, dict) else getattr(confidence_analytics, "headline_summary", None)
+            if hl:
+                parts.append(hl)
 
         return " ".join(parts)

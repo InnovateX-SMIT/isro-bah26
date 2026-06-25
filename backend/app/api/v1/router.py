@@ -21,6 +21,8 @@ from app.api.v1.reconstruction import router as reconstruction_router
 from app.api.v1.temporal_fusion import router as temporal_fusion_router
 from app.api.v1.confidence import router as confidence_router
 from app.api.v1.reliability import router as reliability_router
+from app.api.v1.confidence_heatmap import router as confidence_heatmap_router
+from app.api.v1.confidence_analytics import router as confidence_analytics_router
 
 api_router = APIRouter()
 
@@ -57,3 +59,5 @@ api_router.include_router(reconstruction_router, prefix="/reconstruction", tags=
 api_router.include_router(temporal_fusion_router, prefix="/temporal-fusion", tags=["Temporal Fusion Engine"])
 api_router.include_router(confidence_router, prefix="/confidence", tags=["Confidence Intelligence Engine"])
 api_router.include_router(reliability_router, prefix="/reliability", tags=["Reliability Scoring Engine"])
+api_router.include_router(confidence_heatmap_router, prefix="/confidence-heatmap", tags=["Confidence Heatmap Engine"])
+api_router.include_router(confidence_analytics_router, prefix="/confidence-analytics", tags=["Confidence Analytics Engine"])

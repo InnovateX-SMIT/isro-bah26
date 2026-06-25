@@ -33,6 +33,8 @@ def get_mission_control_service(db: Session = Depends(get_db)) -> MissionControl
     from app.repositories.temporal_fusion_repository import TemporalFusionRepository
     from app.repositories.confidence_repository import ConfidenceRepository
     from app.repositories.reliability_repository import ReliabilityRepository
+    from app.repositories.confidence_heatmap_repository import ConfidenceHeatmapRepository
+    from app.repositories.confidence_analytics_repository import ConfidenceAnalyticsRepository
     
     # Repositories
     dataset_repository = DatasetRepository(db)
@@ -50,6 +52,8 @@ def get_mission_control_service(db: Session = Depends(get_db)) -> MissionControl
     temporal_fusion_repository = TemporalFusionRepository(db)
     confidence_repository = ConfidenceRepository(db)
     reliability_repository = ReliabilityRepository(db)
+    heatmap_repository = ConfidenceHeatmapRepository(db)
+    analytics_repository = ConfidenceAnalyticsRepository(db)
 
     # Services
     metadata_service = DatasetMetadataService(metadata_repository, dataset_repository)
@@ -72,7 +76,9 @@ def get_mission_control_service(db: Session = Depends(get_db)) -> MissionControl
         reconstruction_repository=reconstruction_repository,
         temporal_fusion_repository=temporal_fusion_repository,
         confidence_repository=confidence_repository,
-        reliability_repository=reliability_repository
+        reliability_repository=reliability_repository,
+        heatmap_repository=heatmap_repository,
+        analytics_repository=analytics_repository
     )
 
 @router.get(

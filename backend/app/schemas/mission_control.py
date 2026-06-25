@@ -22,6 +22,8 @@ class MissionControlStatus(BaseModel):
     temporal_fusion: str = Field(default="missing", description="Status of the Temporal Fusion layer")
     confidence: str = Field(default="missing", description="Status of the Confidence layer (future compatibility)")
     reliability: str = Field(default="missing", description="Status of the Reliability layer")
+    confidence_heatmap: str = Field(default="missing", description="Status of the Confidence Heatmap layer")
+    confidence_analytics: str = Field(default="missing", description="Status of the Confidence Analytics layer")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -46,6 +48,8 @@ class MissionControlResponse(BaseModel):
     temporal_fusion: dict | None = Field(default=None, description="Temporal Fusion Intelligence data placeholder")
     confidence: dict | None = Field(default=None, description="Confidence Intelligence data placeholder")
     reliability: dict | None = Field(default=None, description="Reliability Intelligence data placeholder")
+    confidence_heatmap: dict | None = Field(default=None, description="Confidence Heatmap visual context")
+    confidence_analytics: dict | None = Field(default=None, description="Confidence Analytics report context")
 
     model_config = ConfigDict(from_attributes=True)
 

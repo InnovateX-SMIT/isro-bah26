@@ -68,3 +68,9 @@ datasets/reconstruction_evaluations/*
 # Confidence outputs
 datasets/confidence_estimations/*
 !datasets/confidence_estimations/.gitkeep
+
+datasets/confidence_heatmaps/*
+!datasets/confidence_heatmaps/.gitkeep
+
+datasets/confidence_analytics/*
+!datasets/confidence_analytics/.gitkeep

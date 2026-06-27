@@ -104,6 +104,20 @@ Status: ✅ Verified Working. This repository implements the early platform laye
 | Verification script | `scripts/verify_phase_10a.py` verifies registration, inspection setup, consolidated GET responses, timestamp presence, and cascading deletions. |
 | Known bugs fixed | Resolved relative path SQLite split-brain database issues in tests. |
 
+### Status: ✅ Verified Working — Phase 10B: Workflow Monitoring Layer
+
+| Field | Actual State |
+|---|---|
+| Objective | Transform Mission Control into an interactive live monitoring dashboard tracing stage completions, blocked states, and scrolling logs. |
+| Backend files | `backend/app/schemas/workflow.py`, `backend/app/services/workflow_service.py`, `backend/app/api/v1/workflow.py` |
+| Frontend files | `frontend/src/lib/types/workflow.ts`, `frontend/src/lib/workflow-api.ts`, `frontend/src/components/mission-control/WorkflowPipeline.tsx`, `frontend/src/components/mission-control/WorkflowLogsPanel.tsx`, `frontend/src/components/mission-control/StageDetailDrawer.tsx`, `frontend/src/components/mission-control/MissionControlWorkspace.tsx` |
+| Database tables | Dynamically extracts states from session, dataset, inspection, metadata, geospatial, temporal context, cloud detection, reconstruction, and confidence schemas. |
+| API endpoints | `GET /api/v1/workflow/{session_id}` (returns stages status, inputs/outputs, timelines, and console log lines). |
+| Consumes | Real-time database states. |
+| Produces | Progress indicators, pipeline node charts, search-enabled console log terminal views, and side-over drawers details. |
+| Verification script | `scripts/verify_phase_10b.py` tests pipeline registers, dynamic progress checks, log lists, and cascade session teardowns. |
+| Known bugs fixed | Resolved duplicate prefix mapping in FastAPI router paths and mapped uppercase/lowercase inspection enums. |
+
 ## DATA FLOW — END TO END (ACTUAL, NOT ASPIRATIONAL)
 
 Status: ✅ Verified Working. The actual current workflow is endpoint-driven, not a single backend orchestrator:
@@ -250,10 +264,10 @@ Status: ⚠️ Fragile.
 - Current visualization is dataset preview/geospatial/temporal metadata only.
 - No original-vs-cloud-mask-vs-reconstruction-vs-confidence comparison engine exists.
 
-### Status: ❌ Not Implemented — Phase 10B/10C/10D: Advanced Workflow Monitoring & Analytics
+### Status: ❌ Not Implemented — Phase 10C/10D: Operational Analytics & Mission Control Experience
 
-- No real-time process monitoring dashboard for parallel runs.
-- No historical analytics or comparison metrics across multiple sessions.
+- No cross-dataset analytics or aggregation metrics dashboard.
+- No dynamic customization triggers inside the Mission Control layout.
 
 ### Status: ❌ Not Implemented — Phase 11: Export Intelligence
 

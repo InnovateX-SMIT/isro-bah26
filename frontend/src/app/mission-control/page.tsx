@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { Dataset } from "@/lib/types/dataset";
 import { MissionControlProfile } from "@/lib/types/mission-control";
+import { WorkflowResponse } from "@/lib/types/workflow";
 import { getRegisteredDatasets } from "@/lib/dataset-api";
 import { getMissionControlProfile } from "@/lib/mission-control-api";
+import { getWorkflowStatus } from "@/lib/workflow-api";
 import MissionControlHeader from "@/components/mission-control/MissionControlHeader";
 import MissionControlWorkspace from "@/components/mission-control/MissionControlWorkspace";
 import { Loader2, Globe, Database, HelpCircle, AlertCircle } from "lucide-react";
@@ -13,10 +15,12 @@ export default function MissionControlPage() {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
   const [profile, setProfile] = useState<MissionControlProfile | null>(null);
+  const [workflow, setWorkflow] = useState<WorkflowResponse | null>(null);
 
   // Loading States
   const [loadingDatasets, setLoadingDatasets] = useState<boolean>(true);
   const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
+  const [loadingWorkflow, setLoadingWorkflow] = useState<boolean>(false);
   
   // Errors
   const [error, setError] = useState<string | null>(null);
@@ -40,6 +44,7 @@ export default function MissionControlPage() {
       } else {
         setSelectedDataset(null);
         setProfile(null);
+        setWorkflow(null);
       }
     } catch (err: any) {
       console.error("Failed to load registered datasets:", err);
@@ -49,18 +54,29 @@ export default function MissionControlPage() {
     }
   };
 
-  // 2. Fetch Consolidated Mission Control Profile
+  // 2. Fetch Consolidated Mission Control Profile & Workflow
   const handleLoadProfile = async (datasetId: string) => {
     setLoadingProfile(true);
+    setLoadingWorkflow(true);
     setError(null);
     try {
       const data = await getMissionControlProfile(datasetId);
       setProfile(data);
+      
+      if (data.dataset?.analysis_session_id) {
+        try {
+          const wfData = await getWorkflowStatus(data.dataset.analysis_session_id);
+          setWorkflow(wfData);
+        } catch (wfErr) {
+          console.error("Failed to load workflow state:", wfErr);
+        }
+      }
     } catch (err: any) {
       console.error("Failed to load Mission Control profile:", err);
       setError(err.message || "Failed to consolidate Mission Control profile.");
     } finally {
       setLoadingProfile(false);
+      setLoadingWorkflow(false);
     }
   };
 
@@ -89,7 +105,7 @@ export default function MissionControlPage() {
         datasetName={selectedDataset ? selectedDataset.dataset_name : "NO NODE LOCK"}
         datasetId={selectedDataset ? selectedDataset.dataset_id : "N/A"}
         onRefresh={handleSyncTelemetry}
-        isLoading={loadingProfile}
+        isLoading={loadingProfile || loadingWorkflow}
       />
 
       {/* 2. Top level selection selector row */}
@@ -152,7 +168,7 @@ export default function MissionControlPage() {
       )}
 
       {/* 4. Dashboard loading overlay */}
-      {loadingProfile ? (
+      {loadingProfile || loadingWorkflow ? (
         <div className="border border-border bg-card/15 min-h-[450px] flex flex-col items-center justify-center p-6 space-y-4 font-mono">
           <Loader2 className="w-10 h-10 text-primary animate-spin" />
           <div className="space-y-1 text-center">
@@ -162,7 +178,12 @@ export default function MissionControlPage() {
         </div>
       ) : profile ? (
         /* 5. Operational workspace display */
-        <MissionControlWorkspace profile={profile} onRefresh={handleSyncTelemetry} />
+        <MissionControlWorkspace 
+          profile={profile} 
+          workflow={workflow}
+          loadingWorkflow={loadingWorkflow}
+          onRefresh={handleSyncTelemetry} 
+        />
       ) : (
         /* Empty viewport fallback */
         !loadingDatasets && datasets.length > 0 && (

@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { MissionControlProfile } from "@/lib/types/mission-control";
+import { WorkflowResponse, WorkflowStageDetail } from "@/lib/types/workflow";
 import MissionControlStatusBar from "./MissionControlStatusBar";
 import IntelligenceSummaryPanel from "./IntelligenceSummaryPanel";
 import DatasetPanel from "./panels/DatasetPanel";
@@ -11,15 +12,21 @@ import CloudPanel from "./panels/CloudPanel";
 import ReconstructionPanel from "./panels/ReconstructionPanel";
 import ConfidencePanel from "./panels/ConfidencePanel";
 import StatusFooter from "./panels/StatusFooter";
+import WorkflowPipeline from "./WorkflowPipeline";
+import WorkflowLogsPanel from "./WorkflowLogsPanel";
+import StageDetailDrawer from "./StageDetailDrawer";
 import { Shield, CheckCircle, XCircle } from "lucide-react";
 
 interface MissionControlWorkspaceProps {
   profile: MissionControlProfile;
+  workflow: WorkflowResponse | null;
+  loadingWorkflow: boolean;
   onRefresh?: () => void;
 }
 
-export default function MissionControlWorkspace({ profile }: MissionControlWorkspaceProps) {
+export default function MissionControlWorkspace({ profile, workflow, loadingWorkflow }: MissionControlWorkspaceProps) {
   const { dataset, metadata, geospatial, location, status } = profile;
+  const [selectedStage, setSelectedStage] = useState<WorkflowStageDetail | null>(null);
 
   // Audit checklist triggers
   const hasCoordinates = geospatial && geospatial.center.lat !== undefined && geospatial.center.lon !== undefined;
@@ -32,7 +39,18 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
       {/* 1. Readiness status indicators matrix */}
       <MissionControlStatusBar status={status} />
 
-      {/* 2. Geospatial Intelligence System Audit Checklist */}
+      {/* 2. Workflow Monitoring Pipeline */}
+      {workflow && (
+        <WorkflowPipeline
+          stages={workflow.stages}
+          overallProgress={workflow.overall_progress}
+          totalTime={workflow.total_processing_time_ms}
+          health={workflow.session_health}
+          onStageClick={(stage) => setSelectedStage(stage)}
+        />
+      )}
+
+      {/* 3. Geospatial Intelligence System Audit Checklist */}
       <div className="border border-border bg-card/25 p-4 space-y-3 text-[10px] relative overflow-hidden rounded-sm">
         <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
           AUDIT // GEOSPATIAL
@@ -81,7 +99,7 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
         </div>
       </div>
 
-      {/* 3. Outer Grid Layout */}
+      {/* 4. Outer Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Column (Dataset + Geospatial) */}
@@ -141,11 +159,22 @@ export default function MissionControlWorkspace({ profile }: MissionControlWorks
         </div>
       </div>
 
-      {/* 4. Status Footer */}
+      {/* 5. Operational Terminal Log Panel */}
+      {workflow && workflow.logs && (
+        <WorkflowLogsPanel logs={workflow.logs} />
+      )}
+
+      {/* 6. Status Footer */}
       <StatusFooter 
         sessionId={dataset.analysis_session_id} 
         timestamp={profile.timestamp} 
         isLocked={status.metadata === "available"} 
+      />
+
+      {/* 7. Slide-over details drawer for stages */}
+      <StageDetailDrawer 
+        stage={selectedStage} 
+        onClose={() => setSelectedStage(null)} 
       />
     </div>
   );

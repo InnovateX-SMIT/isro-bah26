@@ -73,6 +73,12 @@ Status: ✅ Verified Working. Registered by `backend/app/main.py` and `backend/a
 |---|---|---|---|---|
 | `GET /api/v1/mission-control/{dataset_id}` | path `dataset_id` | `MissionControlResponse(dataset, metadata, geospatial, location, context, status{metadata, geospatial, location, context, temporal, cloud, reconstruction, confidence}, summary, timestamp, temporal, cloud, reconstruction, confidence)` | `MissionControlService.get_mission_control_profile()` | `frontend/src/lib/mission-control-api.ts:getMissionControlProfile()`, `frontend/src/app/mission-control/page.tsx`, `frontend/src/components/mission-control/*`, `frontend/src/components/temporal/TemporalContextPanel.tsx` through Mission Control workspace |
 
+## Status: ✅ Verified Working — Session Workflow Monitoring
+
+| Method + Path | Request Shape | Response Shape | Service Called | Frontend Consumers |
+|---|---|---|---|---|
+| `GET /api/v1/workflow/{session_id}` | path `session_id` | `WorkflowResponse(session_id, current_stage, overall_progress, total_processing_time_ms, session_health, stages[], timeline[], logs[])` | `WorkflowService.get_session_workflow()` | `frontend/src/lib/workflow-api.ts:getWorkflowStatus()`, `frontend/src/app/mission-control/page.tsx`, `frontend/src/components/mission-control/*` |
+
 ## Status: ✅ Verified Working — Temporal Providers
 
 | Method + Path | Request Shape | Response Shape | Service Called | Frontend Consumers |

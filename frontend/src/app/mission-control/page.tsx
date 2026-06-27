@@ -9,6 +9,7 @@ import { getMissionControlProfile } from "@/lib/mission-control-api";
 import { getWorkflowStatus } from "@/lib/workflow-api";
 import MissionControlHeader from "@/components/mission-control/MissionControlHeader";
 import MissionControlWorkspace from "@/components/mission-control/MissionControlWorkspace";
+import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 import { Loader2, Globe, Database, HelpCircle, AlertCircle } from "lucide-react";
 
 export default function MissionControlPage() {
@@ -169,13 +170,7 @@ export default function MissionControlPage() {
 
       {/* 4. Dashboard loading overlay */}
       {loadingProfile || loadingWorkflow ? (
-        <div className="border border-border bg-card/15 min-h-[450px] flex flex-col items-center justify-center p-6 space-y-4 font-mono">
-          <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <div className="space-y-1 text-center">
-            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-widest animate-pulse">Aggregating Satellite Intelligence...</h4>
-            <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Compiling metadata and executing lazy GIS resolving layers</p>
-          </div>
-        </div>
+        <MissionControlSkeleton />
       ) : profile ? (
         /* 5. Operational workspace display */
         <MissionControlWorkspace 

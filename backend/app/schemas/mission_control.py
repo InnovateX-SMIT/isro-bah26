@@ -40,6 +40,7 @@ class MissionControlResponse(BaseModel):
     context: GeospatialContextProfileResponse | None = Field(None, description="Environmental and terrain context profile")
     status: MissionControlStatus = Field(..., description="Intelligence status indicators")
     summary: str | None = Field(None, description="Dynamically generated operational summary report")
+    timestamp: str = Field(..., description="ISO 8601 server aggregation time")
 
     # Future compatibility data placeholders
     temporal: TemporalContextResponse | None = Field(default=None, description="Temporal Intelligence context details")

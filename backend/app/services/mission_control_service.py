@@ -1,21 +1,6 @@
 import os
 import json
-from fastapi import HTTPException
-from app.repositories.dataset_repository import DatasetRepository
-from app.services.dataset_metadata_service import DatasetMetadataService
-from app.services.geospatial_service import GeospatialService
-from app.services.location_service import LocationService
-from app.services.geospatial_context_service import GeospatialContextService
-from app.schemas.mission_control import MissionControlResponse, MissionControlStatus
-from app.repositories.temporal_context_repository import TemporalContextRepository
-from app.schemas.temporal_context import TemporalContextResponse
-from app.repositories.cloud_detection_repository import CloudDetectionRepository
-from app.repositories.cloud_classification_repository import CloudClassificationRepository
-from app.repositories.cloud_shadow_repository import CloudShadowRepository
-from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
-from app.repositories.cloud_analytics_repository import CloudAnalyticsRepository
-import os
-import json
+import datetime
 from fastapi import HTTPException
 from app.repositories.dataset_repository import DatasetRepository
 from app.services.dataset_metadata_service import DatasetMetadataService
@@ -530,7 +515,8 @@ class MissionControlService:
             confidence_heatmap=data_dict["confidence_heatmap"],
             confidence_analytics=data_dict["confidence_analytics"],
             status=MissionControlStatus(**status_dict),
-            summary=briefing
+            summary=briefing,
+            timestamp=datetime.datetime.utcnow().isoformat()
         )
 
 

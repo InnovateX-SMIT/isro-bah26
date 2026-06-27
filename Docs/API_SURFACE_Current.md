@@ -71,7 +71,7 @@ Status: ✅ Verified Working. Registered by `backend/app/main.py` and `backend/a
 
 | Method + Path | Request Shape | Response Shape | Service Called | Frontend Consumers |
 |---|---|---|---|---|
-| `GET /api/v1/mission-control/{dataset_id}` | path `dataset_id` | `MissionControlResponse(dataset, metadata, geospatial, location, context, status{metadata, geospatial, location, context, temporal, cloud, reconstruction, confidence}, summary, temporal, cloud, reconstruction, confidence)` | `MissionControlService.get_mission_control_profile()` | `frontend/src/lib/mission-control-api.ts:getMissionControlProfile()`, `frontend/src/app/mission-control/page.tsx`, `frontend/src/components/mission-control/*`, `frontend/src/components/temporal/TemporalContextPanel.tsx` through Mission Control workspace |
+| `GET /api/v1/mission-control/{dataset_id}` | path `dataset_id` | `MissionControlResponse(dataset, metadata, geospatial, location, context, status{metadata, geospatial, location, context, temporal, cloud, reconstruction, confidence}, summary, timestamp, temporal, cloud, reconstruction, confidence)` | `MissionControlService.get_mission_control_profile()` | `frontend/src/lib/mission-control-api.ts:getMissionControlProfile()`, `frontend/src/app/mission-control/page.tsx`, `frontend/src/components/mission-control/*`, `frontend/src/components/temporal/TemporalContextPanel.tsx` through Mission Control workspace |
 
 ## Status: ✅ Verified Working — Temporal Providers
 

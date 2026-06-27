@@ -13,11 +13,15 @@ export interface MissionControlStatus {
   location: IntelligenceLayerStatus;
   context: IntelligenceLayerStatus;
   
-  // Future compatibility indicators
+  // Extended Indicators
   temporal?: IntelligenceLayerStatus;
   cloud?: IntelligenceLayerStatus;
   reconstruction?: IntelligenceLayerStatus;
+  temporal_fusion?: IntelligenceLayerStatus;
   confidence?: IntelligenceLayerStatus;
+  reliability?: IntelligenceLayerStatus;
+  confidence_heatmap?: IntelligenceLayerStatus;
+  confidence_analytics?: IntelligenceLayerStatus;
 }
 
 export interface MissionControlProfile {
@@ -28,10 +32,15 @@ export interface MissionControlProfile {
   context: GeospatialContextProfile | null;
   status: MissionControlStatus;
   summary: string | null;
+  timestamp: string;
 
-  // Future compatibility placeholders
+  // Extended Data Placeholders
   temporal?: TemporalContextResponse | null;
   cloud?: Record<string, any> | null;
   reconstruction?: Record<string, any> | null;
+  temporal_fusion?: Record<string, any> | null;
   confidence?: Record<string, any> | null;
+  reliability?: Record<string, any> | null;
+  confidence_heatmap?: Record<string, any> | null;
+  confidence_analytics?: Record<string, any> | null;
 }

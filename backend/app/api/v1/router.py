@@ -24,6 +24,7 @@ from app.api.v1.reliability import router as reliability_router
 from app.api.v1.confidence_heatmap import router as confidence_heatmap_router
 from app.api.v1.confidence_analytics import router as confidence_analytics_router
 from app.api.v1.workflow import router as workflow_router
+from app.api.v1.analytics import router as analytics_router
 
 api_router = APIRouter()
 
@@ -63,3 +64,4 @@ api_router.include_router(reliability_router, prefix="/reliability", tags=["Reli
 api_router.include_router(confidence_heatmap_router, prefix="/confidence-heatmap", tags=["Confidence Heatmap Engine"])
 api_router.include_router(confidence_analytics_router, prefix="/confidence-analytics", tags=["Confidence Analytics Engine"])
 api_router.include_router(workflow_router, prefix="/workflow", tags=["Workflow Monitoring"])
+api_router.include_router(analytics_router, prefix="/analytics", tags=["Operational Analytics"])

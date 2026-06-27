@@ -118,6 +118,20 @@ Status: ✅ Verified Working. This repository implements the early platform laye
 | Verification script | `scripts/verify_phase_10b.py` tests pipeline registers, dynamic progress checks, log lists, and cascade session teardowns. |
 | Known bugs fixed | Resolved duplicate prefix mapping in FastAPI router paths and mapped uppercase/lowercase inspection enums. |
 
+### Status: ✅ Verified Working — Phase 10C: Operational Analytics Layer
+
+| Field | Actual State |
+|---|---|
+| Objective | Build a comprehensive performance dashboard displaying KPI cards, responsive SVG trend charts, workflow average durations, cloud metrics, and database-aligned node health. |
+| Backend files | `backend/app/schemas/analytics.py`, `backend/app/services/analytics_service.py`, `backend/app/api/v1/analytics.py` |
+| Frontend files | `frontend/src/lib/types/analytics.ts`, `frontend/src/lib/analytics-api.ts`, `frontend/src/app/dashboard/page.tsx` |
+| Database tables | Computes counts, averages, and group-by records across session, dataset, metadata, geospatial, temporal, cloud, reconstruction, and confidence schemas. |
+| API endpoints | `GET /api/v1/analytics/overview` (returns executive summaries, dataset allocations, workflow bottlenecks, and trend lists). |
+| Consumes | Database states, filesystem storage specs (via python `shutil.disk_usage`). |
+| Produces | Native SVG Line/Area charts, stage progress gauges, system check nodes, and strategy distributions. |
+| Verification script | `scripts/verify_phase_10c.py` executes session registers, metadata runs, analytics gets, metric asserts, and cascading cleans. |
+| Known bugs fixed | Resolved prefix duplications in routes and initialized default dict distributions for demo/custom lists. |
+
 ## DATA FLOW — END TO END (ACTUAL, NOT ASPIRATIONAL)
 
 Status: ✅ Verified Working. The actual current workflow is endpoint-driven, not a single backend orchestrator:
@@ -264,9 +278,8 @@ Status: ⚠️ Fragile.
 - Current visualization is dataset preview/geospatial/temporal metadata only.
 - No original-vs-cloud-mask-vs-reconstruction-vs-confidence comparison engine exists.
 
-### Status: ❌ Not Implemented — Phase 10C/10D: Operational Analytics & Mission Control Experience
+### Status: ❌ Not Implemented — Phase 10D: Mission Control Experience
 
-- No cross-dataset analytics or aggregation metrics dashboard.
 - No dynamic customization triggers inside the Mission Control layout.
 
 ### Status: ❌ Not Implemented — Phase 11: Export Intelligence

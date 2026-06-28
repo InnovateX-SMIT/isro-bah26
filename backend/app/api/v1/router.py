@@ -26,8 +26,10 @@ from app.api.v1.confidence_analytics import router as confidence_analytics_route
 from app.api.v1.workflow import router as workflow_router
 from app.api.v1.analytics import router as analytics_router
 from app.api.v1.export import router as export_router
+from app.api.v1.reports import router as reports_router
 
 api_router = APIRouter()
+
 
 @api_router.get("/status", tags=["System Status"])
 def get_v1_status():
@@ -67,4 +69,6 @@ api_router.include_router(confidence_analytics_router, prefix="/confidence-analy
 api_router.include_router(workflow_router, prefix="/workflow", tags=["Workflow Monitoring"])
 api_router.include_router(analytics_router, prefix="/analytics", tags=["Operational Analytics"])
 api_router.include_router(export_router, prefix="/exports", tags=["Raster Export Subsystem"])
+api_router.include_router(reports_router, prefix="/reports", tags=["Report Export Subsystem"])
+
 

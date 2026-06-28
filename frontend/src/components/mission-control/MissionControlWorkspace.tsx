@@ -12,6 +12,7 @@ import CloudPanel from "./panels/CloudPanel";
 import ReconstructionPanel from "./panels/ReconstructionPanel";
 import ConfidencePanel from "./panels/ConfidencePanel";
 import ExportPanel from "./panels/ExportPanel";
+import ReportExportPanel from "./panels/ReportExportPanel";
 import StatusFooter from "./panels/StatusFooter";
 import WorkflowPipeline from "./WorkflowPipeline";
 import WorkflowLogsPanel from "./WorkflowLogsPanel";
@@ -530,14 +531,22 @@ export default function MissionControlWorkspace({ profile, workflow, loadingWork
         </div>
       </div>
 
-      {/* 4.5. Export Command Center Panel */}
+      {/* 4.5. Export & Report Command Center Hub */}
       {dataset.analysis_session_id && (
-        <ExportPanel
-          sessionId={dataset.analysis_session_id}
-          datasetId={dataset.dataset_id}
-          datasetName={dataset.dataset_name}
-          isSessionCompleted={status.reconstruction === "available"}
-        />
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <ExportPanel
+            sessionId={dataset.analysis_session_id}
+            datasetId={dataset.dataset_id}
+            datasetName={dataset.dataset_name}
+            isSessionCompleted={status.reconstruction === "available"}
+          />
+          <ReportExportPanel
+            sessionId={dataset.analysis_session_id}
+            datasetId={dataset.dataset_id}
+            datasetName={dataset.dataset_name}
+            isSessionCompleted={status.reconstruction === "available"}
+          />
+        </div>
       )}
 
       {/* 5. Operational Terminal Log Panel */}

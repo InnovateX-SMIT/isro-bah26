@@ -77,4 +77,9 @@ datasets/confidence_analytics/*
 
 # Exports
 datasets/exports/*
-!datasets/exports/.gitkeep
+!datasets/exports/.gitkeep
+
+# Reports
+datasets/reports/*
+!datasets/reports/.gitkeep
+

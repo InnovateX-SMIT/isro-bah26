@@ -25,6 +25,17 @@ class WorkflowTimelineItem(BaseModel):
     timestamp: str = Field(..., description="ISO 8601 formatting timestamp of occurrence")
     duration_ms: Optional[float] = Field(None, description="Action duration in milliseconds")
 
+class WorkflowRunRequest(BaseModel):
+    """
+    Request parameters for triggering an end-to-end orchestrated workflow run.
+    """
+    dataset_name: str = Field(..., description="Target dataset name to register or run")
+    dataset_path: str = Field(..., description="Directory path of target LISS-IV dataset folder")
+    dataset_type: str = Field("DEMO", description="DEMO or CUSTOM")
+    temporal_window_days: int = Field(30, description="Temporal window size in days for reference selection")
+    num_references: int = Field(3, description="Number of temporal references to select")
+    reconstruction_strategy: str = Field("TELEA", description="Inpainting strategy name, e.g. TELEA, NS")
+
 class WorkflowLogEntry(BaseModel):
     """
     Log record formatting a terminal console output line.

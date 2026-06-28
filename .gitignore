@@ -74,3 +74,7 @@ datasets/confidence_heatmaps/*
 
 datasets/confidence_analytics/*
 !datasets/confidence_analytics/.gitkeep
+
+# Exports
+datasets/exports/*
+!datasets/exports/.gitkeep

@@ -38,8 +38,9 @@ class AnalysisSession(Base):
         doc="Timestamp of the last status change or session modification"
     )
 
-    # Relationship to Datasets
     datasets = relationship("Dataset", back_populates="session", cascade="all, delete-orphan")
     reconstruction_runs = relationship("ReconstructionRun", back_populates="session", cascade="all, delete-orphan")
     temporal_fusion_runs = relationship("TemporalFusionRun", back_populates="session", cascade="all, delete-orphan")
+    exports = relationship("Export", back_populates="session", cascade="all, delete-orphan")
+
 

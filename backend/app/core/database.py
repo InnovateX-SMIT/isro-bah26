@@ -47,6 +47,8 @@ def init_db():
     # Defer import of models to avoid circular import issues
     from app.models.session import AnalysisSession
     from app.models.dataset import Dataset
+    from app.models.export import Export
+
     from app.models.dataset_inspection import DatasetInspection
     from app.models.dataset_file import DatasetFile
     from app.models.dataset_metadata import DatasetMetadata

@@ -11,6 +11,7 @@ import TemporalPanel from "./panels/TemporalPanel";
 import CloudPanel from "./panels/CloudPanel";
 import ReconstructionPanel from "./panels/ReconstructionPanel";
 import ConfidencePanel from "./panels/ConfidencePanel";
+import ExportPanel from "./panels/ExportPanel";
 import StatusFooter from "./panels/StatusFooter";
 import WorkflowPipeline from "./WorkflowPipeline";
 import WorkflowLogsPanel from "./WorkflowLogsPanel";
@@ -528,6 +529,16 @@ export default function MissionControlWorkspace({ profile, workflow, loadingWork
           </div>
         </div>
       </div>
+
+      {/* 4.5. Export Command Center Panel */}
+      {dataset.analysis_session_id && (
+        <ExportPanel
+          sessionId={dataset.analysis_session_id}
+          datasetId={dataset.dataset_id}
+          datasetName={dataset.dataset_name}
+          isSessionCompleted={status.reconstruction === "available"}
+        />
+      )}
 
       {/* 5. Operational Terminal Log Panel */}
       {workflow && workflow.logs && (

@@ -76,7 +76,7 @@ export default function StageDetailDrawer({ stage, onClose }: StageDetailDrawerP
             </div>
             <button
               onClick={onClose}
-              className="p-1 text-muted-foreground hover:text-foreground hover:bg-border/20 rounded-sm transition-colors"
+              className="p-1 text-muted-foreground hover:text-foreground hover:bg-border/20 rounded-lg transition-colors"
               aria-label="Close details drawer"
             >
               <X className="w-4 h-4" />
@@ -85,13 +85,13 @@ export default function StageDetailDrawer({ stage, onClose }: StageDetailDrawerP
 
           {/* Status Overview Card */}
           <div className="grid grid-cols-2 gap-3 text-[10px]">
-            <div className="bg-background/40 border border-border/30 p-2.5 rounded-sm space-y-0.5">
+            <div className="bg-background/40 border border-border/30 p-2.5 rounded-lg space-y-0.5">
               <span className="text-[7.5px] text-slate-400 uppercase">Stage Status</span>
-              <span className={`px-1.5 py-0.5 rounded-sm text-[8px] font-bold border uppercase block w-fit ${getStatusBadgeClass(stage.status)}`}>
+              <span className={`px-1.5 py-0.5 rounded-lg text-[8px] font-bold border uppercase block w-fit ${getStatusBadgeClass(stage.status)}`}>
                 {stage.status}
               </span>
             </div>
-            <div className="bg-background/40 border border-border/30 p-2.5 rounded-sm space-y-0.5">
+            <div className="bg-background/40 border border-border/30 p-2.5 rounded-lg space-y-0.5">
               <span className="text-[7.5px] text-slate-400 uppercase">Duration</span>
               <span className="font-bold text-slate-200 block text-xs">
                 {stage.duration_ms ? `${stage.duration_ms.toFixed(1)} ms` : "0.0 ms"}
@@ -101,7 +101,7 @@ export default function StageDetailDrawer({ stage, onClose }: StageDetailDrawerP
 
           {/* Blocked by Warning */}
           {stage.status === "blocked" && stage.blocked_by && (
-            <div className="border border-amber-500/30 bg-amber-500/5 p-3 rounded-sm space-y-1">
+            <div className="border border-amber-500/30 bg-amber-500/5 p-3 rounded-lg space-y-1">
               <span className="text-[9px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1">
                 <ShieldAlert className="w-3.5 h-3.5" />
                 Pipeline Downstream Lock
@@ -114,12 +114,12 @@ export default function StageDetailDrawer({ stage, onClose }: StageDetailDrawerP
 
           {/* Failure Stack */}
           {stage.error_summary && (
-            <div className="border border-destructive/30 bg-destructive/5 p-3 rounded-sm space-y-1">
+            <div className="border border-destructive/30 bg-destructive/5 p-3 rounded-lg space-y-1">
               <span className="text-[9px] font-bold text-destructive uppercase tracking-widest flex items-center gap-1">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 Traceback Stack
               </span>
-              <pre className="text-[8.5px] text-slate-300 overflow-x-auto whitespace-pre-wrap font-mono p-1 bg-black/30 rounded-sm">
+              <pre className="text-[8.5px] text-slate-300 overflow-x-auto whitespace-pre-wrap font-mono p-1 bg-black/30 rounded-lg">
                 {stage.error_summary}
               </pre>
             </div>
@@ -131,7 +131,7 @@ export default function StageDetailDrawer({ stage, onClose }: StageDetailDrawerP
               Stage Input Parameters
             </span>
             {Object.keys(stage.inputs).length > 0 ? (
-              <div className="bg-black/30 border border-border/20 p-2.5 rounded-sm space-y-1 text-[9px]">
+              <div className="bg-black/30 border border-border/20 p-2.5 rounded-lg space-y-1 text-[9px]">
                 {Object.entries(stage.inputs).map(([key, val]) => (
                   <div key={key} className="flex justify-between">
                     <span className="text-slate-400 uppercase">{key}:</span>
@@ -152,7 +152,7 @@ export default function StageDetailDrawer({ stage, onClose }: StageDetailDrawerP
               Generated Outputs
             </span>
             {Object.keys(stage.outputs).length > 0 ? (
-              <div className="bg-black/30 border border-border/20 p-2.5 rounded-sm space-y-1 text-[9px]">
+              <div className="bg-black/30 border border-border/20 p-2.5 rounded-lg space-y-1 text-[9px]">
                 {Object.entries(stage.outputs).map(([key, val]) => (
                   <div key={key} className="flex justify-between">
                     <span className="text-slate-400 uppercase">{key}:</span>
@@ -175,7 +175,7 @@ export default function StageDetailDrawer({ stage, onClose }: StageDetailDrawerP
               </span>
               <div className="space-y-1.5">
                 {stage.related_apis.map((api, idx) => (
-                  <div key={idx} className="bg-background/50 border border-border/20 p-1.5 px-2 rounded-sm text-[8px] font-mono text-slate-300 flex items-center justify-between">
+                  <div key={idx} className="bg-background/50 border border-border/20 p-1.5 px-2 rounded-lg text-[8px] font-mono text-slate-300 flex items-center justify-between">
                     <span>{api}</span>
                   </div>
                 ))}
@@ -191,7 +191,7 @@ export default function StageDetailDrawer({ stage, onClose }: StageDetailDrawerP
             <div className="flex flex-wrap gap-1.5">
               {stage.dependencies.length > 0 ? (
                 stage.dependencies.map((dep, idx) => (
-                  <span key={idx} className="bg-background border border-border px-2 py-0.5 rounded-sm text-[8px] text-slate-400 font-bold uppercase">
+                  <span key={idx} className="bg-background border border-border px-2 py-0.5 rounded-lg text-[8px] text-slate-400 font-bold uppercase">
                     {dep}
                   </span>
                 ))

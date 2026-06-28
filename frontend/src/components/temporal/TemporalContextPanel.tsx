@@ -294,7 +294,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
               key={s.num}
               disabled={s.num > activeStep && sessionStatus !== "TEMPORAL_CONTEXT_READY"}
               onClick={() => setActiveStep(s.num)}
-              className={`p-2 border transition-all duration-300 rounded-sm text-left relative overflow-hidden ${
+              className={`p-2 border transition-all duration-300 rounded-lg text-left relative overflow-hidden ${
                 isCurrent
                   ? "border-primary bg-primary/10 text-primary font-bold shadow-[0_0_8px_-2px_rgba(6,182,212,0.35)]"
                   : isCompleted
@@ -323,7 +323,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
 
       {/* 2. Error Diagnostic Board */}
       {error && (
-        <div className="border border-red-500/30 bg-red-500/5 p-3 text-red-400 flex items-start gap-2.5 rounded-sm relative overflow-hidden">
+        <div className="border border-red-500/30 bg-red-500/5 p-3 text-red-400 flex items-start gap-2.5 rounded-lg relative overflow-hidden">
           <div className="absolute top-0 right-0 bg-red-500/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-red-400 tracking-widest uppercase">
             DIAGNOSTICS
           </div>
@@ -384,7 +384,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
           {/* STEP 1: Providers Registry */}
           {activeStep === 1 && (
             <div className="space-y-4">
-              <div className="border border-border/80 bg-card/15 p-4 space-y-4 relative overflow-hidden rounded-sm">
+              <div className="border border-border/80 bg-card/15 p-4 space-y-4 relative overflow-hidden rounded-lg">
                 <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
                   REGISTRY // PROVIDERS
                 </div>
@@ -401,7 +401,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                       <div
                         key={p.name}
                         onClick={() => setSelectedProvider(p.name)}
-                        className={`border p-4 rounded-sm transition-all duration-300 cursor-pointer flex flex-col justify-between ${
+                        className={`border p-4 rounded-lg transition-all duration-300 cursor-pointer flex flex-col justify-between ${
                           isSelected
                             ? "bg-primary/5 border-primary shadow-[0_0_8px_-3px_rgba(6,182,212,0.25)]"
                             : "border-border bg-background/20 hover:border-border/80 hover:bg-background/30"
@@ -413,7 +413,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                               {p.name.replace(/([A-Z])/g, " $1")}
                             </span>
                             {p.is_primary && (
-                              <span className="bg-primary/20 text-primary border border-primary/30 px-1.5 py-0.5 text-[7px] font-bold rounded-sm uppercase tracking-widest">
+                              <span className="bg-primary/20 text-primary border border-primary/30 px-1.5 py-0.5 text-[7px] font-bold rounded-lg uppercase tracking-widest">
                                 PRIMARY
                               </span>
                             )}
@@ -423,7 +423,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                           </p>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {(p.supported_sensors || (p.name === "GoogleEarthEngine" ? ["Landsat-8", "Sentinel-2"] : ["LISS-IV", "LISS-III"])).map(s => (
-                              <span key={s} className="bg-muted/30 text-slate-400 px-1 py-0.5 text-[7px] font-mono rounded-sm border border-border/40">
+                              <span key={s} className="bg-muted/30 text-slate-400 px-1 py-0.5 text-[7px] font-mono rounded-lg border border-border/40">
                                 {s}
                               </span>
                             ))}
@@ -459,7 +459,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                 <button
                   onClick={handleRefreshProvidersHealth}
                   disabled={refreshingHealth}
-                  className="px-3 py-1.5 border border-border text-muted-foreground hover:bg-muted/10 text-[9px] uppercase transition-all duration-300 rounded-sm flex items-center gap-1.5"
+                  className="px-3 py-1.5 border border-border text-muted-foreground hover:bg-muted/10 text-[9px] uppercase transition-all duration-300 rounded-lg flex items-center gap-1.5"
                 >
                   <RefreshCw className={`w-3 h-3 ${refreshingHealth ? "animate-spin" : ""}`} />
                   Refresh Connectivity Diagnostics
@@ -467,7 +467,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                 
                 <button
                   onClick={() => setActiveStep(2)}
-                  className="px-4 py-1.5 border border-primary text-primary hover:bg-primary/20 hover:text-white transition-all duration-300 rounded-sm text-[9.5px] uppercase font-bold tracking-wider flex items-center gap-1.5 shadow-[0_0_10px_-4px_rgba(6,182,212,0.3)]"
+                  className="px-4 py-1.5 border border-primary text-primary hover:bg-primary/20 hover:text-white transition-all duration-300 rounded-lg text-[9.5px] uppercase font-bold tracking-wider flex items-center gap-1.5 shadow-[0_0_10px_-4px_rgba(6,182,212,0.3)]"
                 >
                   <span>Proceed to Discovery</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -479,7 +479,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
           {/* STEP 2: Historical Discovery */}
           {activeStep === 2 && (
             <div className="space-y-4">
-              <div className="border border-border/80 bg-card/15 p-4 space-y-4 relative overflow-hidden rounded-sm">
+              <div className="border border-border/80 bg-card/15 p-4 space-y-4 relative overflow-hidden rounded-lg">
                 <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
                   DISCOVERY // ARCHIVE
                 </div>
@@ -488,7 +488,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                   Step 2 // Historical Imagery Discovery Configuration
                 </h3>
 
-                <div className="border border-primary/10 bg-primary/5 p-3 text-[9px] text-primary flex items-start gap-2.5 rounded-sm">
+                <div className="border border-primary/10 bg-primary/5 p-3 text-[9px] text-primary flex items-start gap-2.5 rounded-lg">
                   <Info className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
                   <div className="space-y-0.5 leading-relaxed">
                     <span className="font-bold uppercase tracking-wider block">TARGET GEOSPATIAL BOUNDS DETECTED</span>
@@ -500,10 +500,10 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                   {/* Target Acquisition Date (Read-only) */}
                   <div className="space-y-1.5">
                     <label className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest block">Target Scene Acquisition Date</label>
-                    <div className="flex items-center gap-2 border border-border/60 bg-muted/15 px-3 py-2 text-slate-300 font-mono rounded-sm select-all">
+                    <div className="flex items-center gap-2 border border-border/60 bg-muted/15 px-3 py-2 text-slate-300 font-mono rounded-lg select-all">
                       <Calendar className="w-4 h-4 text-primary" />
                       <span>{metadata?.acquisition_date || "2026-02-15"}</span>
-                      <span className="text-[7.5px] text-muted-foreground uppercase bg-muted/30 border border-border/30 px-1 py-0.5 rounded-sm ml-auto font-sans font-semibold">BASELINE</span>
+                      <span className="text-[7.5px] text-muted-foreground uppercase bg-muted/30 border border-border/30 px-1 py-0.5 rounded-lg ml-auto font-sans font-semibold">BASELINE</span>
                     </div>
                   </div>
 
@@ -515,7 +515,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                         <button
                           key={days}
                           onClick={() => setDiscoveryWindow(days)}
-                          className={`py-2 border font-mono text-[9.5px] tracking-wide transition-all duration-300 rounded-sm ${
+                          className={`py-2 border font-mono text-[9.5px] tracking-wide transition-all duration-300 rounded-lg ${
                             discoveryWindow === days
                               ? "bg-primary/20 border-primary text-primary font-bold shadow-[0_0_8px_-3px_rgba(6,182,212,0.25)]"
                               : "border-border/60 text-muted-foreground hover:bg-muted/10"
@@ -540,7 +540,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => setActiveStep(1)}
-                  className="px-3 py-1.5 border border-border text-muted-foreground hover:bg-muted/10 text-[9px] uppercase transition-all duration-300 rounded-sm flex items-center gap-1.5"
+                  className="px-3 py-1.5 border border-border text-muted-foreground hover:bg-muted/10 text-[9px] uppercase transition-all duration-300 rounded-lg flex items-center gap-1.5"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   Back to Providers
@@ -548,7 +548,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                 
                 <button
                   onClick={handleRunDiscovery}
-                  className="px-4 py-1.5 border border-primary text-primary hover:bg-primary/20 hover:text-white transition-all duration-300 rounded-sm text-[9.5px] uppercase font-bold tracking-wider flex items-center gap-1.5 shadow-[0_0_10px_-4px_rgba(6,182,212,0.35)] animate-pulse"
+                  className="px-4 py-1.5 border border-primary text-primary hover:bg-primary/20 hover:text-white transition-all duration-300 rounded-lg text-[9.5px] uppercase font-bold tracking-wider flex items-center gap-1.5 shadow-[0_0_10px_-4px_rgba(6,182,212,0.35)] animate-pulse"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>Execute Discovery Scan</span>
@@ -560,7 +560,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
           {/* STEP 3: Reference Selection */}
           {activeStep === 3 && (
             <div className="space-y-4">
-              <div className="border border-border/80 bg-card/15 p-4 space-y-4 relative overflow-hidden rounded-sm">
+              <div className="border border-border/80 bg-card/15 p-4 space-y-4 relative overflow-hidden rounded-lg">
                 <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
                   INVENTORY // SCANS
                 </div>
@@ -573,7 +573,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                 <div className="space-y-1.5">
                   <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest block">Discovered Imagery Candidates List ({discoveredCandidates.length} Items found)</span>
                   {discoveredCandidates.length === 0 ? (
-                    <div className="border border-amber-500/20 bg-amber-500/5 p-4 text-center rounded-sm text-amber-500 font-mono text-[9px]">
+                    <div className="border border-amber-500/20 bg-amber-500/5 p-4 text-center rounded-lg text-amber-500 font-mono text-[9px]">
                       Zero candidate historical reference images found. Try widening search range or checking provider status.
                     </div>
                   ) : (
@@ -618,7 +618,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                         max="10"
                         value={numReferences}
                         onChange={(e) => setNumReferences(parseInt(e.target.value) || 3)}
-                        className="w-full bg-background/30 border border-border/80 focus:border-primary focus:outline-none px-3 py-1.5 rounded-sm font-mono font-bold text-slate-200 text-center"
+                        className="w-full bg-background/30 border border-border/80 focus:border-primary focus:outline-none px-3 py-1.5 rounded-lg font-mono font-bold text-slate-200 text-center"
                       />
                       <p className="text-[7.5px] text-muted-foreground leading-normal uppercase">
                         Specifies the maximum size of references to include in the final reconstruction stack.
@@ -629,7 +629,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                     <div className="md:col-span-2 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest">Decay Ranking Multipliers</span>
-                        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 border rounded-sm ${
+                        <span className={`text-[9px] font-mono font-bold px-2 py-0.5 border rounded-lg ${
                           isWeightValid 
                             ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/5 animate-pulse" 
                             : "text-amber-500 border-amber-500/20 bg-amber-500/5"
@@ -651,7 +651,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                             step="0.05"
                             value={weightCloud}
                             onChange={(e) => setWeightCloud(parseFloat(e.target.value))}
-                            className="w-full accent-primary h-1 bg-muted rounded-sm appearance-none cursor-pointer"
+                            className="w-full accent-primary h-1 bg-muted rounded-lg appearance-none cursor-pointer"
                           />
                         </div>
 
@@ -667,7 +667,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                             step="0.05"
                             value={weightTemporal}
                             onChange={(e) => setWeightTemporal(parseFloat(e.target.value))}
-                            className="w-full accent-primary h-1 bg-muted rounded-sm appearance-none cursor-pointer"
+                            className="w-full accent-primary h-1 bg-muted rounded-lg appearance-none cursor-pointer"
                           />
                         </div>
 
@@ -683,7 +683,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                             step="0.05"
                             value={weightSpatial}
                             onChange={(e) => setWeightSpatial(parseFloat(e.target.value))}
-                            className="w-full accent-primary h-1 bg-muted rounded-sm appearance-none cursor-pointer"
+                            className="w-full accent-primary h-1 bg-muted rounded-lg appearance-none cursor-pointer"
                           />
                         </div>
 
@@ -699,7 +699,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                             step="0.05"
                             value={weightQuality}
                             onChange={(e) => setWeightQuality(parseFloat(e.target.value))}
-                            className="w-full accent-primary h-1 bg-muted rounded-sm appearance-none cursor-pointer"
+                            className="w-full accent-primary h-1 bg-muted rounded-lg appearance-none cursor-pointer"
                           />
                         </div>
                       </div>
@@ -711,7 +711,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => setActiveStep(2)}
-                  className="px-3 py-1.5 border border-border text-muted-foreground hover:bg-muted/10 text-[9px] uppercase transition-all duration-300 rounded-sm flex items-center gap-1.5"
+                  className="px-3 py-1.5 border border-border text-muted-foreground hover:bg-muted/10 text-[9px] uppercase transition-all duration-300 rounded-lg flex items-center gap-1.5"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   Back to Discovery Setup
@@ -720,7 +720,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                 <button
                   disabled={discoveredCandidates.length === 0 || !isWeightValid}
                   onClick={handleRunSelection}
-                  className="px-4 py-1.5 border border-primary text-primary hover:bg-primary/20 hover:text-white transition-all duration-300 rounded-sm text-[9.5px] uppercase font-bold tracking-wider flex items-center gap-1.5 shadow-[0_0_10px_-4px_rgba(6,182,212,0.35)] disabled:border-border/40 disabled:text-muted-foreground disabled:bg-muted/5 disabled:cursor-not-allowed"
+                  className="px-4 py-1.5 border border-primary text-primary hover:bg-primary/20 hover:text-white transition-all duration-300 rounded-lg text-[9.5px] uppercase font-bold tracking-wider flex items-center gap-1.5 shadow-[0_0_10px_-4px_rgba(6,182,212,0.35)] disabled:border-border/40 disabled:text-muted-foreground disabled:bg-muted/5 disabled:cursor-not-allowed"
                 >
                   <span>Select & Rank References</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -732,7 +732,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
           {/* STEP 4: Context Compilation */}
           {activeStep === 4 && (
             <div className="space-y-4">
-              <div className="border border-border/80 bg-card/15 p-4 space-y-4 relative overflow-hidden rounded-sm">
+              <div className="border border-border/80 bg-card/15 p-4 space-y-4 relative overflow-hidden rounded-lg">
                 <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
                   STACKS // SELECTIONS
                 </div>
@@ -785,7 +785,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => setActiveStep(3)}
-                  className="px-3 py-1.5 border border-border text-muted-foreground hover:bg-muted/10 text-[9px] uppercase transition-all duration-300 rounded-sm flex items-center gap-1.5"
+                  className="px-3 py-1.5 border border-border text-muted-foreground hover:bg-muted/10 text-[9px] uppercase transition-all duration-300 rounded-lg flex items-center gap-1.5"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
                   Back to Weight Optimization
@@ -793,7 +793,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                 
                 <button
                   onClick={handleCompileContext}
-                  className="px-4 py-1.5 border border-primary text-primary hover:bg-primary/20 hover:text-white transition-all duration-300 rounded-sm text-[9.5px] uppercase font-bold tracking-wider flex items-center gap-1.5 shadow-[0_0_10px_-4px_rgba(6,182,212,0.35)] animate-pulse"
+                  className="px-4 py-1.5 border border-primary text-primary hover:bg-primary/20 hover:text-white transition-all duration-300 rounded-lg text-[9.5px] uppercase font-bold tracking-wider flex items-center gap-1.5 shadow-[0_0_10px_-4px_rgba(6,182,212,0.35)] animate-pulse"
                 >
                   <CheckCircle className="w-3.5 h-3.5" />
                   <span>Compile Temporal Context</span>
@@ -814,7 +814,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
               ) : packageData ? (
                 <>
                   {/* Status Banner */}
-                  <div className="border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 rounded-sm flex items-center justify-between">
+                  <div className="border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 rounded-lg flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
                       <div>
@@ -825,7 +825,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                     
                     <button
                       onClick={handleResetWorkflow}
-                      className="border border-border/80 hover:border-primary text-muted-foreground hover:text-primary px-3 py-1.5 text-[8.5px] uppercase transition-all duration-300 rounded-sm flex items-center gap-1"
+                      className="border border-border/80 hover:border-primary text-muted-foreground hover:text-primary px-3 py-1.5 text-[8.5px] uppercase transition-all duration-300 rounded-lg flex items-center gap-1"
                     >
                       <Settings className="w-3 h-3" />
                       Re-Configure Steps
@@ -844,7 +844,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                   <TemporalContextSummaryCard summary={packageData.context_summary} />
 
                   {/* Selected reference scenes inventory table */}
-                  <div className="border border-border bg-card/25 p-4 space-y-4 relative overflow-hidden rounded-sm">
+                  <div className="border border-border bg-card/25 p-4 space-y-4 relative overflow-hidden rounded-lg">
                     <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
                       INVENTORY // REFERENCE STACK
                     </div>

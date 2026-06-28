@@ -137,7 +137,7 @@ export default function GeospatialPanel({ datasetId, metadata, geospatial, locat
   const hasLoc = status.location === "available" && location;
 
   return (
-    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-sm hover:border-primary/40 transition-colors flex flex-col justify-between h-full">
+    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-lg hover:border-primary/40 transition-colors flex flex-col justify-between h-full">
       <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
         INTEL // GEOSPATIAL
       </div>
@@ -149,10 +149,10 @@ export default function GeospatialPanel({ datasetId, metadata, geospatial, locat
         </h2>
 
         {/* Interactive Telemetry Map Box */}
-        <div className="relative border border-border bg-black/40 h-[140px] rounded-sm overflow-hidden">
+        <div className="relative border border-border bg-black/40 h-[140px] rounded-lg overflow-hidden">
           <div ref={mapContainerRef} className="w-full h-full" />
           {hasGeo && (
-            <div className="absolute bottom-2 left-2 bg-black/85 border border-primary/20 p-1.5 text-[7.5px] text-primary space-y-0.5 rounded-sm">
+            <div className="absolute bottom-2 left-2 bg-black/85 border border-primary/20 p-1.5 text-[7.5px] text-primary space-y-0.5 rounded-lg">
               <div>CENTROID LAT: {geospatial.center.lat.toFixed(5)}</div>
               <div>CENTROID LON: {geospatial.center.lon.toFixed(5)}</div>
             </div>

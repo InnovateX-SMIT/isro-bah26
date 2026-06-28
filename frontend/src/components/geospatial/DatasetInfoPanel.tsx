@@ -44,7 +44,7 @@ export default function DatasetInfoPanel({ dataset, metadata, context, loading }
       <div className="p-4 border-b border-border/60 space-y-1 bg-muted/5">
         <div className="flex justify-between items-center">
           <span className="text-[9px] text-muted-foreground tracking-widest uppercase">Target locks</span>
-          <span className="px-1.5 py-0.5 text-[9px] font-bold border border-primary/40 bg-primary/5 text-primary rounded-sm uppercase tracking-wider">
+          <span className="px-1.5 py-0.5 text-[9px] font-bold border border-primary/40 bg-primary/5 text-primary rounded-lg uppercase tracking-wider">
             {dataset.dataset_status}
           </span>
         </div>
@@ -165,7 +165,7 @@ export default function DatasetInfoPanel({ dataset, metadata, context, loading }
 
         {/* Warning if metadata doesn't exist */}
         {!metadata && (
-          <div className="flex items-start space-x-2 border border-destructive/30 bg-destructive/5 p-3 rounded-sm">
+          <div className="flex items-start space-x-2 border border-destructive/30 bg-destructive/5 p-3 rounded-lg">
             <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
             <div className="text-[10px] text-destructive-foreground space-y-1 font-mono uppercase">
               <p className="font-bold">Missing metadata lock</p>

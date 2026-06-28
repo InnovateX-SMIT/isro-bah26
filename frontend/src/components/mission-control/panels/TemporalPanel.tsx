@@ -25,7 +25,7 @@ export default function TemporalPanel({ datasetId, temporal, temporalFusion, sta
   const providerBreakdown = temporalFusion?.package?.reconstruction_guidance?.primary_provider_distribution || { "GoogleEarthEngine": 2 };
 
   return (
-    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-sm hover:border-primary/40 transition-colors flex flex-col justify-between h-full">
+    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-lg hover:border-primary/40 transition-colors flex flex-col justify-between h-full">
       <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
         INTEL // TEMPORAL
       </div>
@@ -40,7 +40,7 @@ export default function TemporalPanel({ datasetId, temporal, temporalFusion, sta
           <div className="space-y-4">
             <div className="space-y-1">
               <span className="text-[7.5px] text-muted-foreground uppercase tracking-widest block font-bold">HISTORICAL SEQUENCE DISCOVERY TIMELINE</span>
-              <div className="border border-border/40 bg-black/45 p-3 rounded-sm relative h-[65px] flex items-center justify-between">
+              <div className="border border-border/40 bg-black/45 p-3 rounded-lg relative h-[65px] flex items-center justify-between">
                 <div className="absolute left-6 right-6 h-0.5 bg-border/80 top-[35px]" />
                 
                 {references.length > 0 && (
@@ -72,19 +72,19 @@ export default function TemporalPanel({ datasetId, temporal, temporalFusion, sta
             </div>
 
             <div className="grid grid-cols-3 gap-1.5 text-[9px] text-center">
-              <div className="bg-background/25 border border-border/30 p-2 rounded-sm space-y-0.5">
+              <div className="bg-background/25 border border-border/30 p-2 rounded-lg space-y-0.5">
                 <div className="text-[7px] text-slate-400">AVG CLOUD</div>
                 <div className="text-xs font-bold text-slate-100">
                   {temporal.average_cloud_cover !== undefined ? `${temporal.average_cloud_cover.toFixed(1)}%` : "3.6%"}
                 </div>
               </div>
-              <div className="bg-background/25 border border-border/30 p-2 rounded-sm space-y-0.5">
+              <div className="bg-background/25 border border-border/30 p-2 rounded-lg space-y-0.5">
                 <div className="text-[7px] text-slate-400">AVG OFFSET</div>
                 <div className="text-xs font-bold text-slate-100">
                   {temporal.average_temporal_distance !== undefined ? `${temporal.average_temporal_distance.toFixed(1)}d` : "86.5d"}
                 </div>
               </div>
-              <div className="bg-background/25 border border-border/30 p-2 rounded-sm space-y-0.5">
+              <div className="bg-background/25 border border-border/30 p-2 rounded-lg space-y-0.5">
                 <div className="text-[7px] text-slate-400">AVG OVERLAP</div>
                 <div className="text-xs font-bold text-emerald-400">
                   {temporal.average_spatial_overlap !== undefined ? `${temporal.average_spatial_overlap.toFixed(1)}%` : "96.5%"}

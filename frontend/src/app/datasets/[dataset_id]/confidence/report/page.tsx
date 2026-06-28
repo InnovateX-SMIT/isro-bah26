@@ -52,7 +52,6 @@ export default function ConfidenceReportPage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -139,7 +138,7 @@ export default function ConfidenceReportPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
@@ -153,7 +152,7 @@ export default function ConfidenceReportPage() {
           onClick={() => router.push(`/datasets/${datasetId}/confidence`)}
           className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border uppercase tracking-widest text-[10px] font-bold"
         >
-          Back to Confidence Workspace
+          Back to Confidence
         </button>
       </div>
     )
@@ -193,7 +192,12 @@ export default function ConfidenceReportPage() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="confidence"
+      />
       {/* Central Viewport */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-6 space-y-6">
         
@@ -205,7 +209,7 @@ export default function ConfidenceReportPage() {
               className="inline-flex items-center space-x-1.5 text-[9px] text-primary hover:underline uppercase font-bold"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Confidence Workspace</span>
+              <span>Back to Confidence</span>
             </button>
             <ViewerBreadcrumb
               datasetName={dataset.dataset_name}
@@ -222,7 +226,7 @@ export default function ConfidenceReportPage() {
           </div>
           <button
             onClick={() => window.print()}
-            className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-sm flex items-center gap-1.5 bg-muted/20 hover:bg-muted/30"
+            className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-lg flex items-center gap-1.5 bg-muted/20 hover:bg-muted/30"
           >
             <Printer className="w-3.5 h-3.5 text-primary" />
             Print Report
@@ -230,7 +234,7 @@ export default function ConfidenceReportPage() {
         </div>
 
         {isReportAvailable ? (
-          <div className="max-w-4xl mx-auto w-full bg-slate-950/80 border border-border p-8 rounded-sm space-y-8 shadow-2xl relative overflow-hidden print:bg-white print:text-black print:border-none print:shadow-none">
+          <div className="max-w-4xl mx-auto w-full bg-slate-950/80 border border-border p-8 rounded-lg space-y-8 shadow-2xl relative overflow-hidden print:bg-white print:text-black print:border-none print:shadow-none">
             
             {/* EO Official watermark outline */}
             <div className="absolute top-0 right-0 bg-primary/5 border-l border-b border-border px-3 py-1 text-[9px] text-primary font-bold tracking-widest uppercase select-none print:hidden">
@@ -251,7 +255,7 @@ export default function ConfidenceReportPage() {
                 </div>
               </div>
 
-              <div className="bg-muted/20 border border-border/80 p-3 rounded-sm text-[9.5px] space-y-1 print:border-black print:text-black">
+              <div className="bg-muted/20 border border-border/80 p-3 rounded-lg text-[9.5px] space-y-1 print:border-black print:text-black">
                 <div>
                   <span className="text-muted-foreground block text-[8px] uppercase">REPORT VERSION:</span>
                   <span className="font-bold text-slate-200 print:text-black">{report.report_metadata.report_version || "1.0.0"}</span>
@@ -279,7 +283,7 @@ export default function ConfidenceReportPage() {
 
             {/* Scorecard grids */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="border border-border/60 bg-background/50 p-4 rounded-sm space-y-1.5 print:border-black print:text-black">
+              <div className="border border-border/60 bg-background/50 p-4 rounded-lg space-y-1.5 print:border-black print:text-black">
                 <span className="text-[8.5px] text-muted-foreground uppercase">Mean Confidence</span>
                 <div className="text-xl font-bold text-emerald-400 print:text-black">{meanConfidence}%</div>
                 <div className="text-[8px] text-muted-foreground uppercase leading-normal">
@@ -287,7 +291,7 @@ export default function ConfidenceReportPage() {
                 </div>
               </div>
 
-              <div className="border border-border/60 bg-background/50 p-4 rounded-sm space-y-1.5 print:border-black print:text-black">
+              <div className="border border-border/60 bg-background/50 p-4 rounded-lg space-y-1.5 print:border-black print:text-black">
                 <span className="text-[8.5px] text-muted-foreground uppercase">Low-Trust Margin</span>
                 <div className="text-xl font-bold text-rose-400 print:text-black">{lowTrustPercent}%</div>
                 <div className="text-[8px] text-muted-foreground uppercase leading-normal">
@@ -295,7 +299,7 @@ export default function ConfidenceReportPage() {
                 </div>
               </div>
 
-              <div className="border border-border/60 bg-background/50 p-4 rounded-sm space-y-1.5 print:border-black print:text-black">
+              <div className="border border-border/60 bg-background/50 p-4 rounded-lg space-y-1.5 print:border-black print:text-black">
                 <span className="text-[8.5px] text-muted-foreground uppercase">Reliability Grade</span>
                 <div className="text-xl font-bold text-cyan-400 uppercase print:text-black">
                   {report.reliability.dataset_reliability_tier || "N/A"}
@@ -312,7 +316,7 @@ export default function ConfidenceReportPage() {
                 <Shield className="w-4.5 h-4.5 text-primary print:text-black" />
                 2.0 Uncertainty Estimation Parameters
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px] bg-background/30 p-4 border border-border/40 rounded-sm print:border-black print:text-black">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px] bg-background/30 p-4 border border-border/40 rounded-lg print:border-black print:text-black">
                 <div className="space-y-2">
                   <div>
                     <span className="text-muted-foreground block uppercase text-[8px]">Confidence Estimation ID:</span>
@@ -360,22 +364,22 @@ export default function ConfidenceReportPage() {
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[10px]">
-                <div className="border border-border/40 p-3 text-center bg-background/25 rounded-sm print:border-black print:text-black">
+                <div className="border border-border/40 p-3 text-center bg-background/25 rounded-lg print:border-black print:text-black">
                   <span className="text-[#10b981] font-bold block">HIGH TIER</span>
                   <span className="text-lg font-bold block text-slate-200 print:text-black">{tierCounts["HIGH"]}</span>
                   <span className="text-[8px] text-muted-foreground block">regions</span>
                 </div>
-                <div className="border border-border/40 p-3 text-center bg-background/25 rounded-sm print:border-black print:text-black">
+                <div className="border border-border/40 p-3 text-center bg-background/25 rounded-lg print:border-black print:text-black">
                   <span className="text-[#06b6d4] font-bold block">MODERATE TIER</span>
                   <span className="text-lg font-bold block text-slate-200 print:text-black">{tierCounts["MODERATE"]}</span>
                   <span className="text-[8px] text-muted-foreground block">regions</span>
                 </div>
-                <div className="border border-border/40 p-3 text-center bg-background/25 rounded-sm print:border-black print:text-black">
+                <div className="border border-border/40 p-3 text-center bg-background/25 rounded-lg print:border-black print:text-black">
                   <span className="text-[#f59e0b] font-bold block">LOW TIER</span>
                   <span className="text-lg font-bold block text-slate-200 print:text-black">{tierCounts["LOW"]}</span>
                   <span className="text-[8px] text-muted-foreground block">regions</span>
                 </div>
-                <div className="border border-border/40 p-3 text-center bg-background/25 rounded-sm print:border-black print:text-black">
+                <div className="border border-border/40 p-3 text-center bg-background/25 rounded-lg print:border-black print:text-black">
                   <span className="text-[#ef4444] font-bold block">VERY LOW TIER</span>
                   <span className="text-lg font-bold block text-slate-200 print:text-black">{tierCounts["VERY LOW"]}</span>
                   <span className="text-[8px] text-muted-foreground block">regions</span>
@@ -389,7 +393,7 @@ export default function ConfidenceReportPage() {
                 <Award className="w-4.5 h-4.5 text-primary print:text-black" />
                 4.0 Actionable Recommendations
               </h3>
-              <div className="border border-primary/30 bg-primary/5 p-4 rounded-sm text-[11px] leading-relaxed font-sans text-slate-300 print:border-black print:bg-white print:text-black">
+              <div className="border border-primary/30 bg-primary/5 p-4 rounded-lg text-[11px] leading-relaxed font-sans text-slate-300 print:border-black print:bg-white print:text-black">
                 <b>RECOMMENDED PATHWAY:</b>
                 <p className="mt-1.5">
                   {getSystemRecommendation(reliabilityScore)}
@@ -403,7 +407,7 @@ export default function ConfidenceReportPage() {
 
           </div>
         ) : (
-          <div className="border border-dashed border-border bg-card/10 p-12 rounded-sm text-center flex flex-col items-center justify-center space-y-3 max-w-sm mx-auto my-12">
+          <div className="border border-dashed border-border bg-card/10 p-12 rounded-lg text-center flex flex-col items-center justify-center space-y-3 max-w-sm mx-auto my-12">
             <AlertTriangle className="w-8 h-8 text-amber-500 animate-pulse" />
             <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
               Report File Standby
@@ -415,15 +419,6 @@ export default function ConfidenceReportPage() {
         )}
 
       </div>
-
-      {/* Sidebar Panel */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="confidence"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

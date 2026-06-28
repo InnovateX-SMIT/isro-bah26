@@ -38,7 +38,6 @@ export default function RGBCompositeViewerPage() {
   // Image interactive states
   const [zoom, setZoom] = useState(1)
   const [fitMode, setFitMode] = useState<"contain" | "cover" | "actual">("contain")
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -92,15 +91,15 @@ export default function RGBCompositeViewerPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            RGB composite link failure
+            Could Not Load RGB Composite
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
-          {error || "Telemetry for the requested dataset is unavailable."}
+          {error || "Dataset data is unavailable. Run the required workflow step first."}
         </p>
         <button
           onClick={() => router.push(`/datasets/${datasetId}/viewer`)}
@@ -117,7 +116,12 @@ export default function RGBCompositeViewerPage() {
     : null
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="dataset"
+      />
       
       {/* Viewport Frame */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -148,28 +152,28 @@ export default function RGBCompositeViewerPage() {
 
           {/* Interactive controls */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center space-x-1.5 bg-background border border-border p-1 rounded-sm text-[9px] uppercase font-bold">
+            <div className="flex items-center space-x-1.5 bg-background border border-border p-1 rounded-lg text-[9px] uppercase font-bold">
               <button
                 onClick={() => setFitMode("contain")}
-                className={`px-2 py-1 rounded-sm transition-colors ${fitMode === "contain" ? "bg-primary text-background" : "hover:bg-muted"}`}
+                className={`px-2 py-1 rounded-lg transition-colors ${fitMode === "contain" ? "bg-primary text-background" : "hover:bg-muted"}`}
               >
                 Fit
               </button>
               <button
                 onClick={() => setFitMode("cover")}
-                className={`px-2 py-1 rounded-sm transition-colors ${fitMode === "cover" ? "bg-primary text-background" : "hover:bg-muted"}`}
+                className={`px-2 py-1 rounded-lg transition-colors ${fitMode === "cover" ? "bg-primary text-background" : "hover:bg-muted"}`}
               >
                 Fill
               </button>
               <button
                 onClick={() => setFitMode("actual")}
-                className={`px-2 py-1 rounded-sm transition-colors ${fitMode === "actual" ? "bg-primary text-background" : "hover:bg-muted"}`}
+                className={`px-2 py-1 rounded-lg transition-colors ${fitMode === "actual" ? "bg-primary text-background" : "hover:bg-muted"}`}
               >
                 Actual
               </button>
             </div>
 
-            <div className="flex items-center space-x-1 bg-background border border-border p-1 rounded-sm">
+            <div className="flex items-center space-x-1 bg-background border border-border p-1 rounded-lg">
               <button
                 onClick={handleZoomOut}
                 disabled={zoom <= 0.5}
@@ -193,7 +197,7 @@ export default function RGBCompositeViewerPage() {
 
             <button
               onClick={handleResetZoom}
-              className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-sm"
+              className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-lg"
             >
               Reset
             </button>
@@ -225,7 +229,7 @@ export default function RGBCompositeViewerPage() {
               />
             </div>
           ) : (
-            <div className="border border-dashed border-border bg-card/10 p-8 rounded-sm text-center flex flex-col items-center justify-center space-y-3 max-w-sm">
+            <div className="border border-dashed border-border bg-card/10 p-8 rounded-lg text-center flex flex-col items-center justify-center space-y-3 max-w-sm">
               <AlertTriangle className="w-6 h-6 text-amber-500 animate-pulse" />
               <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
                 RGB Render Missing
@@ -252,15 +256,6 @@ export default function RGBCompositeViewerPage() {
         </div>
 
       </div>
-
-      {/* Sidebar Panel */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="dataset"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

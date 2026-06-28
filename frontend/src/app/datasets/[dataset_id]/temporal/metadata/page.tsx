@@ -38,7 +38,6 @@ export default function TemporalMetadataPage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -94,11 +93,11 @@ export default function TemporalMetadataPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            Metadata Registry Link Failure
+            Could Not Load Metadata
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
@@ -117,7 +116,12 @@ export default function TemporalMetadataPage() {
   const isContextAvailable = context !== null || packageData !== null
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="temporal"
+      />
       
       {/* Central Viewport */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-6 space-y-6">
@@ -164,7 +168,7 @@ export default function TemporalMetadataPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Component 1: Search & Acquisition Constraints */}
-            <div className="border border-border bg-card/25 p-5 rounded-sm space-y-4">
+            <div className="border border-border bg-card/25 p-5 rounded-lg space-y-4">
               <h2 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                 <Clock className="w-4 h-4 text-cyan-400" />
                 Acquisition Orbit Constraints
@@ -191,7 +195,7 @@ export default function TemporalMetadataPage() {
             </div>
 
             {/* Component 2: Provider Configuration */}
-            <div className="border border-border bg-card/25 p-5 rounded-sm space-y-4">
+            <div className="border border-border bg-card/25 p-5 rounded-lg space-y-4">
               <h2 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                 <Layers className="w-4 h-4 text-cyan-400" />
                 Provider Statistics
@@ -223,7 +227,7 @@ export default function TemporalMetadataPage() {
             </div>
 
             {/* Component 3: Overlap & Cloud Coverage stats */}
-            <div className="border border-border bg-card/25 p-5 rounded-sm space-y-4">
+            <div className="border border-border bg-card/25 p-5 rounded-lg space-y-4">
               <h2 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                 <Globe className="w-4 h-4 text-cyan-400" />
                 Coverage & Overlap Summary
@@ -254,7 +258,7 @@ export default function TemporalMetadataPage() {
             </div>
 
             {/* Component 4: Orbit Time Spans */}
-            <div className="border border-border bg-card/25 p-5 rounded-sm space-y-4">
+            <div className="border border-border bg-card/25 p-5 rounded-lg space-y-4">
               <h2 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                 <Shield className="w-4 h-4 text-cyan-400" />
                 Temporal Statistics & Selection
@@ -286,15 +290,6 @@ export default function TemporalMetadataPage() {
         )}
 
       </div>
-
-      {/* Sidebar */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="temporal"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

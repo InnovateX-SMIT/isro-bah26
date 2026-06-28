@@ -39,7 +39,6 @@ export default function ReconstructionMetadataPage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -104,11 +103,11 @@ export default function ReconstructionMetadataPage() {
 
   if (error || !dataset || !reconstructRun) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            Metadata Registry Link Failure
+            Could Not Load Metadata
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
@@ -125,7 +124,12 @@ export default function ReconstructionMetadataPage() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="reconstruction"
+      />
       
       {/* Central Viewport */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-6 space-y-6">
@@ -163,7 +167,7 @@ export default function ReconstructionMetadataPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           {/* Section 1: Processing Details */}
-          <div className="border border-border bg-card/25 p-5 rounded-sm space-y-4">
+          <div className="border border-border bg-card/25 p-5 rounded-lg space-y-4">
             <h2 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
               <Cpu className="w-4 h-4 text-cyan-400" />
               Processing Parameters
@@ -196,7 +200,7 @@ export default function ReconstructionMetadataPage() {
           </div>
 
           {/* Section 2: Reconstruction Inputs */}
-          <div className="border border-border bg-card/25 p-5 rounded-sm space-y-4">
+          <div className="border border-border bg-card/25 p-5 rounded-lg space-y-4">
             <h2 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-cyan-400" />
               Reconstruction Inputs
@@ -223,13 +227,13 @@ export default function ReconstructionMetadataPage() {
           </div>
 
           {/* Section 3: Generated Outputs Registry */}
-          <div className="border border-border bg-card/25 p-5 rounded-sm md:col-span-2 space-y-4">
+          <div className="border border-border bg-card/25 p-5 rounded-lg md:col-span-2 space-y-4">
             <h2 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
               <Compass className="w-4 h-4 text-cyan-400" />
               Generated Physical Output Registry (relative to workspace root)
             </h2>
 
-            <div className="space-y-3 text-[10px] bg-background/25 border border-border/40 p-3.5 rounded-sm">
+            <div className="space-y-3 text-[10px] bg-background/25 border border-border/40 p-3.5 rounded-lg">
               <div>
                 <span className="text-muted-foreground block uppercase text-[8.5px] tracking-wider mb-0.5">Baseline Reconstructed Image GeoTIFF</span>
                 <span className="text-slate-300 font-mono select-all block break-all">{outputInfo?.output_image_path || "N/A"}</span>
@@ -259,15 +263,6 @@ export default function ReconstructionMetadataPage() {
         </div>
 
       </div>
-
-      {/* Sidebar */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="reconstruction"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

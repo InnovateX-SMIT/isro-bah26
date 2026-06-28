@@ -14,9 +14,12 @@ import {
   CheckCircle,
   XCircle,
   Play,
-  Terminal,
   RefreshCw,
-  Award
+  Award,
+  Check,
+  Circle,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react"
 
 import { getDataset } from "@/lib/dataset-api"
@@ -50,6 +53,13 @@ import {
 import ViewerBreadcrumb from "@/components/ViewerBreadcrumb"
 import ViewerSidebar from "@/components/ViewerSidebar"
 
+const PIPELINE_STAGES = [
+  { key: "estimation", label: "Estimation" },
+  { key: "reliability", label: "Reliability" },
+  { key: "heatmap", label: "Heatmap" },
+  { key: "analytics", label: "Analytics" },
+]
+
 export default function ConfidenceOverviewHubPage() {
   const params = useParams()
   const router = useRouter()
@@ -60,7 +70,6 @@ export default function ConfidenceOverviewHubPage() {
   const [profile, setProfile] = useState<MissionControlProfile | null>(null)
   const [reconRun, setReconRun] = useState<ReconstructionRunResponse | null>(null)
 
-  // Pipeline Step States
   const [estimation, setEstimation] = useState<ConfidenceEstimationResponse | null>(null)
   const [reliability, setReliability] = useState<ReliabilityScoreResponse | null>(null)
   const [heatmap, setHeatmap] = useState<ConfidenceHeatmapResponse | null>(null)
@@ -69,23 +78,69 @@ export default function ConfidenceOverviewHubPage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-
-  // Console terminal states
-  const [logs, setLogs] = useState<string[]>([])
   const [pipelineRunning, setPipelineRunning] = useState(false)
-  const terminalEndRef = useRef<HTMLDivElement | null>(null)
+  const [runningStep, setRunningStep] = useState<string | null>(null)
+  const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set())
+  const [logs, setLogs] = useState<string[]>([])
+  const [showLogs, setShowLogs] = useState(false)
 
   const appendLog = (msg: string) => {
     const timestamp = new Date().toISOString().split("T")[1].substring(0, 8)
     setLogs((prev) => [...prev, `[${timestamp}] ${msg}`])
   }
 
-  useEffect(() => {
-    if (terminalEndRef.current) {
-      terminalEndRef.current.scrollIntoView({ behavior: "smooth" })
+  const loadPipelineStatus = async (reconstructionRunId: string) => {
+    let step1: ConfidenceEstimationResponse | null = null
+    let step2: ReliabilityScoreResponse | null = null
+    let step3: ConfidenceHeatmapResponse | null = null
+    let step4: ConfidenceAnalyticsResponse | null = null
+
+    try {
+      step1 = await getConfidenceEstimation(reconstructionRunId)
+      setEstimation(step1)
+      setCompletedSteps(prev => new Set(prev).add("estimation"))
+    } catch (e) {
+      setEstimation(null)
+      return
     }
-  }, [logs])
+
+    if (step1 && step1.confidence_id) {
+      try {
+        step2 = await getReliabilityScore(step1.confidence_id)
+        setReliability(step2)
+        setCompletedSteps(prev => new Set(prev).add("reliability"))
+      } catch (e) {
+        setReliability(null)
+        return
+      }
+    }
+
+    if (step2 && step2.reliability_id) {
+      try {
+        step3 = await getHeatmap(step2.reliability_id)
+        setHeatmap(step3)
+        setCompletedSteps(prev => new Set(prev).add("heatmap"))
+      } catch (e) {
+        setHeatmap(null)
+        return
+      }
+    }
+
+    if (step3 && step3.heatmap_id) {
+      try {
+        step4 = await getAnalytics(step3.heatmap_id)
+        setAnalytics(step4)
+        setCompletedSteps(prev => new Set(prev).add("analytics"))
+
+        try {
+          const step5 = await getConfidenceReportFile(step3.heatmap_id)
+          setReport(step5)
+        } catch (e) {}
+      } catch (e) {
+        setAnalytics(null)
+      }
+    }
+  }
 
   const loadData = async (showLoading = true) => {
     if (showLoading) setLoading(true)
@@ -104,7 +159,6 @@ export default function ConfidenceOverviewHubPage() {
       const prof = await getMissionControlProfile(datasetId)
       setProfile(prof)
 
-      // Fetch reconstruction run
       let rRun: ReconstructionRunResponse | null = null
       try {
         rRun = await getReconstructionStatus(ds.analysis_session_id)
@@ -114,86 +168,18 @@ export default function ConfidenceOverviewHubPage() {
       }
 
       if (rRun && rRun.reconstruction_status === "COMPLETED") {
-        appendLog(`[SYSTEM] Reconstruction run found. ID: ${rRun.id}`)
         await loadPipelineStatus(rRun.id)
-      } else {
-        appendLog(`[WARNING] AI Reconstruction has not been completed. Confidence rating on standby.`)
       }
     } catch (err: any) {
       console.error(err)
-      setError(err.message || "Failed to load Confidence Hub.")
+      setError(err.message || "Failed to load confidence data.")
     } finally {
       if (showLoading) setLoading(false)
     }
   }
 
-  const loadPipelineStatus = async (reconstructionRunId: string) => {
-    // Sequential try-fetch for each step of the pipeline
-    let step1: ConfidenceEstimationResponse | null = null
-    let step2: ReliabilityScoreResponse | null = null
-    let step3: ConfidenceHeatmapResponse | null = null
-    let step4: ConfidenceAnalyticsResponse | null = null
-    let step5: ConfidenceReport | null = null
-
-    try {
-      step1 = await getConfidenceEstimation(reconstructionRunId)
-      setEstimation(step1)
-      appendLog(`[STATUS] Step 1: Confidence Estimation is COMPLETED. (ID: ${step1.confidence_id})`)
-    } catch (e) {
-      setEstimation(null)
-      appendLog(`[STATUS] Step 1: Confidence Estimation is PENDING.`)
-      return // Remaining steps must be missing
-    }
-
-    if (step1 && step1.confidence_id) {
-      try {
-        step2 = await getReliabilityScore(step1.confidence_id)
-        setReliability(step2)
-        appendLog(`[STATUS] Step 2: Reliability Scoring is COMPLETED. (ID: ${step2.reliability_id})`)
-      } catch (e) {
-        setReliability(null)
-        appendLog(`[STATUS] Step 2: Reliability Scoring is PENDING.`)
-        return
-      }
-    }
-
-    if (step2 && step2.reliability_id) {
-      try {
-        step3 = await getHeatmap(step2.reliability_id)
-        setHeatmap(step3)
-        appendLog(`[STATUS] Step 3: Heatmap Generation is COMPLETED. (ID: ${step3.heatmap_id})`)
-      } catch (e) {
-        setHeatmap(null)
-        appendLog(`[STATUS] Step 3: Heatmap Generation is PENDING.`)
-        return
-      }
-    }
-
-    if (step3 && step3.heatmap_id) {
-      try {
-        step4 = await getAnalytics(step3.heatmap_id)
-        setAnalytics(step4)
-        appendLog(`[STATUS] Step 4: Confidence Analytics is COMPLETED. (ID: ${step4.analytics_id})`)
-
-        try {
-          step5 = await getConfidenceReportFile(step3.heatmap_id)
-          setReport(step5)
-          appendLog(`[STATUS] Step 5: Report JSON loaded successfully.`)
-        } catch (e) {
-          appendLog(`[STATUS] Step 5: Report JSON is unavailable.`)
-        }
-      } catch (e) {
-        setAnalytics(null)
-        appendLog(`[STATUS] Step 4: Confidence Analytics is PENDING.`)
-      }
-    }
-  }
-
   useEffect(() => {
     if (datasetId) {
-      setLogs([])
-      appendLog(`[SYSTEM] Initializing Confidence Intelligence Module...`)
-      appendLog(`[SYSTEM] Dataset Target: ${datasetId}`)
       loadData(true)
     }
   }, [datasetId])
@@ -202,93 +188,106 @@ export default function ConfidenceOverviewHubPage() {
     if (!reconRun || reconRun.reconstruction_status !== "COMPLETED") return
     setPipelineRunning(true)
     setError(null)
-    appendLog(`[PIPELINE] Starting sequential execution chain...`)
+    setLogs([])
+    setCompletedSteps(new Set())
 
     try {
       let currentEstimation = estimation
       let currentReliability = reliability
       let currentHeatmap = heatmap
-      let currentAnalytics = analytics
 
-      // Step 1: Estimation
+      // Step 1
       if (!currentEstimation) {
-        appendLog(`[STEP 1] Running Confidence Estimation...`)
+        setRunningStep("estimation")
+        appendLog("Running confidence estimation...")
         currentEstimation = await runConfidenceEstimation(reconRun.id)
         setEstimation(currentEstimation)
-        appendLog(`[STEP 1] Completed. Mean confidence score: ${(currentEstimation.mean_confidence_score ? (currentEstimation.mean_confidence_score * 100).toFixed(2) : "0.0")}%`)
+        appendLog(`✓ Estimation completed. Mean score: ${(currentEstimation.mean_confidence_score ? (currentEstimation.mean_confidence_score * 100).toFixed(1) : "0")}%`)
       }
+      setCompletedSteps(prev => new Set(prev).add("estimation"))
 
-      // Step 2: Reliability
+      // Step 2
       if (!currentReliability && currentEstimation) {
-        appendLog(`[STEP 2] Running Reliability Scoring (Uncertainty Margin Evaluation)...`)
+        setRunningStep("reliability")
+        appendLog("Running reliability scoring...")
         currentReliability = await runReliabilityScoring(currentEstimation.confidence_id)
         setReliability(currentReliability)
-        appendLog(`[STEP 2] Completed. Dataset reliability grade: ${currentReliability.dataset_reliability_tier || "N/A"} (${currentReliability.dataset_reliability_score || 0}/100)`)
+        appendLog(`✓ Reliability completed. Tier: ${currentReliability.dataset_reliability_tier || "N/A"}`)
       }
+      setCompletedSteps(prev => new Set(prev).add("reliability"))
 
-      // Step 3: Heatmap
+      // Step 3
       if (!currentHeatmap && currentReliability) {
-        appendLog(`[STEP 3] Generating Heatmap overlay bands & masks...`)
+        setRunningStep("heatmap")
+        appendLog("Generating heatmap overlay...")
         currentHeatmap = await runHeatmapGeneration(currentReliability.reliability_id)
         setHeatmap(currentHeatmap)
-        appendLog(`[STEP 3] Completed. Heatmap ID: ${currentHeatmap.heatmap_id}`)
+        appendLog("✓ Heatmap generated")
       }
+      setCompletedSteps(prev => new Set(prev).add("heatmap"))
 
-      // Step 4: Analytics & Report
-      if (!currentAnalytics && currentHeatmap) {
-        appendLog(`[STEP 4] Compiling analytics registry & exporting executive report...`)
-        currentAnalytics = await runAnalytics(currentHeatmap.heatmap_id)
+      // Step 4
+      if (!analytics && currentHeatmap) {
+        setRunningStep("analytics")
+        appendLog("Compiling analytics and report...")
+        const currentAnalytics = await runAnalytics(currentHeatmap.heatmap_id)
         setAnalytics(currentAnalytics)
-        appendLog(`[STEP 4] Completed. Headline: ${currentAnalytics.headline_summary || "Success"}`)
+        appendLog(`✓ Analytics completed. ${currentAnalytics.headline_summary || ""}`)
 
         try {
           const currentReport = await getConfidenceReportFile(currentHeatmap.heatmap_id)
           setReport(currentReport)
-          appendLog(`[STEP 5] Report JSON sync finalized.`)
-        } catch (e) {
-          appendLog(`[STEP 5] Failed to load JSON report after creation.`)
-        }
+        } catch (e) {}
       }
+      setCompletedSteps(prev => new Set(prev).add("analytics"))
 
-      appendLog(`[PIPELINE] Sequential execution completed successfully. Workspace ready.`)
+      setRunningStep(null)
+      appendLog("Confidence pipeline completed successfully.")
       await loadData(false)
     } catch (err: any) {
       console.error(err)
-      appendLog(`[FATAL] Pipeline exception: ${err.message || err}`)
-      setError(err.message || "Failed during pipeline step execution.")
+      appendLog(`ERROR: ${err.message || err}`)
+      setError(err.message || "Pipeline failed.")
     } finally {
       setPipelineRunning(false)
+      setRunningStep(null)
     }
+  }
+
+  const getProgressPercent = () => {
+    const completed = completedSteps.size
+    if (completed === 4 && !runningStep) return 100
+    if (runningStep) {
+      const stageIdx = PIPELINE_STAGES.findIndex(s => s.key === runningStep)
+      return Math.round(((stageIdx) / 4) * 100 + 12)
+    }
+    return Math.round((completed / 4) * 100)
   }
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 font-mono">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        <span className="text-xs uppercase text-muted-foreground tracking-widest">
-          Syncing confidence matrices...
-        </span>
+        <span className="text-xs text-muted-foreground">Loading confidence data...</span>
       </div>
     )
   }
 
   if (error && !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-xl space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
-          <h3 className="text-sm font-bold uppercase tracking-wider">
-            Workspace Error
-          </h3>
+          <h3 className="text-sm font-bold">Could Not Load Confidence Data</h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
-          {error || `Confidence details for dataset ${datasetId} are unreachable.`}
+          {error || `Confidence data for dataset ${datasetId} is unavailable.`}
         </p>
         <button
           onClick={() => router.push("/datasets")}
-          className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border uppercase tracking-widest text-[10px] font-bold"
+          className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border uppercase tracking-wider text-xs font-bold rounded-lg"
         >
-          Return to Datacenter
+          Return to Inventory
         </button>
       </div>
     )
@@ -297,12 +296,19 @@ export default function ConfidenceOverviewHubPage() {
   const isPipelineComplete = estimation && reliability && heatmap && analytics
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      {/* Tab Navigation */}
+      <ViewerSidebar
+        dataset={dataset!}
+        metadata={metadata}
+        mode="confidence"
+      />
+
       {/* Central Viewport */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-4 gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <ViewerBreadcrumb
               datasetName={dataset?.dataset_name || "Unknown"}
@@ -310,56 +316,118 @@ export default function ConfidenceOverviewHubPage() {
               items={[{ label: "Confidence Intelligence" }]}
             />
             <h1 className="text-lg font-bold tracking-wider text-foreground uppercase flex items-center gap-2">
-              <Shield className="w-5 h-5 text-primary animate-pulse" />
-              Confidence Intelligence Hub
+              <Shield className="w-5 h-5 text-primary" />
+              Confidence Intelligence
             </h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-              Reconstruction ID: <span className="text-foreground select-all">{reconRun?.id || "NO RUN REGISTERED"}</span>
-            </p>
           </div>
-          <div className="flex items-center space-x-3">
+          {reconRun && reconRun.reconstruction_status === "COMPLETED" && !isPipelineComplete && (
             <button
-              onClick={() => loadData(true)}
-              className="p-1.5 border border-border bg-muted/20 hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-all rounded-sm"
-              title="Refresh status"
+              onClick={executePipeline}
+              disabled={pipelineRunning}
+              className="px-5 py-2.5 bg-primary text-primary-foreground text-xs font-bold tracking-wider uppercase flex items-center gap-2 hover:bg-primary/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed shrink-0 rounded-xl"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              {pipelineRunning ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4 fill-current" />
+                  Run Confidence Pipeline
+                </>
+              )}
             </button>
-            <div className="flex items-center space-x-2 text-xs border border-border px-3 py-1.5 bg-muted/30">
-              <span className={`w-1.5 h-1.5 rounded-full ${isPipelineComplete ? "bg-emerald-500 animate-pulse" : "bg-amber-500 animate-pulse"}`}></span>
-              <span className="text-muted-foreground uppercase text-[9px] tracking-wider">
-                {isPipelineComplete ? "PIPELINE: EVALUATED" : "PIPELINE: INCOMPLETE"}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
-        {/* Reconstruction Block Check */}
+        {/* Prerequisite check */}
         {(!reconRun || reconRun.reconstruction_status !== "COMPLETED") ? (
-          <div className="border border-amber-500/30 bg-amber-500/5 p-6 rounded-sm space-y-4 max-w-xl mx-auto text-center my-6">
-            <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto animate-bounce" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-amber-400">
-              AI Reconstruction Required
+          <div className="border border-amber-500/30 bg-amber-500/5 p-6 rounded-xl space-y-4 max-w-xl mx-auto text-center my-6">
+            <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
+            <h3 className="text-sm font-bold text-amber-400">
+              Reconstruction Required
             </h3>
             <p className="text-xs text-muted-foreground font-sans leading-relaxed">
-              Confidence evaluation can only run on completed reconstruction runs. 
-              The system currently indicates no optimized reconstruction output is generated for session <b>{dataset?.analysis_session_id}</b>.
+              Confidence evaluation requires a completed reconstruction. Complete the AI Reconstruction pipeline first.
             </p>
             <button
               onClick={() => router.push(`/datasets/${datasetId}/reconstruction`)}
-              className="px-4 py-2 bg-primary hover:bg-primary/90 text-background font-bold text-[10px] tracking-widest uppercase transition-all rounded-sm"
+              className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs tracking-wider uppercase transition-all rounded-xl"
             >
-              Open Reconstruction Workspace
+              Open Reconstruction
             </button>
           </div>
         ) : (
           <>
-            {/* Quick Metrics Cards */}
+            {/* Pipeline Progress */}
+            {(pipelineRunning || completedSteps.size > 0) && (
+              <div className="border border-border bg-card/20 rounded-xl p-5 space-y-4">
+                <div className="progress-track">
+                  <div
+                    className={`progress-fill ${isPipelineComplete ? "progress-fill-success" : ""}`}
+                    style={{ width: `${getProgressPercent()}%` }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                  {PIPELINE_STAGES.map((stage) => {
+                    const isCompleted = completedSteps.has(stage.key)
+                    const isActive = runningStep === stage.key
+
+                    return (
+                      <div
+                        key={stage.key}
+                        className={`flex items-center gap-1.5 p-2.5 border rounded-lg text-[10px] transition-all ${
+                          isCompleted
+                            ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400"
+                            : isActive
+                            ? "border-primary/30 bg-primary/5 text-primary stage-running"
+                            : "border-border bg-card/10 text-muted-foreground"
+                        }`}
+                      >
+                        {isCompleted ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        ) : isActive ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                        ) : (
+                          <Circle className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
+                        )}
+                        <span className="font-semibold truncate">{stage.label}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {logs.length > 0 && (
+                  <div>
+                    <button
+                      onClick={() => setShowLogs(!showLogs)}
+                      className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-foreground transition-all font-semibold"
+                    >
+                      {showLogs ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      {showLogs ? "Hide Logs" : "View Logs"}
+                    </button>
+                    {showLogs && (
+                      <div className="mt-2 border border-border bg-black/50 p-3 rounded-lg max-h-[160px] overflow-y-auto space-y-1 text-[10px] text-slate-300">
+                        {logs.map((log, idx) => (
+                          <div key={idx} className={log.includes("ERROR") ? "text-red-400 font-bold" : log.includes("✓") ? "text-emerald-400" : ""}>
+                            {log}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Metrics Cards */}
             {isPipelineComplete && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="border border-border bg-card/25 p-4 rounded-sm relative overflow-hidden flex items-center justify-between">
+                <div className="border border-border bg-card/25 p-4 rounded-xl flex items-center justify-between">
                   <div className="space-y-1">
-                    <span className="text-[9px] text-muted-foreground uppercase">Mean Reconstruction Confidence</span>
+                    <span className="text-[9px] text-muted-foreground uppercase">Mean Confidence</span>
                     <div className="text-xl font-bold text-foreground">
                       {estimation?.mean_confidence_score !== null 
                         ? `${(estimation!.mean_confidence_score! * 100).toFixed(1)}%` 
@@ -369,9 +437,9 @@ export default function ConfidenceOverviewHubPage() {
                   <Shield className="w-8 h-8 text-primary/20 shrink-0" />
                 </div>
 
-                <div className="border border-border bg-card/25 p-4 rounded-sm relative overflow-hidden flex items-center justify-between">
+                <div className="border border-border bg-card/25 p-4 rounded-xl flex items-center justify-between">
                   <div className="space-y-1">
-                    <span className="text-[9px] text-muted-foreground uppercase">Low-Trust Area Ratio</span>
+                    <span className="text-[9px] text-muted-foreground uppercase">Low-Trust Area</span>
                     <div className="text-xl font-bold text-rose-400">
                       {estimation?.low_confidence_area_percent !== null 
                         ? `${estimation!.low_confidence_area_percent!.toFixed(1)}%` 
@@ -381,9 +449,9 @@ export default function ConfidenceOverviewHubPage() {
                   <Activity className="w-8 h-8 text-rose-500/20 shrink-0" />
                 </div>
 
-                <div className="border border-border bg-card/25 p-4 rounded-sm relative overflow-hidden flex items-center justify-between">
+                <div className="border border-border bg-card/25 p-4 rounded-xl flex items-center justify-between">
                   <div className="space-y-1">
-                    <span className="text-[9px] text-muted-foreground uppercase">Overall Reliability Tier</span>
+                    <span className="text-[9px] text-muted-foreground uppercase">Reliability Tier</span>
                     <div className="text-xl font-bold text-emerald-400 uppercase">
                       {reliability?.dataset_reliability_tier || "N/A"}
                     </div>
@@ -393,245 +461,92 @@ export default function ConfidenceOverviewHubPage() {
               </div>
             )}
 
-            {/* Pipeline Control & Terminal Logs */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2 space-y-6">
-                
-                {/* Console Widget */}
-                <div className="border border-border bg-black/60 rounded-sm overflow-hidden flex flex-col">
-                  {/* Console Header */}
-                  <div className="bg-muted/30 px-4 py-2 border-b border-border/80 flex items-center justify-between">
-                    <div className="flex items-center space-x-2 text-[10px] uppercase font-bold text-slate-300">
-                      <Terminal className="w-3.5 h-3.5 text-primary" />
-                      <span>Pipeline Console Monitor</span>
-                    </div>
-                    <div className="flex items-center space-x-1.5">
-                      <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                      <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-                      <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    </div>
+            {/* Subpage Cards */}
+            {isPipelineComplete && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div
+                  onClick={() => router.push(`/datasets/${datasetId}/confidence/heatmap`)}
+                  className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-xl flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
+                >
+                  <div className="space-y-1.5">
+                    <ImageIcon className="w-5 h-5 text-primary" />
+                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Confidence Heatmap</h3>
+                    <p className="text-[10px] text-muted-foreground leading-normal font-sans">Spatial confidence visualization across the scene.</p>
                   </div>
-
-                  {/* Console logs */}
-                  <div className="p-4 h-[240px] overflow-y-auto font-mono text-[10px] text-slate-300 space-y-1.5 bg-black/90 scrollbar-thin scrollbar-thumb-primary/20">
-                    {logs.map((log, idx) => {
-                      let color = "text-slate-300"
-                      if (log.includes("[SYSTEM]")) color = "text-blue-400"
-                      else if (log.includes("[STATUS] Step")) color = "text-cyan-400"
-                      else if (log.includes("[STEP 1]") || log.includes("[STEP 2]") || log.includes("[STEP 3]") || log.includes("[STEP 4]")) color = "text-indigo-400"
-                      else if (log.includes("[PIPELINE]")) color = "text-primary font-bold"
-                      else if (log.includes("COMPLETED")) color = "text-emerald-400"
-                      else if (log.includes("[WARNING]")) color = "text-amber-500"
-                      else if (log.includes("[FATAL]")) color = "text-rose-500 font-bold"
-                      
-                      return (
-                        <div key={idx} className={color}>
-                          {log}
-                        </div>
-                      )
-                    })}
-                    <div ref={terminalEndRef} />
-                  </div>
-
-                  {/* Console Actions */}
-                  <div className="bg-muted/10 p-3 border-t border-border/60 flex items-center justify-between">
-                    <span className="text-[9px] text-muted-foreground uppercase">
-                      {pipelineRunning ? "Executing process sequence..." : "Ready to execute pipeline stages"}
-                    </span>
-                    {!isPipelineComplete && (
-                      <button
-                        onClick={executePipeline}
-                        disabled={pipelineRunning}
-                        className="px-4 py-2 bg-primary hover:bg-primary/95 text-background font-bold text-[10px] tracking-widest uppercase rounded-sm border border-primary/20 flex items-center gap-2 disabled:opacity-50 transition-all cursor-pointer"
-                      >
-                        {pipelineRunning ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            Executing...
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-3 h-3 fill-current" />
-                            Trigger Pipeline Execution
-                          </>
-                        )}
-                      </button>
-                    )}
+                  <div className="text-[9px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest">
+                    Open <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
 
-                {/* Subpage hubs grid */}
-                {isPipelineComplete && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div
-                      onClick={() => router.push(`/datasets/${datasetId}/confidence/heatmap`)}
-                      className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-sm flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
-                    >
-                      <div className="space-y-1.5">
-                        <ImageIcon className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
-                        <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Confidence Heatmap</h3>
-                        <p className="text-[10px] text-muted-foreground leading-normal font-sans">
-                          Inspect continuous spatial confidence bounds across the composite grid.
-                        </p>
-                      </div>
-                      <div className="text-[9px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest mt-2">
-                        Open Heatmap <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => router.push(`/datasets/${datasetId}/confidence/overlay`)}
-                      className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-sm flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
-                    >
-                      <div className="space-y-1.5">
-                        <Layers className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
-                        <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Opacity Overlay</h3>
-                        <p className="text-[10px] text-muted-foreground leading-normal font-sans">
-                          Toggle dynamic transparency trust margins directly on the original composited band bands.
-                        </p>
-                      </div>
-                      <div className="text-[9px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest mt-2">
-                        Open Overlay <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => router.push(`/datasets/${datasetId}/confidence/reliability`)}
-                      className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-sm flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
-                    >
-                      <div className="space-y-1.5">
-                        <Activity className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
-                        <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Reliability Map</h3>
-                        <p className="text-[10px] text-muted-foreground leading-normal font-sans">
-                          Inspect segmented geographic cloud patches categorised into reliability quality tiers.
-                        </p>
-                      </div>
-                      <div className="text-[9px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest mt-2">
-                        Open Reliability <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => router.push(`/datasets/${datasetId}/confidence/analytics`)}
-                      className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-sm flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
-                    >
-                      <div className="space-y-1.5">
-                        <FileText className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
-                        <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Confidence Analytics</h3>
-                        <p className="text-[10px] text-muted-foreground leading-normal font-sans">
-                          Examine detailed histograms, Low-Confidence areas, and spatial coverage statistics.
-                        </p>
-                      </div>
-                      <div className="text-[9px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest mt-2">
-                        Open Analytics <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
+                <div
+                  onClick={() => router.push(`/datasets/${datasetId}/confidence/overlay`)}
+                  className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-xl flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
+                >
+                  <div className="space-y-1.5">
+                    <Layers className="w-5 h-5 text-primary" />
+                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Confidence Overlay</h3>
+                    <p className="text-[10px] text-muted-foreground leading-normal font-sans">Toggle transparency trust margins on original composite.</p>
                   </div>
-                )}
-              </div>
+                  <div className="text-[9px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest">
+                    Open <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
 
-              {/* Sidebar stats or guidance */}
-              <div className="space-y-6">
-                
-                {/* Pipeline Checklist */}
-                <div className="border border-border bg-card/20 p-5 rounded-sm space-y-3">
+                <div
+                  onClick={() => router.push(`/datasets/${datasetId}/confidence/reliability`)}
+                  className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-xl flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
+                >
+                  <div className="space-y-1.5">
+                    <Activity className="w-5 h-5 text-primary" />
+                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Reliability Map</h3>
+                    <p className="text-[10px] text-muted-foreground leading-normal font-sans">Quality tiers for reconstructed cloud patches.</p>
+                  </div>
+                  <div className="text-[9px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest">
+                    Open <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => router.push(`/datasets/${datasetId}/confidence/analytics`)}
+                  className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-xl flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
+                >
+                  <div className="space-y-1.5">
+                    <FileText className="w-5 h-5 text-primary" />
+                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Analytics</h3>
+                    <p className="text-[10px] text-muted-foreground leading-normal font-sans">Histograms, coverage statistics, and detailed analysis.</p>
+                  </div>
+                  <div className="text-[9px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest">
+                    Open <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Report Card */}
+            {isPipelineComplete && report && (
+              <div className="border border-border bg-gradient-to-br from-card/30 to-primary/5 p-5 rounded-xl space-y-4 max-w-md">
+                <div className="space-y-1.5">
                   <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-primary" />
-                    Validation Matrix
+                    <FileText className="w-4 h-4 text-primary" />
+                    Executive Report
                   </h3>
-                  <p className="text-[10px] text-muted-foreground font-sans">
-                    Required pipeline compilation checklist.
+                  <p className="text-[10px] text-muted-foreground leading-normal font-sans">
+                    Scientific assessment with reliability ratings and validation recommendations.
                   </p>
-
-                  <div className="space-y-2 border-t border-border/20 pt-3">
-                    <div className="flex items-center justify-between text-[10px] border-b border-border/10 pb-1.5">
-                      <span className="text-slate-400">1. Confidence Estimation</span>
-                      {estimation ? (
-                        <span className="text-emerald-400 flex items-center gap-1 font-bold">
-                          <CheckCircle className="w-3.5 h-3.5" /> COMPLETED
-                        </span>
-                      ) : (
-                        <span className="text-amber-500 flex items-center gap-1 font-bold">
-                          <XCircle className="w-3.5 h-3.5" /> PENDING
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] border-b border-border/10 pb-1.5">
-                      <span className="text-slate-400">2. Reliability Scoring</span>
-                      {reliability ? (
-                        <span className="text-emerald-400 flex items-center gap-1 font-bold">
-                          <CheckCircle className="w-3.5 h-3.5" /> COMPLETED
-                        </span>
-                      ) : (
-                        <span className="text-amber-500 flex items-center gap-1 font-bold">
-                          <XCircle className="w-3.5 h-3.5" /> PENDING
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] border-b border-border/10 pb-1.5">
-                      <span className="text-slate-400">3. Heatmap Overlay</span>
-                      {heatmap ? (
-                        <span className="text-emerald-400 flex items-center gap-1 font-bold">
-                          <CheckCircle className="w-3.5 h-3.5" /> COMPLETED
-                        </span>
-                      ) : (
-                        <span className="text-amber-500 flex items-center gap-1 font-bold">
-                          <XCircle className="w-3.5 h-3.5" /> PENDING
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between text-[10px]">
-                      <span className="text-slate-400">4. Analytics & Report</span>
-                      {analytics ? (
-                        <span className="text-emerald-400 flex items-center gap-1 font-bold">
-                          <CheckCircle className="w-3.5 h-3.5" /> COMPLETED
-                        </span>
-                      ) : (
-                        <span className="text-amber-500 flex items-center gap-1 font-bold">
-                          <XCircle className="w-3.5 h-3.5" /> PENDING
-                        </span>
-                      )}
-                    </div>
-                  </div>
                 </div>
-
-                {/* Report link Card */}
-                {isPipelineComplete && report && (
-                  <div className="border border-border bg-gradient-to-br from-card/30 to-primary/5 p-5 rounded-sm space-y-4">
-                    <div className="space-y-1.5">
-                      <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
-                        <FileText className="w-4 h-4 text-primary animate-pulse" />
-                        Executive Report
-                      </h3>
-                      <p className="text-[10px] text-muted-foreground leading-normal font-sans">
-                        An executive-level scientific assessment report compiles reliability ratings, pixel degradation estimations, and validation recommendations.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => router.push(`/datasets/${datasetId}/confidence/report`)}
-                      className="w-full inline-flex items-center justify-between bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-1.5 text-[9px] font-bold tracking-wider uppercase transition-all"
-                    >
-                      Inspect Report Document
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
-
+                <button
+                  onClick={() => router.push(`/datasets/${datasetId}/confidence/report`)}
+                  className="w-full inline-flex items-center justify-between bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 px-3 py-2 text-[10px] font-bold tracking-wider uppercase transition-all rounded-lg"
+                >
+                  View Report
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
-            </div>
+            )}
           </>
         )}
 
       </div>
-
-      {/* Workspace Sidebar Navigation */}
-      <ViewerSidebar
-        dataset={dataset!}
-        metadata={metadata}
-        mode="confidence"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

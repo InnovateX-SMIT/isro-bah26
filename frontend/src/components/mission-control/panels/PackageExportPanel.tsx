@@ -214,7 +214,7 @@ export default function PackageExportPanel({ sessionId, datasetId, datasetName, 
           <label className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider block">
             1. Package Content Ingestion Checklist
           </label>
-          <div className="bg-background/40 border border-border/40 p-3 space-y-2 max-h-[140px] overflow-y-auto rounded-sm scrollbar-thin scrollbar-thumb-border">
+          <div className="bg-background/40 border border-border/40 p-3 space-y-2 max-h-[140px] overflow-y-auto rounded-lg scrollbar-thin scrollbar-thumb-border">
             {CHECKLIST.map((item) => {
               const isAvailable = availableAssets.includes(item.key);
               return (
@@ -279,7 +279,7 @@ export default function PackageExportPanel({ sessionId, datasetId, datasetName, 
           <button
             onClick={handleCompilePackage}
             disabled={!isValid || isCompiling}
-            className={`flex items-center justify-center gap-2 px-4 py-2.5 font-bold text-[10px] tracking-widest uppercase transition-all rounded-sm w-full ${
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 font-bold text-[10px] tracking-widest uppercase transition-all rounded-lg w-full ${
               !isValid || isCompiling
                 ? "bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed"
                 : "bg-primary text-background border border-primary hover:bg-primary-hover shadow-[0_0_12px_-3px_rgba(6,182,212,0.4)]"
@@ -300,7 +300,7 @@ export default function PackageExportPanel({ sessionId, datasetId, datasetName, 
         </div>
 
         {/* Right Side: Log console drawer inline */}
-        <div className="bg-black/60 border border-border/80 p-3 rounded-sm flex flex-col justify-between min-h-[140px] text-[8.5px] relative overflow-hidden">
+        <div className="bg-black/60 border border-border/80 p-3 rounded-lg flex flex-col justify-between min-h-[140px] text-[8.5px] relative overflow-hidden">
           <div className="absolute top-0 right-0 bg-border/20 px-1.5 py-0.5 text-[6.5px] text-muted-foreground uppercase">
             COMPILER FEED
           </div>
@@ -328,7 +328,7 @@ export default function PackageExportPanel({ sessionId, datasetId, datasetName, 
           </div>
 
           {isCompiling && (
-            <div className="w-full bg-slate-800/80 h-1 mt-2 rounded-sm overflow-hidden shrink-0">
+            <div className="w-full bg-slate-800/80 h-1 mt-2 rounded-lg overflow-hidden shrink-0">
               <div 
                 className="bg-primary h-full transition-all duration-300"
                 style={{ width: `${compileProgress}%` }}
@@ -354,7 +354,7 @@ export default function PackageExportPanel({ sessionId, datasetId, datasetName, 
             <a
               href={getPackageDownloadUrl(sessionId)}
               download
-              className="w-full inline-flex items-center justify-center gap-1.5 bg-emerald-500 text-background hover:bg-emerald-600 border border-emerald-500 font-bold px-3 py-2 text-[10px] tracking-widest uppercase transition-all rounded-sm shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)] cursor-pointer"
+              className="w-full inline-flex items-center justify-center gap-1.5 bg-emerald-500 text-background hover:bg-emerald-600 border border-emerald-500 font-bold px-3 py-2 text-[10px] tracking-widest uppercase transition-all rounded-lg shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)] cursor-pointer"
             >
               <FileDown className="w-4 h-4 animate-bounce" />
               Download Analysis Package

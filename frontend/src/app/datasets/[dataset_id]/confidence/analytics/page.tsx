@@ -56,7 +56,6 @@ export default function ConfidenceAnalyticsPage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -146,7 +145,7 @@ export default function ConfidenceAnalyticsPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
@@ -154,13 +153,13 @@ export default function ConfidenceAnalyticsPage() {
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
-          {error || "Analytics telemetry for the requested dataset is unavailable."}
+          {error || "Analytics Dataset data is unavailable. Run the required workflow step first."}
         </p>
         <button
           onClick={() => router.push(`/datasets/${datasetId}/confidence`)}
           className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border uppercase tracking-widest text-[10px] font-bold"
         >
-          Back to Confidence Workspace
+          Back to Confidence
         </button>
       </div>
     )
@@ -169,7 +168,12 @@ export default function ConfidenceAnalyticsPage() {
   const isAnalyticsAvailable = analytics && analytics.analytics_status === "completed"
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="confidence"
+      />
       {/* Central Viewport */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-6 space-y-6">
         
@@ -181,7 +185,7 @@ export default function ConfidenceAnalyticsPage() {
               className="inline-flex items-center space-x-1.5 text-[9px] text-primary hover:underline uppercase font-bold"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Confidence Workspace</span>
+              <span>Back to Confidence</span>
             </button>
             <ViewerBreadcrumb
               datasetName={dataset.dataset_name}
@@ -206,7 +210,7 @@ export default function ConfidenceAnalyticsPage() {
 
         {/* Narrative Headline */}
         {analytics?.headline_summary && (
-          <div className="border border-border bg-card/25 p-4 rounded-sm relative overflow-hidden">
+          <div className="border border-border bg-card/25 p-4 rounded-lg relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
               Operational Guideline
             </div>
@@ -227,7 +231,7 @@ export default function ConfidenceAnalyticsPage() {
             <div className="lg:col-span-2 space-y-6">
               
               {/* Statistical Progress Metrics */}
-              <div className="border border-border bg-card/20 p-5 rounded-sm space-y-4">
+              <div className="border border-border bg-card/20 p-5 rounded-lg space-y-4">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                   <Grid className="w-4 h-4 text-primary" />
                   Key Parameter Metrics
@@ -244,7 +248,7 @@ export default function ConfidenceAnalyticsPage() {
                           : "0%"}
                       </span>
                     </div>
-                    <div className="w-full bg-muted/40 h-2 border border-border/50 rounded-sm overflow-hidden">
+                    <div className="w-full bg-muted/40 h-2 border border-border/50 rounded-lg overflow-hidden">
                       <div 
                         className="bg-emerald-500 h-full transition-all duration-500" 
                         style={{ width: `${(estimation?.mean_confidence_score || 0) * 100}%` }}
@@ -262,7 +266,7 @@ export default function ConfidenceAnalyticsPage() {
                           : "0%"}
                       </span>
                     </div>
-                    <div className="w-full bg-muted/40 h-2 border border-border/50 rounded-sm overflow-hidden">
+                    <div className="w-full bg-muted/40 h-2 border border-border/50 rounded-lg overflow-hidden">
                       <div 
                         className="bg-cyan-500 h-full transition-all duration-500" 
                         style={{ width: `${reliability?.dataset_reliability_score || 0}%` }}
@@ -280,7 +284,7 @@ export default function ConfidenceAnalyticsPage() {
                           : "0%"}
                       </span>
                     </div>
-                    <div className="w-full bg-muted/40 h-2 border border-border/50 rounded-sm overflow-hidden">
+                    <div className="w-full bg-muted/40 h-2 border border-border/50 rounded-lg overflow-hidden">
                       <div 
                         className="bg-primary h-full transition-all duration-500" 
                         style={{ width: `${reliability?.reconstruction_reliability_score || 0}%` }}
@@ -298,7 +302,7 @@ export default function ConfidenceAnalyticsPage() {
                           : "0%"}
                       </span>
                     </div>
-                    <div className="w-full bg-muted/40 h-2 border border-border/50 rounded-sm overflow-hidden">
+                    <div className="w-full bg-muted/40 h-2 border border-border/50 rounded-lg overflow-hidden">
                       <div 
                         className="bg-rose-500 h-full transition-all duration-500" 
                         style={{ width: `${estimation?.low_confidence_area_percent || 0}%` }}
@@ -310,7 +314,7 @@ export default function ConfidenceAnalyticsPage() {
               </div>
 
               {/* Segmented Region Detailed Table */}
-              <div className="border border-border bg-card/20 p-5 rounded-sm space-y-3">
+              <div className="border border-border bg-card/20 p-5 rounded-lg space-y-3">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">
                   Segment Subgrid Classification Report
                 </h3>
@@ -332,7 +336,7 @@ export default function ConfidenceAnalyticsPage() {
                             <td className="py-2.5 text-slate-300">{reg.area_px} px</td>
                             <td className="py-2.5 text-emerald-400 font-bold">{(reg.mean_confidence * 100).toFixed(1)}%</td>
                             <td className="py-2.5">
-                              <span className={`px-1.5 py-0.5 rounded-sm text-[8px] font-bold border ${
+                              <span className={`px-1.5 py-0.5 rounded-lg text-[8px] font-bold border ${
                                 reg.reliability_tier === "High" ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/5" :
                                 reg.reliability_tier === "Moderate" ? "text-cyan-400 border-cyan-500/30 bg-cyan-500/5" :
                                 reg.reliability_tier === "Low" ? "text-amber-400 border-amber-500/30 bg-amber-500/5" :
@@ -361,7 +365,7 @@ export default function ConfidenceAnalyticsPage() {
             <div className="space-y-6">
               
               {/* Telemetry settings */}
-              <div className="border border-border bg-card/20 p-5 rounded-sm space-y-3">
+              <div className="border border-border bg-card/20 p-5 rounded-lg space-y-3">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                   <Shield className="w-4 h-4 text-primary" />
                   Telemetry Registry
@@ -387,7 +391,7 @@ export default function ConfidenceAnalyticsPage() {
               </div>
 
               {/* Parsed files download list */}
-              <div className="border border-border bg-card/20 p-5 rounded-sm space-y-3">
+              <div className="border border-border bg-card/20 p-5 rounded-lg space-y-3">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-primary" />
                   Generated Artifacts
@@ -445,7 +449,7 @@ export default function ConfidenceAnalyticsPage() {
 
           </div>
         ) : (
-          <div className="border border-dashed border-border bg-card/10 p-12 rounded-sm text-center flex flex-col items-center justify-center space-y-3 max-w-md mx-auto my-12">
+          <div className="border border-dashed border-border bg-card/10 p-12 rounded-lg text-center flex flex-col items-center justify-center space-y-3 max-w-md mx-auto my-12">
             <AlertTriangle className="w-8 h-8 text-amber-500 animate-pulse" />
             <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
               Analytics Telemetry Pending
@@ -457,15 +461,6 @@ export default function ConfidenceAnalyticsPage() {
         )}
 
       </div>
-
-      {/* Sidebar Panel */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="confidence"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

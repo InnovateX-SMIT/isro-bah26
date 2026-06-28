@@ -39,7 +39,6 @@ export default function ReconstructionEvaluationPage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -91,11 +90,11 @@ export default function ReconstructionEvaluationPage() {
 
   if (error || !dataset || !report || !scorecard) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            Scorecard Node Link Failure
+            Could Not Load Quality Scorecard
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
@@ -115,7 +114,12 @@ export default function ReconstructionEvaluationPage() {
   const overallGrade = scorecard.overall_grade
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="reconstruction"
+      />
       
       {/* Central Viewport */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-6 space-y-6">
@@ -152,7 +156,7 @@ export default function ReconstructionEvaluationPage() {
         {/* Core summary panel (Overall grade + score) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          <div className="border border-border bg-card/25 p-5 rounded-sm flex items-center justify-between col-span-1 relative overflow-hidden">
+          <div className="border border-border bg-card/25 p-5 rounded-lg flex items-center justify-between col-span-1 relative overflow-hidden">
             <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase font-bold">
               Grade
             </div>
@@ -163,12 +167,12 @@ export default function ReconstructionEvaluationPage() {
                 Class: {report.overall_assessment}
               </div>
             </div>
-            <div className="text-4xl font-black text-primary border border-primary/20 bg-primary/5 px-4 py-2 rounded-sm shadow-[0_0_15px_-4px_rgba(6,182,212,0.45)]">
+            <div className="text-4xl font-black text-primary border border-primary/20 bg-primary/5 px-4 py-2 rounded-lg shadow-[0_0_15px_-4px_rgba(6,182,212,0.45)]">
               {overallGrade}
             </div>
           </div>
 
-          <div className="border border-border bg-card/25 p-5 rounded-sm col-span-2 space-y-2 relative overflow-hidden flex flex-col justify-center">
+          <div className="border border-border bg-card/25 p-5 rounded-lg col-span-2 space-y-2 relative overflow-hidden flex flex-col justify-center">
             <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase font-bold">
               Summary
             </div>
@@ -187,10 +191,10 @@ export default function ReconstructionEvaluationPage() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           
           {/* Left panel: Metric scoring breakdown */}
-          <div className="lg:col-span-3 border border-border bg-card/20 p-5 rounded-sm space-y-4">
+          <div className="lg:col-span-3 border border-border bg-card/20 p-5 rounded-lg space-y-4">
             <h2 className="text-xs font-bold text-foreground uppercase tracking-widest">Metric Scorecard Details</h2>
             
-            <div className="border border-border/40 rounded-sm overflow-hidden bg-background/20 text-[11px]">
+            <div className="border border-border/40 rounded-lg overflow-hidden bg-background/20 text-[11px]">
               <div className="grid grid-cols-4 bg-muted/40 text-[9px] font-bold uppercase tracking-wider p-2.5 border-b border-border/40 text-slate-400">
                 <div className="col-span-2">Quality Criterion</div>
                 <div className="text-center">Score</div>
@@ -215,7 +219,7 @@ export default function ReconstructionEvaluationPage() {
                       <div className="col-span-2 font-bold text-slate-300">{metric}</div>
                       <div className="text-center text-slate-100 font-bold">{val.toFixed(1)}%</div>
                       <div className="text-right">
-                        <span className={`text-[9.5px] font-black px-1.5 py-0.5 rounded-sm ${
+                        <span className={`text-[9.5px] font-black px-1.5 py-0.5 rounded-lg ${
                           grade.includes("A") ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25" :
                           grade.includes("B") ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/25" :
                           "bg-amber-500/10 text-amber-400 border border-amber-500/25"
@@ -235,7 +239,7 @@ export default function ReconstructionEvaluationPage() {
           <div className="lg:col-span-2 space-y-6">
             
             {/* Strengths */}
-            <div className="border border-border bg-card/25 p-5 rounded-sm space-y-3">
+            <div className="border border-border bg-card/25 p-5 rounded-lg space-y-3">
               <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                 <ThumbsUp className="w-4 h-4 text-emerald-400" />
                 SYSTEM STRENGTHS
@@ -248,7 +252,7 @@ export default function ReconstructionEvaluationPage() {
             </div>
 
             {/* Weaknesses & Recommendations */}
-            <div className="border border-border bg-card/25 p-5 rounded-sm space-y-3">
+            <div className="border border-border bg-card/25 p-5 rounded-lg space-y-3">
               <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                 <ThumbsDown className="w-4 h-4 text-amber-500" />
                 WEAKNESSES & RECOMMENDATIONS
@@ -284,15 +288,6 @@ export default function ReconstructionEvaluationPage() {
         </div>
 
       </div>
-
-      {/* Sidebar */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="reconstruction"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

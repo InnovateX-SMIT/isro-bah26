@@ -12,7 +12,7 @@ export default function StatusFooter({ sessionId, timestamp, isLocked }: StatusF
     : new Date().toLocaleString("en-US", { hour12: false });
 
   return (
-    <div className="border border-border bg-card/10 p-3 px-4 font-mono text-[9px] text-muted-foreground flex flex-col md:flex-row justify-between items-center gap-2 rounded-sm select-none">
+    <div className="border border-border bg-card/10 p-3 px-4 font-mono text-[9px] text-muted-foreground flex flex-col md:flex-row justify-between items-center gap-2 rounded-lg select-none">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
         <div className="flex items-center space-x-1">
           <span className="text-[7.5px] uppercase tracking-wider text-slate-500 font-bold">DATABASE TARGET:</span>

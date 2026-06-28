@@ -31,7 +31,7 @@ export default function IntelligenceSummaryPanel({ summary, status }: Intelligen
         </h2>
 
         {/* Dynamic Summary terminal screen */}
-        <div className="border border-border/40 bg-black/45 p-4 rounded-sm relative overflow-hidden shadow-[inset_0_0_15px_rgba(0,0,0,0.6)]">
+        <div className="border border-border/40 bg-black/45 p-4 rounded-lg relative overflow-hidden shadow-[inset_0_0_15px_rgba(0,0,0,0.6)]">
           {/* Matrix scanline effect */}
           <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.02)_50%,rgba(0,0,0,0.15)_50%)] bg-[length:100%_4px] pointer-events-none" />
           
@@ -59,7 +59,7 @@ export default function IntelligenceSummaryPanel({ summary, status }: Intelligen
           <FileText className="w-3.5 h-3.5" />
           <span>REPORT INTEGRITY:</span>
         </div>
-        <div className={`px-2 py-0.5 border rounded-sm font-bold uppercase tracking-widest text-[8px] ${readiness.color}`}>
+        <div className={`px-2 py-0.5 border rounded-lg font-bold uppercase tracking-widest text-[8px] ${readiness.color}`}>
           {readiness.text}
         </div>
       </div>

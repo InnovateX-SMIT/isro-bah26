@@ -54,7 +54,7 @@ export default function ProviderStatisticsCard({ stats }: ProviderStatisticsCard
                   <span className="font-bold text-slate-200">{count} SCENE(S) ({percentage.toFixed(0)}%)</span>
                 </div>
                 {/* Visual bar */}
-                <div className="w-full bg-border/20 h-1.5 rounded-sm overflow-hidden">
+                <div className="w-full bg-border/20 h-1.5 rounded-lg overflow-hidden">
                   <div
                     className="bg-primary h-full transition-all duration-300"
                     style={{ width: `${percentage}%` }}

@@ -45,7 +45,6 @@ export default function CloudVsReconstructionPage() {
 
   const [zoom, setZoom] = useState(1)
   const [fitMode, setFitMode] = useState<"contain" | "actual">("contain")
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -117,11 +116,11 @@ export default function CloudVsReconstructionPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            Comparison Failure
+            Could Not Load Comparison
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
@@ -146,7 +145,12 @@ export default function CloudVsReconstructionPage() {
     : ""
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="comparison"
+      />
       
       {/* Central view frame */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -177,7 +181,7 @@ export default function CloudVsReconstructionPage() {
 
           {/* Interactive controls */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center space-x-1 bg-background border border-border p-1 rounded-sm">
+            <div className="flex items-center space-x-1 bg-background border border-border p-1 rounded-lg">
               <button
                 onClick={() => setZoom(prev => Math.max(0.5, prev - 0.25))}
                 disabled={zoom <= 0.5}
@@ -202,7 +206,7 @@ export default function CloudVsReconstructionPage() {
                 setZoom(1)
                 setFitMode(fitMode === "contain" ? "actual" : "contain")
               }}
-              className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-sm flex items-center gap-1"
+              className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-lg flex items-center gap-1"
             >
               <Maximize2 className="w-3 h-3" />
               {fitMode === "contain" ? "Actual Size" : "Fit Window"}

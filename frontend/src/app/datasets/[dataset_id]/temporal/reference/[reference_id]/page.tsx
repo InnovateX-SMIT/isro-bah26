@@ -39,7 +39,6 @@ export default function IndividualReferencePage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -93,11 +92,11 @@ export default function IndividualReferencePage() {
 
   if (error || !dataset || !reference) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            Orbit Node Link Failure
+            Could Not Load Reference Scene
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
@@ -117,7 +116,12 @@ export default function IndividualReferencePage() {
   const previewUrl = cand?.preview_url
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="temporal"
+      />
       {/* Central Viewport */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-6 space-y-6">
         
@@ -142,7 +146,7 @@ export default function IndividualReferencePage() {
             />
             <h1 className="text-md font-bold uppercase text-foreground flex items-center gap-1.5 mt-1">
               <Layers className="w-4.5 h-4.5 text-primary" />
-              Reference Orbit Inspector: #{reference.rank_position}
+              Reference Scene: #{reference.rank_position}
             </h1>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
               Candidate ID: <span className="text-foreground select-all">{reference.candidate_id}</span>
@@ -160,7 +164,7 @@ export default function IndividualReferencePage() {
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           
           {/* Left Column: Big Image Preview */}
-          <div className="lg:col-span-3 border border-border bg-black/45 rounded-sm p-4 flex flex-col justify-center items-center relative min-h-[350px]">
+          <div className="lg:col-span-3 border border-border bg-black/45 rounded-lg p-4 flex flex-col justify-center items-center relative min-h-[350px]">
             <div className="absolute top-3 left-3 bg-black/75 border border-border/40 px-2.5 py-1 text-[8.5px] text-primary uppercase font-bold tracking-widest z-10">
               Imagery Viewport
             </div>
@@ -168,7 +172,7 @@ export default function IndividualReferencePage() {
               <img
                 src={previewUrl}
                 alt={`Candidate image ${reference.candidate_id}`}
-                className="max-h-[380px] max-w-full object-contain rounded-sm shadow-md border border-border/20"
+                className="max-h-[380px] max-w-full object-contain rounded-lg shadow-md border border-border/20"
                 crossOrigin="anonymous"
               />
             ) : (
@@ -183,7 +187,7 @@ export default function IndividualReferencePage() {
           <div className="lg:col-span-2 space-y-6">
             
             {/* Justification Box */}
-            <div className="border border-border bg-card/25 p-5 rounded-sm space-y-3 relative overflow-hidden">
+            <div className="border border-border bg-card/25 p-5 rounded-lg space-y-3 relative overflow-hidden">
               <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8.5px] text-primary tracking-widest uppercase">
                 JUSTIFICATION
               </div>
@@ -197,7 +201,7 @@ export default function IndividualReferencePage() {
             </div>
 
             {/* Structured Parameters Panel */}
-            <div className="border border-border bg-card/20 p-5 rounded-sm space-y-4">
+            <div className="border border-border bg-card/20 p-5 rounded-lg space-y-4">
               <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                 <Database className="w-4 h-4 text-primary" />
                 ORBITAL PARAMETERS
@@ -238,7 +242,7 @@ export default function IndividualReferencePage() {
                 {cand?.metadata && Object.keys(cand.metadata).length > 0 && (
                   <div className="pt-2 border-t border-border/10">
                     <span className="text-muted-foreground block text-[9px] uppercase tracking-wider mb-1.5">Extended Telemetry tags</span>
-                    <div className="bg-black/25 p-2.5 rounded-sm text-[9px] border border-border/30 max-h-[120px] overflow-y-auto space-y-1">
+                    <div className="bg-black/25 p-2.5 rounded-lg text-[9px] border border-border/30 max-h-[120px] overflow-y-auto space-y-1">
                       {Object.entries(cand.metadata).map(([key, val]) => (
                         <div key={key} className="flex justify-between items-start">
                           <span className="text-slate-400 uppercase tracking-tight block shrink-0 max-w-[120px] truncate">{key}:</span>
@@ -257,15 +261,6 @@ export default function IndividualReferencePage() {
         </div>
 
       </div>
-
-      {/* Sidebar */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="temporal"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

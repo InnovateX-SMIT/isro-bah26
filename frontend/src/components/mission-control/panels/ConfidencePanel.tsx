@@ -16,7 +16,7 @@ export default function ConfidencePanel({ datasetId, confidence, reliability, he
   const hasConfidence = status === "available" && confidence;
 
   return (
-    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-sm hover:border-primary/40 transition-colors flex flex-col justify-between h-full">
+    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-lg hover:border-primary/40 transition-colors flex flex-col justify-between h-full">
       <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
         INTEL // CONFIDENCE
       </div>
@@ -30,7 +30,7 @@ export default function ConfidencePanel({ datasetId, confidence, reliability, he
         {hasConfidence ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 text-[10px]">
-              <div className="bg-background/25 border border-border/30 p-2 rounded-sm space-y-1">
+              <div className="bg-background/25 border border-border/30 p-2 rounded-lg space-y-1">
                 <span className="text-[7.5px] text-slate-400 block">RELIABILITY TIER</span>
                 <span className={`font-bold ${
                   reliability?.dataset_reliability_tier?.toUpperCase() === "HIGH" ? "text-emerald-400" :
@@ -40,7 +40,7 @@ export default function ConfidencePanel({ datasetId, confidence, reliability, he
                   {reliability?.dataset_reliability_tier || "MODERATE"}
                 </span>
               </div>
-              <div className="bg-background/25 border border-border/30 p-2 rounded-sm space-y-1">
+              <div className="bg-background/25 border border-border/30 p-2 rounded-lg space-y-1">
                 <span className="text-[7.5px] text-slate-400 block">MEAN SCORE</span>
                 <span className="font-bold text-slate-100">
                   {reliability?.dataset_reliability_score !== undefined 
@@ -68,7 +68,7 @@ export default function ConfidencePanel({ datasetId, confidence, reliability, he
             </div>
 
             {analytics?.headline_summary && (
-              <div className="bg-black/25 border border-border/20 p-3 rounded-sm space-y-1.5 text-[8.5px] text-slate-400 italic">
+              <div className="bg-black/25 border border-border/20 p-3 rounded-lg space-y-1.5 text-[8.5px] text-slate-400 italic">
                 <div className="text-[7.5px] text-primary font-bold uppercase tracking-wider not-italic mb-1">
                   SUMMARY BRIEFING:
                 </div>

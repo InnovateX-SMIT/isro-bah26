@@ -15,7 +15,7 @@ export default function CloudPanel({ datasetId, cloud, status }: CloudPanelProps
   const hasCloud = status === "available" && cloud;
 
   return (
-    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-sm hover:border-primary/40 transition-colors">
+    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-lg hover:border-primary/40 transition-colors">
       <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
         INTEL // CLOUD
       </div>
@@ -29,19 +29,19 @@ export default function CloudPanel({ datasetId, cloud, status }: CloudPanelProps
         <div className="space-y-3">
           {/* Burden and coverage indices */}
           <div className="grid grid-cols-3 gap-1.5 text-[9px] text-center">
-            <div className="bg-background/25 border border-border/30 p-2 rounded-sm space-y-0.5">
+            <div className="bg-background/25 border border-border/30 p-2 rounded-lg space-y-0.5">
               <div className="text-[7.5px] text-slate-400">BURDEN INDEX</div>
               <div className="text-xs font-bold text-amber-400">
                 {cloud.analytics?.burden_index !== undefined ? `${cloud.analytics.burden_index.toFixed(1)}/100` : "43.5/100"}
               </div>
             </div>
-            <div className="bg-background/25 border border-border/30 p-2 rounded-sm space-y-0.5">
+            <div className="bg-background/25 border border-border/30 p-2 rounded-lg space-y-0.5">
               <div className="text-[7.5px] text-slate-400">CLOUD COVER</div>
               <div className="text-xs font-bold text-slate-100">
                 {cloud.cloud_coverage_percent !== undefined ? `${cloud.cloud_coverage_percent.toFixed(1)}%` : "12.4%"}
               </div>
             </div>
-            <div className="bg-background/25 border border-border/30 p-2 rounded-sm space-y-0.5">
+            <div className="bg-background/25 border border-border/30 p-2 rounded-lg space-y-0.5">
               <div className="text-[7.5px] text-slate-400">SHADOW AREA</div>
               <div className="text-xs font-bold text-slate-100">
                 {cloud.shadow?.total_shadow_area_percent !== undefined ? `${cloud.shadow.total_shadow_area_percent.toFixed(1)}%` : "4.8%"}
@@ -83,26 +83,26 @@ export default function CloudPanel({ datasetId, cloud, status }: CloudPanelProps
               <div className="flex gap-1.5">
                 <button
                   onClick={() => setPreviewType("segmentation")}
-                  className={`px-1 rounded-sm border ${previewType === "segmentation" ? "bg-primary/20 border-primary text-primary" : "border-border/40"}`}
+                  className={`px-1 rounded-lg border ${previewType === "segmentation" ? "bg-primary/20 border-primary text-primary" : "border-border/40"}`}
                 >
                   SEG
                 </button>
                 <button
                   onClick={() => setPreviewType("classification")}
-                  className={`px-1 rounded-sm border ${previewType === "classification" ? "bg-primary/20 border-primary text-primary" : "border-border/40"}`}
+                  className={`px-1 rounded-lg border ${previewType === "classification" ? "bg-primary/20 border-primary text-primary" : "border-border/40"}`}
                 >
                   CLASS
                 </button>
                 <button
                   onClick={() => setPreviewType("shadow")}
-                  className={`px-1 rounded-sm border ${previewType === "shadow" ? "bg-primary/20 border-primary text-primary" : "border-border/40"}`}
+                  className={`px-1 rounded-lg border ${previewType === "shadow" ? "bg-primary/20 border-primary text-primary" : "border-border/40"}`}
                 >
                   SHADOW
                 </button>
               </div>
             </div>
 
-            <div className="border border-border/50 rounded-sm overflow-hidden bg-black/40 h-[100px] flex items-center justify-center relative">
+            <div className="border border-border/50 rounded-lg overflow-hidden bg-black/40 h-[100px] flex items-center justify-center relative">
               <img
                 src={`${API_URL}/api/v1/cloud-${previewType}/${datasetId}/preview`}
                 alt={`${previewType} mask preview`}

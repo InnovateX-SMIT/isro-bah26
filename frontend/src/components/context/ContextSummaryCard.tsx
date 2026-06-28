@@ -31,7 +31,7 @@ export default function ContextSummaryCard({ profile }: ContextSummaryCardProps)
           <ShieldAlert className="w-3 h-3 text-amber-500 animate-pulse" />
           <span className="uppercase font-bold text-amber-500">EXPLAINABILITY LOG:</span>
         </div>
-        <span className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/25 text-amber-400 font-bold uppercase rounded-sm select-all">
+        <span className="px-1.5 py-0.5 bg-amber-500/10 border border-amber-500/25 text-amber-400 font-bold uppercase rounded-lg select-all">
           {profile.inference_basis}
         </span>
       </div>

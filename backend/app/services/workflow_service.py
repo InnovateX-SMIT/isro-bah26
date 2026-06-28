@@ -439,7 +439,7 @@ class WorkflowService:
                 updated_at=fmt_dt(reconstruction.updated_at),
                 duration_ms=rec_duration,
                 inputs={"strategy": reconstruction.reconstruction_method},
-                outputs={"output_raster_path": reconstruction.reconstructed_image_path, "preview_raster_path": reconstruction.preview_image_path},
+                outputs={"output_raster_path": reconstruction.output_image_path, "preview_raster_path": reconstruction.preview_image_path},
                 related_apis=["POST /api/v1/reconstruction/run/{session_id}", "POST /api/v1/reconstruction/optimize/{session_id}", "POST /api/v1/reconstruction/evaluate/{session_id}"],
                 dependencies=["Cloud Intelligence"]
             )

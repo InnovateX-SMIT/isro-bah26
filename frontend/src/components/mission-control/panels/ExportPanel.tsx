@@ -167,20 +167,13 @@ export default function ExportPanel({ sessionId, datasetId, datasetName, isSessi
   };
 
   return (
-    <div className="border border-border bg-card/25 p-5 font-mono space-y-5 relative overflow-hidden rounded-sm hover:border-primary/30 transition-all duration-300">
-      <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2.5 py-0.5 text-[8.5px] text-primary tracking-widest uppercase">
-        CONTROL CENTER // EXPORTS
-      </div>
-
+    <div className="font-mono space-y-5">
       <div className="flex items-center gap-2 border-b border-border/50 pb-3">
         <Compass className="w-5 h-5 text-primary" />
         <div>
           <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
-            Raster Export Command Command Center
+            Raster Export Command Center
           </h2>
-          <p className="text-[8px] text-muted-foreground uppercase tracking-wider">
-            Phase 11A Operational Subsystem
-          </p>
         </div>
       </div>
 
@@ -222,7 +215,7 @@ export default function ExportPanel({ sessionId, datasetId, datasetName, isSessi
                     key={fmt.id}
                     onClick={() => setSelectedFormat(fmt.id)}
                     disabled={isCompiling}
-                    className={`flex-1 px-2.5 py-2 border text-[9.5px] font-bold tracking-wider transition-all rounded-sm uppercase ${
+                    className={`flex-1 px-2.5 py-2 border text-[9.5px] font-bold tracking-wider transition-all rounded-lg uppercase ${
                       selectedFormat === fmt.id
                         ? "bg-primary/10 border-primary text-primary"
                         : "border-border/60 text-muted-foreground hover:bg-muted/10 hover:text-foreground"
@@ -269,7 +262,7 @@ export default function ExportPanel({ sessionId, datasetId, datasetName, isSessi
             <button
               onClick={handleCompile}
               disabled={!isValid || isCompiling}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 font-bold text-[10px] tracking-widest uppercase transition-all rounded-sm w-full md:w-auto ${
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 font-bold text-[10px] tracking-widest uppercase transition-all rounded-lg w-full md:w-auto ${
                 !isValid || isCompiling
                   ? "bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed"
                   : "bg-primary text-background border border-primary hover:bg-primary-hover shadow-[0_0_12px_-3px_rgba(6,182,212,0.4)]"
@@ -291,7 +284,7 @@ export default function ExportPanel({ sessionId, datasetId, datasetName, isSessi
         </div>
 
         {/* Col 2: Console Logs and Output details */}
-        <div className="bg-black/60 border border-border/80 p-4 rounded-sm flex flex-col justify-between min-h-[160px] text-[9px] relative overflow-hidden">
+        <div className="bg-black/60 border border-border/80 p-4 rounded-lg flex flex-col justify-between min-h-[160px] text-[9px] relative overflow-hidden">
           <div className="absolute top-0 right-0 bg-border/20 px-1.5 py-0.5 text-[7px] text-muted-foreground uppercase">
             OPERATOR LOGS
           </div>
@@ -316,7 +309,7 @@ export default function ExportPanel({ sessionId, datasetId, datasetName, isSessi
             )}
 
             {isCompiling && (
-              <div className="w-full bg-slate-800/80 h-1 mt-2 rounded-sm overflow-hidden">
+              <div className="w-full bg-slate-800/80 h-1 mt-2 rounded-lg overflow-hidden">
                 <div 
                   className="bg-primary h-full transition-all duration-300"
                   style={{ width: `${compileProgress}%` }}
@@ -342,7 +335,7 @@ export default function ExportPanel({ sessionId, datasetId, datasetName, isSessi
               <a
                 href={getExportDownloadUrl(exportResult.export_id)}
                 download
-                className="w-full inline-flex items-center justify-center gap-1.5 bg-emerald-500 text-background hover:bg-emerald-600 border border-emerald-500 font-bold px-3 py-2 text-[10px] tracking-widest uppercase transition-all rounded-sm shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)] cursor-pointer"
+                className="w-full inline-flex items-center justify-center gap-1.5 bg-emerald-500 text-background hover:bg-emerald-600 border border-emerald-500 font-bold px-3 py-2 text-[10px] tracking-widest uppercase transition-all rounded-lg shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)] cursor-pointer"
               >
                 <FileDown className="w-3.5 h-3.5" />
                 Download Compiled Raster

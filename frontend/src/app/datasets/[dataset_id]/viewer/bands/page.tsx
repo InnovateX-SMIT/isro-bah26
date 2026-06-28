@@ -77,7 +77,6 @@ export default function SpectralBandsViewerPage() {
   const [activeBandIdx, setActiveBandIdx] = useState(0)
   const [zoom, setZoom] = useState(1)
   const [fitMode, setFitMode] = useState<"contain" | "actual">("contain")
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imageCacheRef = useRef<HTMLImageElement | null>(null)
@@ -198,7 +197,7 @@ export default function SpectralBandsViewerPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
@@ -206,7 +205,7 @@ export default function SpectralBandsViewerPage() {
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
-          {error || "Telemetry for the requested dataset is unavailable."}
+          {error || "Dataset data is unavailable. Run the required workflow step first."}
         </p>
         <button
           onClick={() => router.push(`/datasets/${datasetId}/viewer`)}
@@ -221,7 +220,12 @@ export default function SpectralBandsViewerPage() {
   const hasPreview = preview && preview.preview_status === "COMPLETED"
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="dataset"
+      />
       
       {/* Central view frame */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -254,19 +258,19 @@ export default function SpectralBandsViewerPage() {
           <div className="flex flex-wrap items-center gap-2">
             
             {/* Band selector tab toggles */}
-            <div className="flex bg-background border border-border p-1 rounded-sm text-[9px] font-bold uppercase">
+            <div className="flex bg-background border border-border p-1 rounded-lg text-[9px] font-bold uppercase">
               {BAND_DEFINITIONS.map((band, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveBandIdx(idx)}
-                  className={`px-3 py-1 rounded-sm transition-colors cursor-pointer ${activeBandIdx === idx ? "bg-primary text-background" : "text-muted-foreground hover:bg-muted"}`}
+                  className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${activeBandIdx === idx ? "bg-primary text-background" : "text-muted-foreground hover:bg-muted"}`}
                 >
                   Band {band.number}
                 </button>
               ))}
             </div>
 
-            <div className="flex items-center space-x-1 bg-background border border-border p-1 rounded-sm">
+            <div className="flex items-center space-x-1 bg-background border border-border p-1 rounded-lg">
               <button
                 onClick={() => setZoom(prev => Math.max(0.5, prev - 0.25))}
                 disabled={zoom <= 0.5}
@@ -291,7 +295,7 @@ export default function SpectralBandsViewerPage() {
                 setZoom(1)
                 setFitMode(fitMode === "contain" ? "actual" : "contain")
               }}
-              className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-sm flex items-center gap-1"
+              className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-lg flex items-center gap-1"
             >
               <Maximize2 className="w-3 h-3" />
               {fitMode === "contain" ? "Actual Size" : "Fit Window"}
@@ -303,7 +307,7 @@ export default function SpectralBandsViewerPage() {
         <div className="flex-1 bg-black/65 overflow-hidden relative flex items-center justify-center p-6">
           
           {/* Grayscale extraction active indicator */}
-          <div className="absolute top-3 left-3 bg-background/85 border border-border px-2.5 py-1 rounded-sm text-[9px] text-slate-300 font-bold uppercase z-10 select-none space-y-0.5">
+          <div className="absolute top-3 left-3 bg-background/85 border border-border px-2.5 py-1 rounded-lg text-[9px] text-slate-300 font-bold uppercase z-10 select-none space-y-0.5">
             <div>CURRENT VIEWPORT: {activeBand.name}</div>
             <div className="text-[7.5px] text-muted-foreground tracking-wide">
               Wavelength: {activeBand.wavelength} &middot; Mode: Grayscale Isolation
@@ -348,7 +352,7 @@ export default function SpectralBandsViewerPage() {
               </div>
             </div>
           ) : (
-            <div className="border border-dashed border-border bg-card/10 p-8 rounded-sm text-center flex flex-col items-center justify-center space-y-3 max-w-sm">
+            <div className="border border-dashed border-border bg-card/10 p-8 rounded-lg text-center flex flex-col items-center justify-center space-y-3 max-w-sm">
               <AlertTriangle className="w-6 h-6 text-amber-500 animate-pulse" />
               <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
                 Bands preview missing
@@ -396,15 +400,6 @@ export default function SpectralBandsViewerPage() {
         </div>
 
       </div>
-
-      {/* Sidebar Panel */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="dataset"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

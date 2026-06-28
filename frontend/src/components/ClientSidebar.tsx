@@ -14,7 +14,10 @@ import {
   Globe,
   Shield,
   Pin,
-  PinOff
+  PinOff,
+  Download,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react"
 
 export default function ClientSidebar() {
@@ -24,9 +27,10 @@ export default function ClientSidebar() {
   const navItems = [
     { label: "Mission Overview", href: "/", icon: Home },
     { label: "Analysis Pipeline", href: "/analysis", icon: Cpu },
-    { label: "Mission Control", href: "/mission-control", icon: Shield },
     { label: "Data Inventory", href: "/datasets", icon: Database },
+    { label: "Mission Control", href: "/mission-control", icon: Shield },
     { label: "Geospatial Map", href: "/mission-control/geospatial", icon: Globe },
+    { label: "Export", href: "/export", icon: Download },
     { label: "Analytics Dashboard", href: "/dashboard", icon: BarChart3 },
     { label: "System Settings", href: "/settings", icon: Settings },
   ]
@@ -53,7 +57,7 @@ export default function ClientSidebar() {
         <div className="w-14 border-r border-border bg-card/20 flex flex-col items-center py-4 justify-between h-full font-mono text-[9px]">
           <div className="flex flex-col items-center space-y-6 w-full">
             {/* Platform logo */}
-            <div className="p-1 border border-primary/20 bg-primary/5 rounded-sm">
+            <div className="p-1.5 border border-primary/20 bg-primary/5 rounded-lg">
               <ShieldAlert className="w-5 h-5 text-primary" />
             </div>
 
@@ -61,7 +65,7 @@ export default function ClientSidebar() {
             <button
               onClick={() => setIsPinned(true)}
               className="text-muted-foreground hover:text-primary transition-all p-1 cursor-pointer"
-              title="Pin Sidebar (Always Expanded)"
+              title="Pin Sidebar"
             >
               <PinOff className="w-4 h-4 rotate-45" />
             </button>
@@ -74,9 +78,9 @@ export default function ClientSidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`p-2.5 border transition-all rounded-sm flex items-center justify-center ${
+                    className={`p-2.5 border transition-all rounded-lg flex items-center justify-center ${
                       isActive
-                        ? "bg-primary/10 border-primary text-primary shadow-[0_0_8px_-2px_rgba(6,182,212,0.25)]"
+                        ? "bg-primary/10 border-primary text-primary"
                         : "border-transparent text-muted-foreground hover:bg-muted/10 hover:text-foreground"
                     }`}
                     title={item.label}
@@ -88,10 +92,7 @@ export default function ClientSidebar() {
             </div>
           </div>
 
-          {/* Minimal visual specs */}
-          <div className="text-[7.5px] text-muted-foreground border border-border/30 px-1 py-0.5 uppercase tracking-widest bg-muted/10">
-            0x48A9
-          </div>
+          <div></div>
         </div>
       )}
 
@@ -108,23 +109,25 @@ export default function ClientSidebar() {
         <div className="p-4 space-y-6">
           {/* Brand header & Pin Action */}
           <div className="flex items-center justify-between border-b border-border/60 pb-4">
-            <div className="flex items-center space-x-2">
-              <ShieldAlert className="w-5 h-5 text-primary" />
+            <div className="flex items-center space-x-2.5">
+              <div className="p-1.5 bg-primary/10 border border-primary/20 rounded-lg">
+                <ShieldAlert className="w-5 h-5 text-primary" />
+              </div>
               <div>
-                <div className="font-bold tracking-widest text-foreground uppercase">ISRO-BAH26</div>
-                <div className="text-[9px] text-muted-foreground tracking-widest uppercase">Geospatial Inpaint Node</div>
+                <div className="font-bold tracking-wider text-foreground uppercase text-[11px]">GeoRecon Platform</div>
+                <div className="text-[9px] text-muted-foreground tracking-wider">LISS-IV Cloud Removal</div>
               </div>
             </div>
 
             {/* Pinned/Unpinned Switch toggle */}
             <button
               onClick={() => setIsPinned(!isPinned)}
-              className={`p-1.5 border rounded-sm transition-all hover:bg-muted/20 flex items-center justify-center cursor-pointer ${
+              className={`p-1.5 border rounded-lg transition-all hover:bg-muted/20 flex items-center justify-center cursor-pointer ${
                 isPinned 
                   ? "border-primary text-primary bg-primary/10" 
                   : "border-border/60 text-muted-foreground hover:text-foreground"
               }`}
-              title={isPinned ? "Unpin Sidebar (Auto-Hide Enabled)" : "Pin Sidebar (Always Visible)"}
+              title={isPinned ? "Unpin Sidebar" : "Pin Sidebar"}
             >
               {isPinned ? (
                 <Pin className="w-3.5 h-3.5" />
@@ -132,14 +135,6 @@ export default function ClientSidebar() {
                 <PinOff className="w-3.5 h-3.5" />
               )}
             </button>
-          </div>
-
-          {/* Mode label status indicator */}
-          <div className="flex items-center justify-between text-[9px] text-muted-foreground uppercase font-bold tracking-wider px-1">
-            <span>Navigation Workspace</span>
-            <span className={isPinned ? "text-primary" : "text-amber-500 animate-pulse"}>
-              {isPinned ? "📌 Pinned" : "📍 Auto-Hide"}
-            </span>
           </div>
 
           {/* Navigation Links list */}
@@ -150,9 +145,9 @@ export default function ClientSidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center space-x-3 px-3 py-2.5 border transition-all rounded-sm ${
+                  className={`flex items-center space-x-3 px-3 py-2.5 border transition-all rounded-lg ${
                     isActive
-                      ? "bg-primary/10 border-primary text-primary font-bold shadow-[0_0_10px_-3px_rgba(6,182,212,0.25)]"
+                      ? "bg-primary/10 border-primary text-primary font-bold"
                       : "border-transparent text-muted-foreground hover:bg-muted/10 hover:text-foreground"
                   }`}
                 >
@@ -164,23 +159,9 @@ export default function ClientSidebar() {
           </nav>
         </div>
 
-        {/* Footer System Specs */}
-        <div className="p-4 border-t border-border bg-muted/10 space-y-2 text-[10px] text-muted-foreground">
-          <div className="flex justify-between">
-            <span>PLATFORM:</span>
-            <span className="text-foreground">LOCAL-FIRST</span>
-          </div>
-          <div className="flex justify-between">
-            <span>COMPOSER:</span>
-            <span className="text-foreground">V5.1.4</span>
-          </div>
-          <div className="flex justify-between">
-            <span>ENGINE:</span>
-            <span className="text-foreground">FASTAPI v1</span>
-          </div>
-          <div className="mt-2 text-center text-[9px] border border-border/40 py-1 uppercase tracking-widest bg-muted/20 text-muted-foreground">
-            SYS_NODE // 0x48A9
-          </div>
+        {/* Footer System Version */}
+        <div className="p-4 border-t border-border bg-muted/5 text-[9px] text-muted-foreground text-center">
+          GeoRecon v1.0
         </div>
       </aside>
     </div>

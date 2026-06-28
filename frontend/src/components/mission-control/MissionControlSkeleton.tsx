@@ -7,7 +7,7 @@ export default function MissionControlSkeleton() {
       {/* 1. Status Bar skeleton */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="border border-border/40 bg-card/10 p-2.5 rounded-sm h-12 flex flex-col justify-between">
+          <div key={i} className="border border-border/40 bg-card/10 p-2.5 rounded-lg h-12 flex flex-col justify-between">
             <div className="h-2 bg-slate-800 rounded w-16" />
             <div className="h-3 bg-slate-700 rounded w-12" />
           </div>
@@ -15,12 +15,12 @@ export default function MissionControlSkeleton() {
       </div>
 
       {/* 2. Pipeline skeleton */}
-      <div className="border border-border/40 bg-card/15 p-4 rounded-sm space-y-4">
+      <div className="border border-border/40 bg-card/15 p-4 rounded-lg space-y-4">
         <div className="flex justify-between items-center">
           <div className="h-3 bg-slate-700 rounded w-32" />
           <div className="h-3 bg-slate-700 rounded w-24" />
         </div>
-        <div className="w-full bg-slate-900 border border-border/20 h-3 rounded-sm" />
+        <div className="w-full bg-slate-900 border border-border/20 h-3 rounded-lg" />
         <div className="flex justify-between gap-2 overflow-x-auto py-2">
           {Array.from({ length: 11 }).map((_, i) => (
             <div key={i} className="flex flex-col items-center space-y-2 shrink-0 w-16">
@@ -32,11 +32,11 @@ export default function MissionControlSkeleton() {
       </div>
 
       {/* 3. System Audit Checklist skeleton */}
-      <div className="border border-border/40 bg-card/10 p-4 space-y-3 rounded-sm">
+      <div className="border border-border/40 bg-card/10 p-4 space-y-3 rounded-lg">
         <div className="h-3 bg-slate-700 rounded w-48" />
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-slate-900/50 border border-border/20 p-3 h-10 rounded-sm" />
+            <div key={i} className="bg-slate-900/50 border border-border/20 p-3 h-10 rounded-lg" />
           ))}
         </div>
       </div>
@@ -46,7 +46,7 @@ export default function MissionControlSkeleton() {
         {/* Left Column */}
         <div className="space-y-6 lg:col-span-1">
           {/* Dataset Panel */}
-          <div className="border border-border/40 bg-card/10 p-4 space-y-4 rounded-sm h-[220px]">
+          <div className="border border-border/40 bg-card/10 p-4 space-y-4 rounded-lg h-[220px]">
             <div className="h-3 bg-slate-700 rounded w-32" />
             <div className="space-y-2">
               <div className="h-8 bg-slate-900/60 rounded" />
@@ -57,7 +57,7 @@ export default function MissionControlSkeleton() {
             </div>
           </div>
           {/* Geospatial Panel */}
-          <div className="border border-border/40 bg-card/10 p-4 space-y-4 rounded-sm h-[320px]">
+          <div className="border border-border/40 bg-card/10 p-4 space-y-4 rounded-lg h-[320px]">
             <div className="h-3 bg-slate-700 rounded w-32" />
             <div className="h-[140px] bg-slate-900/80 rounded" />
             <div className="space-y-2">
@@ -70,7 +70,7 @@ export default function MissionControlSkeleton() {
         {/* Right Column */}
         <div className="space-y-6 lg:col-span-2">
           {/* Briefing summary */}
-          <div className="border border-border/40 bg-card/10 p-5 rounded-sm h-[130px] space-y-3">
+          <div className="border border-border/40 bg-card/10 p-5 rounded-lg h-[130px] space-y-3">
             <div className="h-3 bg-slate-700 rounded w-48" />
             <div className="space-y-2">
               <div className="h-3 bg-slate-850 rounded w-full" />
@@ -81,7 +81,7 @@ export default function MissionControlSkeleton() {
           {/* 2x2 Sub-Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="border border-border/40 bg-card/10 p-4 rounded-sm h-[190px] space-y-4">
+              <div key={i} className="border border-border/40 bg-card/10 p-4 rounded-lg h-[190px] space-y-4">
                 <div className="h-3 bg-slate-700 rounded w-28" />
                 <div className="space-y-2">
                   <div className="h-3 bg-slate-850 rounded w-full" />
@@ -95,7 +95,7 @@ export default function MissionControlSkeleton() {
       </div>
 
       {/* 5. Logs Panel skeleton */}
-      <div className="border border-border/40 bg-card/10 p-4 rounded-sm h-[160px] space-y-3">
+      <div className="border border-border/40 bg-card/10 p-4 rounded-lg h-[160px] space-y-3">
         <div className="h-3 bg-slate-700 rounded w-48" />
         <div className="h-[90px] bg-slate-950/70 rounded" />
       </div>

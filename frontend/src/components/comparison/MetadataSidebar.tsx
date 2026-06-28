@@ -46,7 +46,7 @@ export default function MetadataSidebar({
             <Database className="w-3.5 h-3.5 text-primary" />
             Dataset Parameters
           </div>
-          <div className="bg-background/40 border border-border/40 p-3 rounded-sm space-y-2 text-[10px]">
+          <div className="bg-background/40 border border-border/40 p-3 rounded-lg space-y-2 text-[10px]">
             <div>
               <span className="text-muted-foreground block text-[9.5px]">DATASET ID:</span>
               <span className="text-foreground truncate select-all block font-bold" title={dataset.dataset_id}>
@@ -77,7 +77,7 @@ export default function MetadataSidebar({
               <Cpu className="w-3.5 h-3.5 text-primary" />
               AI Reconstruction Info
             </div>
-            <div className="bg-background/40 border border-border/40 p-3 rounded-sm space-y-2 text-[10px]">
+            <div className="bg-background/40 border border-border/40 p-3 rounded-lg space-y-2 text-[10px]">
               <div>
                 <span className="text-muted-foreground block text-[9.5px]">STRATEGY / METHOD:</span>
                 <span className="text-foreground font-bold uppercase">{reconRun.reconstruction_strategy || "DEFAULT"} / {reconRun.reconstruction_method || "DIFFUSION"}</span>
@@ -103,7 +103,7 @@ export default function MetadataSidebar({
               <Cloud className="w-3.5 h-3.5 text-primary" />
               Cloud Core burden
             </div>
-            <div className="bg-background/40 border border-border/40 p-3 rounded-sm space-y-2 text-[10px]">
+            <div className="bg-background/40 border border-border/40 p-3 rounded-lg space-y-2 text-[10px]">
               <div>
                 <span className="text-muted-foreground block text-[9.5px]">CLOUD COVER percent:</span>
                 <span className="text-amber-500 font-bold">{(cloud.cloud_coverage_percent || 0).toFixed(1)}%</span>
@@ -123,7 +123,7 @@ export default function MetadataSidebar({
               <Shield className="w-3.5 h-3.5 text-primary" />
               Uncertainty Ratings
             </div>
-            <div className="bg-background/40 border border-border/40 p-3 rounded-sm space-y-2 text-[10px]">
+            <div className="bg-background/40 border border-border/40 p-3 rounded-lg space-y-2 text-[10px]">
               <div>
                 <span className="text-muted-foreground block text-[9.5px]">MEAN CONFIDENCE score:</span>
                 <span className="text-emerald-400 font-bold">
@@ -137,7 +137,7 @@ export default function MetadataSidebar({
                   <span className="text-muted-foreground block text-[9.5px]">RELIABILITY TIER:</span>
                   <span className="text-cyan-400 font-bold uppercase">{reliability.dataset_reliability_tier || "N/A"}</span>
                 </div>
-                <span className="text-[14px] font-black border border-cyan-500/25 px-2 bg-cyan-500/5 text-cyan-400 rounded-sm">
+                <span className="text-[14px] font-black border border-cyan-500/25 px-2 bg-cyan-500/5 text-cyan-400 rounded-lg">
                   {reliability.dataset_reliability_score || "N/A"}
                 </span>
               </div>

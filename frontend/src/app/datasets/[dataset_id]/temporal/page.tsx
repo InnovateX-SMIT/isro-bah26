@@ -57,7 +57,6 @@ export default function TemporalIntelligenceHubPage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [compiling, setCompiling] = useState(false)
 
   const loadData = async (showLoading = true) => {
@@ -79,7 +78,6 @@ export default function TemporalIntelligenceHubPage() {
 
       const sessionId = ds.analysis_session_id
 
-      // Load temporal details
       try {
         const pkg = await getTemporalContextPackage(sessionId)
         setPackageData(pkg)
@@ -93,11 +91,11 @@ export default function TemporalIntelligenceHubPage() {
         const health = await getProvidersHealth()
         setProvidersHealth(health)
       } catch (err) {
-        console.log("Failed to load providers registry details")
+        console.log("Failed to load providers details")
       }
     } catch (err: any) {
       console.error(err)
-      setError(err.message || "Failed to load Temporal Workspace metadata.")
+      setError(err.message || "Failed to load temporal workspace.")
     } finally {
       if (showLoading) setLoading(false)
     }
@@ -118,7 +116,7 @@ export default function TemporalIntelligenceHubPage() {
       await loadData(false)
     } catch (err: any) {
       console.error(err)
-      setError(err.message || "Failed to compile temporal context package.")
+      setError(err.message || "Failed to compile temporal context.")
     } finally {
       setCompiling(false)
     }
@@ -128,8 +126,8 @@ export default function TemporalIntelligenceHubPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 font-mono">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        <span className="text-xs uppercase text-muted-foreground tracking-widest">
-          Synchronizing Orbit Parameters...
+        <span className="text-xs text-muted-foreground">
+          Loading temporal data...
         </span>
       </div>
     )
@@ -137,21 +135,21 @@ export default function TemporalIntelligenceHubPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-xl space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
-          <h3 className="text-sm font-bold uppercase tracking-wider">
-            Orbit Sync Lock Failure
+          <h3 className="text-sm font-bold">
+            Could Not Load Temporal Data
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
-          {error || `Temporal Context details for dataset ${datasetId} are unreachable.`}
+          {error || `Temporal data for dataset ${datasetId} is unavailable.`}
         </p>
         <button
           onClick={() => router.push("/datasets")}
-          className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border uppercase tracking-widest text-[10px] font-bold"
+          className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border uppercase tracking-wider text-xs font-bold rounded-lg"
         >
-          Return to Datacenter
+          Return to Inventory
         </button>
       </div>
     )
@@ -160,35 +158,31 @@ export default function TemporalIntelligenceHubPage() {
   const isContextAvailable = packageData !== null && packageData.selected_references?.length > 0
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      {/* Tab Navigation */}
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="temporal"
+      />
+
       {/* Central Viewport */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-6 space-y-6">
-        
+      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-border pb-4 gap-4">
-          <div className="space-y-1">
-            <ViewerBreadcrumb
-              datasetName={dataset.dataset_name}
-              datasetId={datasetId}
-              items={[{ label: "Temporal Intelligence" }]}
-            />
-            <h1 className="text-lg font-bold tracking-wider text-foreground uppercase flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary animate-pulse" />
-              Temporal Intelligence Overview
-            </h1>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-              Session Stack: <span className="text-foreground select-all">{dataset.analysis_session_id}</span>
-            </p>
-          </div>
-          <div className="flex items-center space-x-2 text-xs border border-border px-3 py-1.5 bg-muted/30">
-            <span className={`w-1.5 h-1.5 rounded-full ${isContextAvailable ? "bg-emerald-500 animate-pulse" : "bg-amber-500 animate-pulse"}`}></span>
-            <span className="text-muted-foreground uppercase text-[9px] tracking-wider">
-              {isContextAvailable ? "TEMPORAL STACK: ENGAGED" : "TEMPORAL STACK: STANDBY"}
-            </span>
-          </div>
+        <div className="space-y-1">
+          <ViewerBreadcrumb
+            datasetName={dataset.dataset_name}
+            datasetId={datasetId}
+            items={[{ label: "Temporal Intelligence" }]}
+          />
+          <h1 className="text-lg font-bold tracking-wider text-foreground uppercase flex items-center gap-2">
+            <Clock className="w-5 h-5 text-primary" />
+            Temporal Intelligence
+          </h1>
         </div>
 
-        {/* Orbit Core Metrics */}
+        {/* Statistics Cards */}
         {isContextAvailable && packageData && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <TemporalStatisticsCard stats={packageData.temporal_statistics} />
@@ -198,105 +192,102 @@ export default function TemporalIntelligenceHubPage() {
           </div>
         )}
 
-        {/* Summary Narrative or Empty State */}
+        {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            
-            {/* Briefing Card */}
-            <div className="border border-border bg-card/25 p-5 rounded-sm space-y-3 relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
-                Briefing
-              </div>
-              <h2 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                Operational Temporal Guidance Summary
-              </h2>
-              {isContextAvailable ? (
+
+            {/* Context Summary or Generate */}
+            {isContextAvailable ? (
+              <div className="border border-border bg-card/25 p-5 rounded-xl space-y-3">
+                <h2 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-primary" />
+                  Context Summary
+                </h2>
                 <p className="text-[11px] leading-relaxed text-slate-300 font-sans border-t border-border/20 pt-3">
                   {packageData?.context_summary}
                 </p>
-              ) : (
-                <div className="space-y-4 py-4">
-                  <p className="text-xs text-muted-foreground font-sans">
-                    No historical reference observations have been selected or compiled into the temporal package for this session yet. You can trigger lazy generation of the baseline temporal context below.
+              </div>
+            ) : (
+              <div className="border border-dashed border-border bg-card/10 p-8 text-center rounded-xl space-y-4">
+                <Clock className="w-8 h-8 text-amber-500 mx-auto animate-pulse" />
+                <div className="space-y-1">
+                  <h3 className="text-sm font-bold text-foreground">
+                    Temporal Context Pending
+                  </h3>
+                  <p className="text-xs text-muted-foreground font-sans leading-relaxed max-w-md mx-auto">
+                    Generate temporal context to discover and rank historical reference observations for reconstruction.
                   </p>
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      onClick={handleCompileContext}
-                      disabled={compiling}
-                      className="px-4 py-2 bg-primary hover:bg-primary/95 text-background font-bold text-[10px] tracking-widest uppercase rounded-sm border border-primary/20 flex items-center gap-2 disabled:opacity-50 transition-all cursor-pointer"
-                    >
-                      {compiling ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          Compiling Stack...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5" />
-                          Generate Temporal Context
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => router.push(`/mission-control/temporal?dataset=${datasetId}`)}
-                      className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground font-bold text-[10px] tracking-widest uppercase rounded-sm border border-border flex items-center gap-1.5 transition-all"
-                    >
-                      Open Stepper Wizard
-                    </button>
-                  </div>
                 </div>
-              )}
-            </div>
+                <div className="flex flex-wrap gap-3 justify-center">
+                  <button
+                    onClick={handleCompileContext}
+                    disabled={compiling}
+                    className="px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs tracking-wider uppercase rounded-xl flex items-center gap-2 disabled:opacity-50 transition-all"
+                  >
+                    {compiling ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Compiling...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Generate Temporal Context
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
 
-            {/* Hub Actions Grid */}
+            {/* Navigation Cards */}
             {isContextAvailable && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div 
+                <div
                   onClick={() => router.push(`/datasets/${datasetId}/temporal/references`)}
-                  className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-sm flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
+                  className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-xl flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
                 >
                   <div className="space-y-1.5">
-                    <Layers className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
+                    <Layers className="w-5 h-5 text-primary" />
                     <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Historical References</h3>
                     <p className="text-[10px] text-muted-foreground leading-normal font-sans">
-                      Browse orbital parameters, cloud cover ratings, and rankings for the {packageData?.selected_references?.length} selected target observations.
+                      Browse {packageData?.selected_references?.length} selected reference observations.
                     </p>
                   </div>
                   <div className="text-[9px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest mt-2">
-                    Open Gallery <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                    Open <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
 
-                <div 
+                <div
                   onClick={() => router.push(`/datasets/${datasetId}/temporal/timeline`)}
-                  className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-sm flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
+                  className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-xl flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
                 >
                   <div className="space-y-1.5">
-                    <Clock className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
-                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Orbit Timeline</h3>
+                    <Clock className="w-5 h-5 text-primary" />
+                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Timeline</h3>
                     <p className="text-[10px] text-muted-foreground leading-normal font-sans">
-                      Understand spatial chronological offsets relative to the target dataset footprint in days.
+                      View temporal offsets and chronological ordering of reference imagery.
                     </p>
                   </div>
                   <div className="text-[9px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest mt-2">
-                    Open Timeline <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                    Open <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
 
-                <div 
+                <div
                   onClick={() => router.push(`/datasets/${datasetId}/temporal/metadata`)}
-                  className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-sm flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
+                  className="border border-border bg-card/10 hover:bg-card/25 p-4 rounded-xl flex flex-col justify-between space-y-3 cursor-pointer group hover:border-primary/50 transition-all"
                 >
                   <div className="space-y-1.5">
-                    <FileText className="w-5 h-5 text-primary group-hover:scale-105 transition-transform" />
-                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Reference Metadata</h3>
+                    <FileText className="w-5 h-5 text-primary" />
+                    <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">Metadata</h3>
                     <p className="text-[10px] text-muted-foreground leading-normal font-sans">
-                      Inspect structural attributes, coverage grids, sensor types, and provider details.
+                      Coverage grids, sensor types, and provider details.
                     </p>
                   </div>
                   <div className="text-[9px] font-bold text-primary flex items-center gap-1 uppercase tracking-widest mt-2">
-                    Open Registry <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                    Open <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
               </div>
@@ -304,52 +295,51 @@ export default function TemporalIntelligenceHubPage() {
 
           </div>
 
-          {/* Right Column: Provider Information & Health */}
+          {/* Right Column */}
           <div className="space-y-6">
-            
-            {/* Providers registry status */}
-            <div className="border border-border bg-card/20 p-5 rounded-sm space-y-3">
-              <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
-                <Server className="w-4 h-4 text-primary" />
-                Connectivity Registry
-              </h3>
-              <p className="text-[10px] text-muted-foreground font-sans">
-                Real-time connection interfaces to historical catalog indexes.
-              </p>
-              
-              <div className="space-y-2 border-t border-border/20 pt-3">
-                {providers.map((prov, i) => {
-                  const healthInfo = providersHealth?.providers.find(h => h.name === prov.name)
-                  const isHealthy = healthInfo ? healthInfo.healthy : true
-                  return (
-                    <div key={i} className="border border-border/40 p-2.5 bg-background/30 rounded-sm text-[10px] flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <div className="font-bold text-slate-200">{prov.name}</div>
-                        <div className="text-[9px] text-muted-foreground uppercase">{prov.is_primary ? "Primary Provider" : "Alternate"}</div>
+
+            {/* Providers status */}
+            {providers.length > 0 && (
+              <div className="border border-border bg-card/20 p-5 rounded-xl space-y-3">
+                <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
+                  <Server className="w-4 h-4 text-primary" />
+                  Data Providers
+                </h3>
+
+                <div className="space-y-2 pt-2">
+                  {providers.map((prov, i) => {
+                    const healthInfo = providersHealth?.providers.find(h => h.name === prov.name)
+                    const isHealthy = healthInfo ? healthInfo.healthy : true
+                    return (
+                      <div key={i} className="border border-border/40 p-2.5 bg-background/30 rounded-lg text-[10px] flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="font-bold text-slate-200">{prov.name}</div>
+                          <div className="text-[9px] text-muted-foreground">{prov.is_primary ? "Primary" : "Alternate"}</div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`w-1.5 h-1.5 rounded-full ${isHealthy ? "bg-emerald-500" : "bg-red-500"}`}></span>
+                          <span className="text-[9px] text-muted-foreground">
+                            {isHealthy ? "Online" : "Offline"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`w-1.5 h-1.5 rounded-full ${isHealthy ? "bg-emerald-500 animate-pulse" : "bg-red-500 animate-pulse"}`}></span>
-                        <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
-                          {isHealthy ? "ONLINE" : "OFFLINE"}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Quality Summary */}
             {isContextAvailable && packageData && (
-              <div className="border border-border bg-card/20 p-5 rounded-sm space-y-3">
+              <div className="border border-border bg-card/20 p-5 rounded-xl space-y-3">
                 <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                   <BarChart2 className="w-4 h-4 text-primary" />
                   Quality Averages
                 </h3>
-                <div className="space-y-2 border-t border-border/20 pt-3 text-[10px]">
+                <div className="space-y-2 pt-2 text-[10px]">
                   <div className="flex justify-between items-center border-b border-border/10 pb-1.5">
-                    <span className="text-slate-400">Total Stack Count:</span>
-                    <span className="font-bold text-slate-200">{packageData.selected_references.length} references</span>
+                    <span className="text-slate-400">References:</span>
+                    <span className="font-bold text-slate-200">{packageData.selected_references.length}</span>
                   </div>
                   <div className="flex justify-between items-center border-b border-border/10 pb-1.5">
                     <span className="text-slate-400">Avg Spatial Overlap:</span>
@@ -371,15 +361,6 @@ export default function TemporalIntelligenceHubPage() {
         </div>
 
       </div>
-
-      {/* Workspace Sidebar navigation */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="temporal"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

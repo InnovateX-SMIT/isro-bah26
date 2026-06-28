@@ -38,7 +38,6 @@ export default function MetadataViewerPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<ActiveTabType>("acquisition")
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -97,15 +96,15 @@ export default function MetadataViewerPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            Metadata registry link failure
+            Could Not Load Metadata
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
-          {error || "Telemetry for the requested dataset is unavailable."}
+          {error || "Dataset data is unavailable. Run the required workflow step first."}
         </p>
         <button
           onClick={() => router.push(`/datasets/${datasetId}/viewer`)}
@@ -118,7 +117,12 @@ export default function MetadataViewerPage() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="dataset"
+      />
       
       {/* Central Viewport */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-6 space-y-6">
@@ -155,35 +159,35 @@ export default function MetadataViewerPage() {
         </div>
 
         {/* Logical tab switcher */}
-        <div className="flex border-b border-border bg-muted/10 p-1 rounded-sm text-[10px] uppercase font-bold tracking-wider">
+        <div className="flex border-b border-border bg-muted/10 p-1 rounded-lg text-[10px] uppercase font-bold tracking-wider">
           <button
             onClick={() => setActiveTab("acquisition")}
-            className={`flex-1 py-2 text-center transition-colors rounded-sm cursor-pointer ${activeTab === "acquisition" ? "bg-primary text-background" : "text-muted-foreground hover:bg-muted"}`}
+            className={`flex-1 py-2 text-center transition-colors rounded-lg cursor-pointer ${activeTab === "acquisition" ? "bg-primary text-background" : "text-muted-foreground hover:bg-muted"}`}
           >
             Acquisition Details
           </button>
           <button
             onClick={() => setActiveTab("projection")}
-            className={`flex-1 py-2 text-center transition-colors rounded-sm cursor-pointer ${activeTab === "projection" ? "bg-primary text-background" : "text-muted-foreground hover:bg-muted"}`}
+            className={`flex-1 py-2 text-center transition-colors rounded-lg cursor-pointer ${activeTab === "projection" ? "bg-primary text-background" : "text-muted-foreground hover:bg-muted"}`}
           >
             Spatial & Projection
           </button>
           <button
             onClick={() => setActiveTab("raster")}
-            className={`flex-1 py-2 text-center transition-colors rounded-sm cursor-pointer ${activeTab === "raster" ? "bg-primary text-background" : "text-muted-foreground hover:bg-muted"}`}
+            className={`flex-1 py-2 text-center transition-colors rounded-lg cursor-pointer ${activeTab === "raster" ? "bg-primary text-background" : "text-muted-foreground hover:bg-muted"}`}
           >
             Raster Properties
           </button>
           <button
             onClick={() => setActiveTab("files")}
-            className={`flex-1 py-2 text-center transition-colors rounded-sm cursor-pointer ${activeTab === "files" ? "bg-primary text-background" : "text-muted-foreground hover:bg-muted"}`}
+            className={`flex-1 py-2 text-center transition-colors rounded-lg cursor-pointer ${activeTab === "files" ? "bg-primary text-background" : "text-muted-foreground hover:bg-muted"}`}
           >
             File Inventory ({files.length})
           </button>
         </div>
 
         {/* Tab content panel */}
-        <div className="border border-border bg-card/25 p-5 min-h-[300px] rounded-sm space-y-4">
+        <div className="border border-border bg-card/25 p-5 min-h-[300px] rounded-lg space-y-4">
           
           {/* TAB 1: Acquisition details */}
           {activeTab === "acquisition" && (
@@ -194,19 +198,19 @@ export default function MetadataViewerPage() {
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">Dataset Name</span>
                   <span className="text-foreground text-sm font-black">{dataset.dataset_name}</span>
                 </div>
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">Sensor Type</span>
                   <span className="text-foreground text-sm font-black">LISS-IV Multi-Spectral</span>
                 </div>
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">Acquisition Date</span>
                   <span className="text-pink-400 text-sm font-black">{metadata?.acquisition_date || "Unknown"}</span>
                 </div>
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">Physical Ingestion Path</span>
                   <span className="text-slate-300 text-[10px] break-all select-all font-mono">{dataset.dataset_path}</span>
                 </div>
@@ -223,19 +227,19 @@ export default function MetadataViewerPage() {
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">Coordinate System (CRS)</span>
                   <span className="text-foreground text-xs font-bold break-words">{metadata?.coordinate_system || "N/A"}</span>
                 </div>
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">Projection Name</span>
                   <span className="text-foreground text-xs font-bold">{metadata?.projection_name || "N/A"}</span>
                 </div>
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">EPSG Code</span>
                   <span className="text-cyan-400 text-sm font-black">EPSG:{metadata?.epsg_code || "N/A"}</span>
                 </div>
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">UTM Hemisphere & Zone</span>
                   <span className="text-foreground text-sm font-black">{metadata?.utm_zone || "N/A"}</span>
                 </div>
@@ -252,13 +256,13 @@ export default function MetadataViewerPage() {
               </h3>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">Raster Dimensions (X / Y)</span>
                   <span className="text-foreground text-sm font-black">
                     {metadata?.raster_width} columns x {metadata?.raster_height} scan lines
                   </span>
                 </div>
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">Spatial Resolution (Pixel Pitch)</span>
                   <span className="text-amber-500 text-sm font-black">
                     {metadata && metadata.pixel_size_x !== null && metadata.pixel_size_y !== null
@@ -266,12 +270,12 @@ export default function MetadataViewerPage() {
                       : "N/A"}
                   </span>
                 </div>
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">Upper Left Corner origin (Easting / Northing)</span>
                   <span className="text-foreground text-xs font-mono block">X: {metadata?.origin_x?.toFixed(6) ?? "N/A"}</span>
                   <span className="text-foreground text-xs font-mono block">Y: {metadata?.origin_y?.toFixed(6) ?? "N/A"}</span>
                 </div>
-                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-sm">
+                <div className="space-y-1 bg-background/30 p-3 border border-border/40 rounded-lg">
                   <span className="text-muted-foreground text-[9px] uppercase font-bold block">Ingested Band Count</span>
                   <span className="text-foreground text-sm font-black">{metadata?.band_count || "N/A"} spectral bands</span>
                 </div>
@@ -288,11 +292,11 @@ export default function MetadataViewerPage() {
               </h3>
 
               {files.length === 0 ? (
-                <div className="text-center p-8 text-xs text-muted-foreground border border-dashed border-border rounded-sm">
+                <div className="text-center p-8 text-xs text-muted-foreground border border-dashed border-border rounded-lg">
                   No files indexed for this dataset node. Run scan first.
                 </div>
               ) : (
-                <div className="border border-border bg-background/20 rounded-sm overflow-hidden">
+                <div className="border border-border bg-background/20 rounded-lg overflow-hidden">
                   <div className="overflow-x-auto max-h-[300px]">
                     <table className="w-full text-left border-collapse text-[10px]">
                       <thead>
@@ -336,15 +340,6 @@ export default function MetadataViewerPage() {
         </div>
 
       </div>
-
-      {/* Sidebar Panel */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="dataset"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

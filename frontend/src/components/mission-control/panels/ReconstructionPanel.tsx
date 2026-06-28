@@ -25,7 +25,7 @@ export default function ReconstructionPanel({ datasetId, reconstruction, status 
   const isOptimized = reconstruction?.optimization_status === "COMPLETED";
 
   return (
-    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-sm hover:border-primary/40 transition-colors flex flex-col justify-between h-full">
+    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-lg hover:border-primary/40 transition-colors flex flex-col justify-between h-full">
       <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
         INTEL // RECONSTRUCTION
       </div>
@@ -39,13 +39,13 @@ export default function ReconstructionPanel({ datasetId, reconstruction, status 
         {hasRecon ? (
           <div className="space-y-3.5">
             <div className="grid grid-cols-2 gap-2 text-[10px]">
-              <div className="bg-background/25 border border-border/30 p-2 rounded-sm space-y-1">
+              <div className="bg-background/25 border border-border/30 p-2 rounded-lg space-y-1">
                 <span className="text-[7.5px] text-slate-400 block">PIPELINE STAGE</span>
                 <span className="font-bold text-emerald-400 uppercase">
                   {isOptimized && showOptimized ? "OPTIMIZED" : reconstruction.reconstruction_status}
                 </span>
               </div>
-              <div className="bg-background/25 border border-border/30 p-2 rounded-sm space-y-1">
+              <div className="bg-background/25 border border-border/30 p-2 rounded-lg space-y-1">
                 <span className="text-[7.5px] text-slate-400 block">EXECUTION TIME</span>
                 <span className="font-bold text-slate-200">
                   {reconstruction.execution_time_ms ? `${reconstruction.execution_time_ms} ms` : "3061 ms"}
@@ -71,10 +71,10 @@ export default function ReconstructionPanel({ datasetId, reconstruction, status 
             )}
 
             {reconstruction.evaluation_completed && reconstruction.evaluation_metrics && (
-              <div className="border border-border/40 bg-background/25 p-3 rounded-sm space-y-2">
+              <div className="border border-border/40 bg-background/25 p-3 rounded-lg space-y-2">
                 <div className="flex items-center justify-between border-b border-border/30 pb-1.5">
                   <span className="text-[9px] font-bold text-primary tracking-wider uppercase">QUALITY SCORECARD</span>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-sm ${
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-lg ${
                     reconstruction.overall_score >= 90 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 animate-pulse" :
                     reconstruction.overall_score >= 80 ? "bg-sky-500/10 text-sky-400 border border-sky-500/25" :
                     "bg-amber-500/10 text-amber-400 border border-amber-500/25"
@@ -98,7 +98,7 @@ export default function ReconstructionPanel({ datasetId, reconstruction, status 
 
             <div className="space-y-1">
               <span className="text-[7.5px] text-muted-foreground uppercase tracking-widest block">Output Preview</span>
-              <div className="border border-border/50 rounded-sm overflow-hidden bg-black/40 h-[100px] flex items-center justify-center relative">
+              <div className="border border-border/50 rounded-lg overflow-hidden bg-black/40 h-[100px] flex items-center justify-center relative">
                 <img
                   src={showOptimized && isOptimized
                     ? `${API_URL}/api/v1/reconstruction/${reconstruction.session_id}/optimized-preview`

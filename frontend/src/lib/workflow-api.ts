@@ -6,12 +6,36 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
  * Retrieves the workflow monitoring profile for a given analysis session.
  */
 export async function getWorkflowStatus(sessionId: string): Promise<WorkflowResponse> {
-  const res = await fetch(`${API_URL}/api/v1/workflow/${sessionId}`, {
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ detail: "Failed to load workflow status" }));
-    throw new Error(errorData.detail || "Failed to load workflow status");
+  try {
+    const res = await fetch(`${API_URL}/api/v1/workflow/${sessionId}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      return buildUnavailableWorkflow(sessionId);
+    }
+    return await res.json();
+  } catch {
+    return buildUnavailableWorkflow(sessionId);
   }
-  return await res.json();
+}
+
+function buildUnavailableWorkflow(sessionId: string): WorkflowResponse {
+  return {
+    session_id: sessionId,
+    current_stage: "Workflow status unavailable",
+    overall_progress: 0,
+    total_processing_time_ms: 0,
+    session_health: "DEGRADED",
+    stages: [],
+    timeline: [],
+    logs: [
+      {
+        timestamp: new Date().toISOString(),
+        stage: "Workflow",
+        event: "Workflow status is currently unavailable. Continue from the required workflow step.",
+        status: "unavailable",
+        severity: "WARNING",
+      },
+    ],
+  };
 }

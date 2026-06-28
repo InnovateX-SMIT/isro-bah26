@@ -48,7 +48,6 @@ export default function TemporalTimelinePage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -143,11 +142,11 @@ export default function TemporalTimelinePage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            Timeline Node Link Failure
+            Could Not Load Timeline
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
@@ -164,7 +163,12 @@ export default function TemporalTimelinePage() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="temporal"
+      />
       
       {/* Central Viewport */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-6 space-y-6">
@@ -246,7 +250,7 @@ export default function TemporalTimelinePage() {
 
                     {/* Content Card (placed right for even idx or mobile, left for odd idx on desktop) */}
                     <div className={`w-full md:w-[45%] pl-12 md:pl-0 ${idx % 2 === 1 ? "md:mr-auto" : "md:ml-auto"}`}>
-                      <div className={`border p-4 rounded-sm space-y-3 bg-card/25 shadow-sm relative ${
+                      <div className={`border p-4 rounded-lg space-y-3 bg-card/25 shadow-sm relative ${
                         isTarget ? "border-primary/50 bg-primary/5 shadow-[0_0_12px_-5px_rgba(6,182,212,0.35)]" : "border-border/80 hover:border-cyan-400/30"
                       }`}>
                         
@@ -266,7 +270,7 @@ export default function TemporalTimelinePage() {
                               {evt.provider || "Original Composite"}
                             </span>
                           </div>
-                          <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded-sm border uppercase ${
+                          <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded-lg border uppercase ${
                             isTarget 
                               ? "bg-primary/10 text-primary border-primary/20" 
                               : "bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
@@ -310,15 +314,6 @@ export default function TemporalTimelinePage() {
         )}
 
       </div>
-
-      {/* Sidebar */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="temporal"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

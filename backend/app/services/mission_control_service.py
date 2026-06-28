@@ -117,10 +117,10 @@ class MissionControlService:
         try:
             metadata = self.metadata_service.get_metadata(dataset_id)
             if metadata:
-                if metadata.metadata_status == "COMPLETED":
+                if metadata.metadata_status.upper() == "COMPLETED":
                     data_dict["metadata"] = metadata
                     status_dict["metadata"] = "available"
-                elif metadata.metadata_status == "FAILED":
+                elif metadata.metadata_status.upper() == "FAILED":
                     status_dict["metadata"] = "error"
                 else:
                     status_dict["metadata"] = "missing"
@@ -380,7 +380,7 @@ class MissionControlService:
                 conf_rec = self.confidence_repository.get_by_dataset(dataset_id)
                 if conf_rec:
                     confidence_est = conf_rec
-                    status_dict["confidence"] = "available" if conf_rec.confidence_status == "completed" else conf_rec.confidence_status
+                    status_dict["confidence"] = "available" if conf_rec.confidence_status.lower() == "completed" else conf_rec.confidence_status
                     data_dict["confidence"] = {
                         "confidence_id": conf_rec.confidence_id,
                         "reconstruction_run_id": conf_rec.reconstruction_run_id,

@@ -37,7 +37,6 @@ export default function HistoricalReferencesPage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -86,11 +85,11 @@ export default function HistoricalReferencesPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            References Link Failure
+            Could Not Load References
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
@@ -107,7 +106,12 @@ export default function HistoricalReferencesPage() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="temporal"
+      />
       
       {/* Central Viewport */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto p-6 space-y-6">
@@ -165,7 +169,7 @@ export default function HistoricalReferencesPage() {
               return (
                 <div 
                   key={ref.id}
-                  className="border border-border bg-card/25 rounded-sm flex flex-col justify-between overflow-hidden hover:border-primary/50 transition-colors font-mono relative"
+                  className="border border-border bg-card/25 rounded-lg flex flex-col justify-between overflow-hidden hover:border-primary/50 transition-colors font-mono relative"
                 >
                   {/* Rank Header */}
                   <div className="bg-muted/30 border-b border-border/50 px-4 py-2.5 flex items-center justify-between text-[10px]">
@@ -236,7 +240,7 @@ export default function HistoricalReferencesPage() {
                   <div className="p-4 pt-0 border-t border-border/10 mt-auto bg-muted/5 flex">
                     <button
                       onClick={() => router.push(`/datasets/${datasetId}/temporal/reference/${ref.id}`)}
-                      className="w-full py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-sm font-bold text-[9px] tracking-widest uppercase flex items-center justify-center gap-1.5 transition-all"
+                      className="w-full py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg font-bold text-[9px] tracking-widest uppercase flex items-center justify-center gap-1.5 transition-all"
                     >
                       <Maximize2 className="w-3 h-3" />
                       Open Reference Viewer
@@ -249,15 +253,6 @@ export default function HistoricalReferencesPage() {
         )}
 
       </div>
-
-      {/* Sidebar */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="temporal"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

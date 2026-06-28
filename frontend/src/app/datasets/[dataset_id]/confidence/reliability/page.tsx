@@ -47,7 +47,6 @@ export default function ReliabilityMapViewerPage() {
   
   const [zoom, setZoom] = useState(1)
   const [fitMode, setFitMode] = useState<"contain" | "actual">("contain")
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function loadData() {
@@ -114,7 +113,7 @@ export default function ReliabilityMapViewerPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
@@ -122,13 +121,13 @@ export default function ReliabilityMapViewerPage() {
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
-          {error || "Telemetry for the requested dataset is unavailable."}
+          {error || "Dataset data is unavailable. Run the required workflow step first."}
         </p>
         <button
           onClick={() => router.push(`/datasets/${datasetId}/confidence`)}
           className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border uppercase tracking-widest text-[10px] font-bold"
         >
-          Back to Confidence Workspace
+          Back to Confidence
         </button>
       </div>
     )
@@ -153,7 +152,12 @@ export default function ReliabilityMapViewerPage() {
   }
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="confidence"
+      />
       
       {/* Central view frame */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -166,7 +170,7 @@ export default function ReliabilityMapViewerPage() {
               className="inline-flex items-center space-x-1.5 text-[9px] text-primary hover:underline uppercase font-bold"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Confidence Workspace</span>
+              <span>Back to Confidence</span>
             </button>
             <ViewerBreadcrumb
               datasetName={dataset.dataset_name}
@@ -184,7 +188,7 @@ export default function ReliabilityMapViewerPage() {
 
           {/* Interactive controls */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center space-x-1 bg-background border border-border p-1 rounded-sm">
+            <div className="flex items-center space-x-1 bg-background border border-border p-1 rounded-lg">
               <button
                 onClick={() => setZoom(prev => Math.max(0.5, prev - 0.25))}
                 disabled={zoom <= 0.5}
@@ -209,7 +213,7 @@ export default function ReliabilityMapViewerPage() {
                 setZoom(1)
                 setFitMode(fitMode === "contain" ? "actual" : "contain")
               }}
-              className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-sm flex items-center gap-1"
+              className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-lg flex items-center gap-1"
             >
               <Maximize2 className="w-3 h-3" />
               {fitMode === "contain" ? "Actual Size" : "Fit Window"}
@@ -222,23 +226,23 @@ export default function ReliabilityMapViewerPage() {
           
           {/* Left image area */}
           <div className="flex-1 bg-black/65 overflow-hidden relative flex items-center justify-center p-6 border-r border-border">
-            <div className="absolute top-3 left-3 bg-background/85 border border-border px-2.5 py-1.5 rounded-sm text-[9px] text-slate-300 font-bold uppercase z-10 select-none space-y-2">
+            <div className="absolute top-3 left-3 bg-background/85 border border-border px-2.5 py-1.5 rounded-lg text-[9px] text-slate-300 font-bold uppercase z-10 select-none space-y-2">
               <div>Reliability Map Legend</div>
               <div className="flex flex-wrap gap-3">
                 <div className="flex items-center space-x-1.5">
-                  <span className="w-2.5 h-2.5 bg-[#10b981] inline-block rounded-sm"></span>
+                  <span className="w-2.5 h-2.5 bg-[#10b981] inline-block rounded-lg"></span>
                   <span className="text-[8px]">HIGH</span>
                 </div>
                 <div className="flex items-center space-x-1.5">
-                  <span className="w-2.5 h-2.5 bg-[#06b6d4] inline-block rounded-sm"></span>
+                  <span className="w-2.5 h-2.5 bg-[#06b6d4] inline-block rounded-lg"></span>
                   <span className="text-[8px]">MODERATE</span>
                 </div>
                 <div className="flex items-center space-x-1.5">
-                  <span className="w-2.5 h-2.5 bg-[#f59e0b] inline-block rounded-sm"></span>
+                  <span className="w-2.5 h-2.5 bg-[#f59e0b] inline-block rounded-lg"></span>
                   <span className="text-[8px]">LOW</span>
                 </div>
                 <div className="flex items-center space-x-1.5">
-                  <span className="w-2.5 h-2.5 bg-[#ef4444] inline-block rounded-sm"></span>
+                  <span className="w-2.5 h-2.5 bg-[#ef4444] inline-block rounded-lg"></span>
                   <span className="text-[8px]">VERY LOW</span>
                 </div>
               </div>
@@ -260,7 +264,7 @@ export default function ReliabilityMapViewerPage() {
                 />
               </div>
             ) : (
-              <div className="border border-dashed border-border bg-card/10 p-8 rounded-sm text-center flex flex-col items-center justify-center space-y-3 max-w-sm">
+              <div className="border border-dashed border-border bg-card/10 p-8 rounded-lg text-center flex flex-col items-center justify-center space-y-3 max-w-sm">
                 <AlertTriangle className="w-6 h-6 text-amber-500 animate-pulse" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
                   No Reliability Map
@@ -285,14 +289,14 @@ export default function ReliabilityMapViewerPage() {
             <div className="flex-1 p-3 space-y-2">
               {regionList.length > 0 ? (
                 regionList.map((region) => (
-                  <div key={region.region_id} className="border border-border/60 bg-background/40 p-2.5 rounded-sm flex items-center justify-between text-[10px]">
+                  <div key={region.region_id} className="border border-border/60 bg-background/40 p-2.5 rounded-lg flex items-center justify-between text-[10px]">
                     <div className="space-y-1">
                       <div className="font-bold text-slate-200">REGION ID: #{region.region_id}</div>
                       <div className="text-[9px] text-muted-foreground uppercase">Area: <span className="text-foreground font-semibold">{region.area_px} px</span></div>
                     </div>
                     <div className="text-right space-y-1">
                       <div className="text-emerald-400 font-bold">{(region.mean_confidence * 100).toFixed(1)}% CF</div>
-                      <span className={`px-1.5 py-0.5 rounded-sm text-[8px] font-bold border ${getTierColor(region.reliability_tier)}`}>
+                      <span className={`px-1.5 py-0.5 rounded-lg text-[8px] font-bold border ${getTierColor(region.reliability_tier)}`}>
                         {region.reliability_tier}
                       </span>
                     </div>
@@ -340,15 +344,6 @@ export default function ReliabilityMapViewerPage() {
         )}
 
       </div>
-
-      {/* Sidebar Panel */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="confidence"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

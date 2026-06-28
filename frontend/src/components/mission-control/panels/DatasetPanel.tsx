@@ -15,7 +15,7 @@ export default function DatasetPanel({ dataset, metadata, status }: DatasetPanel
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
   return (
-    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-sm hover:border-primary/40 transition-colors flex flex-col justify-between h-full">
+    <div className="border border-border bg-card/20 p-4 font-mono space-y-4 relative overflow-hidden rounded-lg hover:border-primary/40 transition-colors flex flex-col justify-between h-full">
       <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
         INTEL // DATASET
       </div>
@@ -66,7 +66,7 @@ export default function DatasetPanel({ dataset, metadata, status }: DatasetPanel
 
             <div className="space-y-1">
               <span className="text-[8px] text-muted-foreground uppercase tracking-widest block">DOWN-SAMPLED COMPOSITE PREVIEW</span>
-              <div className="border border-border/50 rounded-sm overflow-hidden bg-black/40 h-[120px] flex items-center justify-center relative group">
+              <div className="border border-border/50 rounded-lg overflow-hidden bg-black/40 h-[120px] flex items-center justify-center relative group">
                 <img
                   src={`${API_URL}/api/v1/dataset-preview/${dataset.dataset_id}/thumbnail`}
                   alt={`${dataset.dataset_name} preview`}

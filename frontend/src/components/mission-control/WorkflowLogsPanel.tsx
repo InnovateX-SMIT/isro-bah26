@@ -58,7 +58,7 @@ export default function WorkflowLogsPanel({ logs }: WorkflowLogsPanelProps) {
   };
 
   return (
-    <div className="border border-border bg-card/20 rounded-sm font-mono overflow-hidden transition-all duration-300">
+    <div className="border border-border bg-card/20 rounded-lg font-mono overflow-hidden transition-all duration-300">
       {/* Header bar */}
       <div className="bg-background/80 border-b border-border/50 p-3 px-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
@@ -66,7 +66,7 @@ export default function WorkflowLogsPanel({ logs }: WorkflowLogsPanelProps) {
           <span className="text-xs font-bold uppercase tracking-wider text-foreground">
             Operational Telemetry Console Logs
           </span>
-          <span className="text-[9px] bg-primary/10 border border-primary/20 text-primary px-1.5 py-0.5 rounded-sm font-bold uppercase">
+          <span className="text-[9px] bg-primary/10 border border-primary/20 text-primary px-1.5 py-0.5 rounded-lg font-bold uppercase">
             LIVE
           </span>
         </div>
@@ -75,7 +75,7 @@ export default function WorkflowLogsPanel({ logs }: WorkflowLogsPanelProps) {
           {/* Collapse/Expand Toggle */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1 text-muted-foreground hover:text-foreground hover:bg-border/20 rounded-sm transition-all"
+            className="p-1 text-muted-foreground hover:text-foreground hover:bg-border/20 rounded-lg transition-all"
             aria-label={collapsed ? "Expand logs panel" : "Collapse logs panel"}
           >
             {collapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -86,7 +86,7 @@ export default function WorkflowLogsPanel({ logs }: WorkflowLogsPanelProps) {
       {!collapsed && (
         <div className="p-4 space-y-4">
           {/* Controls Bar */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-background/30 p-2.5 border border-border/30 rounded-sm">
+          <div className="flex flex-col sm:flex-row gap-3 justify-between items-center bg-background/30 p-2.5 border border-border/30 rounded-lg">
             {/* Severity filter tabs */}
             <div className="flex gap-1 text-[8.5px]">
               {(["ALL", "INFO", "WARNING", "ERROR"] as const).map((sev) => (
@@ -135,7 +135,7 @@ export default function WorkflowLogsPanel({ logs }: WorkflowLogsPanelProps) {
           </div>
 
           {/* Terminal logs listing */}
-          <div className="bg-black/60 border border-border/40 rounded-sm p-4 h-[180px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-border">
+          <div className="bg-black/60 border border-border/40 rounded-lg p-4 h-[180px] overflow-y-auto space-y-1.5 scrollbar-thin scrollbar-thumb-border">
             {filteredLogs.length > 0 ? (
               filteredLogs.map((log, index) => {
                 const logTime = new Date(log.timestamp).toLocaleTimeString("en-US", { hour12: false });

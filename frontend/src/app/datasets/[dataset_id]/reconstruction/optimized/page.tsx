@@ -38,7 +38,6 @@ export default function OptimizedReconstructionResultPage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   // Zoom interactive state
   const [zoom, setZoom] = useState(1)
@@ -102,11 +101,11 @@ export default function OptimizedReconstructionResultPage() {
 
   if (error || !dataset || !reconstructRun) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            Optimized Viewport Failure
+            Could Not Load Optimized Output
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
@@ -125,7 +124,12 @@ export default function OptimizedReconstructionResultPage() {
   const imageUrl = getReconstructionOptimizedPreviewUrl(dataset.analysis_session_id)
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="reconstruction"
+      />
       
       {/* Central Viewport */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -156,7 +160,7 @@ export default function OptimizedReconstructionResultPage() {
 
           {/* Interactive controls */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center border border-border rounded-sm bg-background/50 text-[10px]">
+            <div className="flex items-center border border-border rounded-lg bg-background/50 text-[10px]">
               <button
                 onClick={() => setFitMode("contain")}
                 className={`px-2.5 py-1.5 border-r border-border hover:bg-muted transition-colors ${fitMode === "contain" ? "bg-primary/20 text-primary font-bold" : "text-muted-foreground"}`}
@@ -177,7 +181,7 @@ export default function OptimizedReconstructionResultPage() {
               </button>
             </div>
 
-            <div className="flex items-center border border-border rounded-sm bg-background/50 text-[10px] h-[31px]">
+            <div className="flex items-center border border-border rounded-lg bg-background/50 text-[10px] h-[31px]">
               <button
                 onClick={handleZoomOut}
                 className="px-2.5 hover:bg-muted transition-colors h-full border-r border-border"
@@ -226,7 +230,7 @@ export default function OptimizedReconstructionResultPage() {
               <img
                 src={imageUrl}
                 alt="Optimized Reconstruction preview"
-                className={`max-w-full max-h-full rounded-sm border border-border/20 shadow-lg ${
+                className={`max-w-full max-h-full rounded-lg border border-border/20 shadow-lg ${
                   fitMode === "cover" ? "object-cover w-full h-full" : "object-contain"
                 }`}
                 crossOrigin="anonymous"
@@ -244,7 +248,7 @@ export default function OptimizedReconstructionResultPage() {
           <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-border bg-card/20 p-5 overflow-y-auto space-y-5 text-[11px]">
             
             <div className="space-y-1.5">
-              <span className="text-[8px] text-primary font-bold tracking-widest uppercase">MODULE // PARAMETERS</span>
+              <span className="text-[8px] text-primary font-bold tracking-widest uppercase">Parameters</span>
               <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
                 <Shield className="w-4 h-4 text-primary" />
                 OPTIMIZATION TECHNIQUES
@@ -278,7 +282,7 @@ export default function OptimizedReconstructionResultPage() {
               {/* Parameter values */}
               <div className="space-y-2 pt-2 border-t border-border/10">
                 <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-bold">Refinement configuration</span>
-                <div className="space-y-2 text-[10px] bg-background/30 border border-border/40 p-2.5 rounded-sm">
+                <div className="space-y-2 text-[10px] bg-background/30 border border-border/40 p-2.5 rounded-lg">
                   <div>
                     <span className="text-slate-400 block text-[9px] uppercase">Feather Kernel Size:</span>
                     <span className="font-bold text-slate-200">15 px</span>
@@ -299,7 +303,7 @@ export default function OptimizedReconstructionResultPage() {
               </div>
 
               {/* Informative advice */}
-              <div className="border border-border bg-primary/5 p-3 rounded-sm text-[9.5px] leading-relaxed text-slate-400 font-sans flex items-start gap-2">
+              <div className="border border-border bg-primary/5 p-3 rounded-lg text-[9.5px] leading-relaxed text-slate-400 font-sans flex items-start gap-2">
                 <Info className="w-4.5 h-4.5 text-primary shrink-0 mt-0.5" />
                 <span>
                   The optimized composite uses Guided Filtering to map edge outlines from raw bands, preserving spatial features and reducing blur indices.
@@ -313,15 +317,6 @@ export default function OptimizedReconstructionResultPage() {
         </div>
 
       </div>
-
-      {/* Sidebar */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="reconstruction"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

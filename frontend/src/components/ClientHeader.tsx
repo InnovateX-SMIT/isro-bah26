@@ -27,7 +27,7 @@ export default function ClientHeader() {
       <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent pointer-events-none"></div>
 
       <div className="flex items-center space-x-3">
-        <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse glow-cyan-sm"></div>
+        <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></div>
         <div>
           <span className="font-mono text-xs text-primary/80 uppercase tracking-widest font-bold">AI-Powered Satellite Reconstruction</span>
           <h1 className="text-sm font-black tracking-widest uppercase text-foreground/95 -mt-0.5">GEOSPATIAL MISSION CONTROL</h1>

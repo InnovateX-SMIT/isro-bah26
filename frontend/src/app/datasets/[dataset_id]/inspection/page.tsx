@@ -12,7 +12,10 @@ import {
   Eye,
   Info,
   Calendar,
-  Layers
+  Layers,
+  Play,
+  Check,
+  Circle
 } from "lucide-react"
 import { getDataset } from "@/lib/dataset-api"
 import {
@@ -35,6 +38,14 @@ import { DatasetInspection, DatasetFile } from "@/lib/types/dataset-inspection"
 import { DatasetMetadata as MetadataType } from "@/lib/types/dataset-metadata"
 import { DatasetPreview as PreviewType } from "@/lib/types/dataset-preview"
 
+type PipelineStage = "idle" | "inspection" | "metadata" | "preview" | "complete"
+
+const STAGES = [
+  { key: "inspection" as const, label: "Filesystem Scan" },
+  { key: "metadata" as const, label: "Metadata Extraction" },
+  { key: "preview" as const, label: "Preview Generation" },
+]
+
 export default function DatasetInspectionPage() {
   const params = useParams()
   const router = useRouter()
@@ -54,7 +65,12 @@ export default function DatasetInspectionPage() {
   const [loadingMetadata, setLoadingMetadata] = useState<boolean>(true)
   const [loadingPreview, setLoadingPreview] = useState<boolean>(true)
 
-  // Action running states
+  // Pipeline state
+  const [pipelineStage, setPipelineStage] = useState<PipelineStage>("idle")
+  const [pipelineError, setPipelineError] = useState<string | null>(null)
+  const [completedStages, setCompletedStages] = useState<Set<string>>(new Set())
+
+  // Action running states (for individual re-runs)
   const [runningInspection, setRunningInspection] = useState<boolean>(false)
   const [runningMetadata, setRunningMetadata] = useState<boolean>(false)
   const [runningPreview, setRunningPreview] = useState<boolean>(false)
@@ -83,7 +99,7 @@ export default function DatasetInspectionPage() {
       setDataset(ds)
     } catch (err: any) {
       console.error(err)
-      setError("Failed to locate dataset record in database.")
+      setError("Failed to locate dataset record.")
     } finally {
       setLoadingDataset(false)
     }
@@ -99,13 +115,13 @@ export default function DatasetInspectionPage() {
         setLoadingFiles(true)
         const fileList = await getDatasetInspectionFiles(datasetId)
         setFiles(fileList)
+        setCompletedStages(prev => new Set(prev).add("inspection"))
       }
     } catch (err: any) {
       if (err.message && err.message.includes("404")) {
         setInspection(null)
       } else {
         console.error(err)
-        setError("Error loading dataset inspection summary.")
       }
     } finally {
       setLoadingInspection(false)
@@ -119,6 +135,7 @@ export default function DatasetInspectionPage() {
     try {
       const meta = await getDatasetMetadata(datasetId)
       setMetadata(meta)
+      if (meta) setCompletedStages(prev => new Set(prev).add("metadata"))
     } catch (err: any) {
       if (err.message && err.message.includes("404")) {
         setMetadata(null)
@@ -136,6 +153,7 @@ export default function DatasetInspectionPage() {
     try {
       const prevData = await getDatasetPreview(datasetId)
       setPreview(prevData)
+      if (prevData) setCompletedStages(prev => new Set(prev).add("preview"))
     } catch (err: any) {
       if (err.message && err.message.includes("404")) {
         setPreview(null)
@@ -156,7 +174,62 @@ export default function DatasetInspectionPage() {
     }
   }, [datasetId])
 
-  // Trigger Scanner
+  // Run Complete Pipeline
+  const handleRunCompletePipeline = async () => {
+    setPipelineError(null)
+    setError(null)
+    setCompletedStages(new Set())
+
+    // Stage 1: Inspection
+    setPipelineStage("inspection")
+    try {
+      const res = await runDatasetInspection(datasetId)
+      setInspection(res)
+      if (res.inspection_status === "COMPLETED") {
+        setLoadingFiles(true)
+        const fileList = await getDatasetInspectionFiles(datasetId)
+        setFiles(fileList)
+        setLoadingFiles(false)
+      }
+      setCompletedStages(prev => new Set(prev).add("inspection"))
+    } catch (err: any) {
+      console.error(err)
+      setPipelineError(err.message || "Filesystem scan failed.")
+      setPipelineStage("idle")
+      return
+    }
+
+    // Stage 2: Metadata
+    setPipelineStage("metadata")
+    try {
+      const res = await runDatasetMetadata(datasetId)
+      setMetadata(res)
+      setCompletedStages(prev => new Set(prev).add("metadata"))
+    } catch (err: any) {
+      console.error(err)
+      setPipelineError(err.message || "Metadata extraction failed.")
+      setPipelineStage("idle")
+      return
+    }
+
+    // Stage 3: Preview
+    setPipelineStage("preview")
+    try {
+      const res = await runDatasetPreview(datasetId)
+      setPreview(res)
+      setCompletedStages(prev => new Set(prev).add("preview"))
+    } catch (err: any) {
+      console.error(err)
+      setPipelineError(err.message || "Preview generation failed.")
+      setPipelineStage("idle")
+      return
+    }
+
+    setPipelineStage("complete")
+    triggerSuccess("Complete inspection finished successfully.")
+  }
+
+  // Individual step runners
   const handleRunInspection = async () => {
     setRunningInspection(true)
     setError(null)
@@ -165,22 +238,22 @@ export default function DatasetInspectionPage() {
     try {
       const res = await runDatasetInspection(datasetId)
       setInspection(res)
-      triggerSuccess("Filesystem scan completed successfully.")
+      triggerSuccess("Filesystem scan completed.")
       if (res.inspection_status === "COMPLETED") {
         setLoadingFiles(true)
         const fileList = await getDatasetInspectionFiles(datasetId)
         setFiles(fileList)
       }
+      setCompletedStages(prev => new Set(prev).add("inspection"))
     } catch (err: any) {
       console.error(err)
-      setError(err.message || "Filesystem scanning failed. Verify raw image pathway.")
+      setError(err.message || "Filesystem scan failed.")
     } finally {
       setRunningInspection(false)
       setLoadingFiles(false)
     }
   }
 
-  // Trigger Metadata extraction
   const handleRunMetadata = async () => {
     setRunningMetadata(true)
     setError(null)
@@ -188,7 +261,8 @@ export default function DatasetInspectionPage() {
     try {
       const res = await runDatasetMetadata(datasetId)
       setMetadata(res)
-      triggerSuccess("Metadata intelligence extraction completed.")
+      triggerSuccess("Metadata extraction completed.")
+      setCompletedStages(prev => new Set(prev).add("metadata"))
     } catch (err: any) {
       console.error(err)
       setError(err.message || "Metadata extraction failed.")
@@ -197,7 +271,6 @@ export default function DatasetInspectionPage() {
     }
   }
 
-  // Trigger Preview compilation
   const handleRunPreview = async () => {
     setRunningPreview(true)
     setError(null)
@@ -206,10 +279,11 @@ export default function DatasetInspectionPage() {
     try {
       const res = await runDatasetPreview(datasetId)
       setPreview(res)
-      triggerSuccess("Visual preview stack rendered.")
+      triggerSuccess("Preview generation completed.")
+      setCompletedStages(prev => new Set(prev).add("preview"))
     } catch (err: any) {
       console.error(err)
-      setError(err.message || "Failed to render visual preview stack.")
+      setError(err.message || "Preview generation failed.")
     } finally {
       setRunningPreview(false)
     }
@@ -223,546 +297,460 @@ export default function DatasetInspectionPage() {
     return `${mb.toFixed(1)} MB`
   }
 
+  const getProgressPercent = () => {
+    if (pipelineStage === "complete") return 100
+    if (pipelineStage === "idle") return completedStages.size * 33
+    const stageIdx = STAGES.findIndex(s => s.key === pipelineStage)
+    return Math.round(((stageIdx) / 3) * 100 + 16) // mid-stage
+  }
+
+  const isPipelineRunning = pipelineStage !== "idle" && pipelineStage !== "complete"
+  const hasAnyData = inspection || metadata || preview
+
   return (
     <div className="space-y-6 font-mono pb-12 text-slate-100">
-      {/* Upper Navigation Header */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-4 gap-4">
         <div className="space-y-1">
           <button
             onClick={() => router.push("/datasets")}
-            className="inline-flex items-center space-x-1 text-xs text-primary hover:underline uppercase text-[10px]"
+            className="inline-flex items-center space-x-1 text-xs text-primary hover:underline"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to Inventory Registry</span>
+            <span>Back to Inventory</span>
           </button>
           <h1 className="text-xl font-bold tracking-wider text-primary uppercase flex items-center gap-2">
             <FileCode2 className="w-5 h-5 text-primary" />
-            DATASET INSPECTION COMMAND
+            Dataset Inspection
           </h1>
           {dataset && (
-            <p className="text-xs text-slate-300 uppercase tracking-widest text-[10px]">
-              LOCKED NODE: <span className="text-white font-bold select-all">{dataset.dataset_name}</span> &middot; {dataset.dataset_path}
+            <p className="text-xs text-muted-foreground">
+              <span className="text-foreground font-semibold">{dataset.dataset_name}</span>
+              <span className="mx-2 text-border">·</span>
+              <span className="text-muted-foreground">{dataset.dataset_path}</span>
             </p>
-          )}
-        </div>
-        <div className="flex items-center space-x-2 text-xs border border-border px-3 py-1.5 bg-muted/30">
-          {loadingDataset ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-              <span className="text-muted-foreground uppercase text-[10px]">LOADING SENSOR SPEC...</span>
-            </>
-          ) : (
-            <>
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-muted-foreground uppercase text-[10px]">INSPECTOR: LOCKED</span>
-            </>
           )}
         </div>
       </div>
 
-      {/* Notifications Banners */}
+      {/* Notifications */}
       {success && (
-        <div className="border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-emerald-400 text-xs flex items-center justify-between shadow-[0_0_10px_-5px_rgba(16,185,129,0.3)]">
+        <div className="border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-emerald-400 text-xs flex items-center justify-between rounded-lg">
           <div className="flex items-center space-x-2">
             <CheckCircle className="w-4 h-4" />
-            <span className="font-bold uppercase tracking-wider">{success}</span>
+            <span className="font-semibold">{success}</span>
           </div>
-          <button onClick={() => setSuccess(null)} className="text-[10px] uppercase hover:underline opacity-80 font-bold">
+          <button onClick={() => setSuccess(null)} className="text-xs hover:underline opacity-80 font-semibold">
             Dismiss
           </button>
         </div>
       )}
 
       {error && (
-        <div className="border border-red-500/30 bg-red-500/5 px-4 py-3 text-red-400 text-xs flex items-center justify-between shadow-[0_0_10px_-5px_rgba(239,68,68,0.3)]">
+        <div className="border border-red-500/30 bg-red-500/5 px-4 py-3 text-red-400 text-xs flex items-center justify-between rounded-lg">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="w-4 h-4" />
-            <span className="font-bold uppercase tracking-wider">{error}</span>
+            <span className="font-semibold">{error}</span>
           </div>
-          <button onClick={() => setError(null)} className="text-[10px] uppercase hover:underline opacity-80 font-bold">
+          <button onClick={() => setError(null)} className="text-xs hover:underline opacity-80 font-semibold">
             Dismiss
           </button>
         </div>
       )}
 
-      {/* Primary Layout */}
-      <div className="space-y-6">
-        
-        {/* Step 1: Run Inspection Card */}
-        <div className="border border-border bg-card/20 p-5 space-y-4 relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-3 py-0.5 text-[8px] text-primary tracking-widest uppercase">
-            STEP 01 // FILESYSTEM SCAN
+      {pipelineError && (
+        <div className="border border-red-500/30 bg-red-500/5 px-4 py-3 text-red-400 text-xs flex items-center justify-between rounded-lg">
+          <div className="flex items-center space-x-2">
+            <AlertTriangle className="w-4 h-4" />
+            <span className="font-semibold">Pipeline Error: {pipelineError}</span>
           </div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-3">
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">1. Filesystem Inspection</h2>
-              <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                Scan workspace directories to verify physical GeoTIFF files and operational auxiliary reports.
-              </p>
-            </div>
-            <button
-              disabled={runningInspection || loadingInspection}
-              onClick={handleRunInspection}
-              className="px-4 py-2 bg-primary text-primary-foreground text-xs font-bold tracking-widest uppercase flex items-center gap-1.5 hover:bg-primary/95 transition-all shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)] disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed shrink-0"
-            >
-              {runningInspection ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  RUNNING SCAN...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  RUN INSPECTION
-                </>
-              )}
-            </button>
+          <button onClick={() => setPipelineError(null)} className="text-xs hover:underline opacity-80 font-semibold">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Primary Action: Run Complete Inspection */}
+      <div className="border border-border bg-card/20 rounded-xl p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-bold text-foreground">Complete Inspection Pipeline</h2>
+            <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed max-w-lg">
+              Scan workspace directories, extract geospatial metadata from GeoTIFF files, and generate RGB preview composites — all in one step.
+            </p>
           </div>
-
-          {/* Inspection results container */}
-          {loadingInspection ? (
-            <div className="flex items-center justify-center p-8 space-x-2 text-xs text-muted-foreground">
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span>FETCHING FILE PROFILE FROM SYSTEM DATABASE...</span>
-            </div>
-          ) : !inspection ? (
-            <div className="border border-dashed border-border bg-muted/5 p-8 text-center flex flex-col items-center justify-center space-y-2 min-h-[120px]">
-              <AlertTriangle className="w-5 h-5 text-amber-500/60 animate-pulse" />
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">No Inspection Profile Found</h4>
-                <p className="text-[10px] text-muted-foreground max-w-sm mt-0.5 leading-normal">
-                  This dataset workspace has not been scanned. Run inspection scanner to index TIFF files.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Metric strip */}
-              <div className="space-y-1.5">
-                <div className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-wider">
-                  Scan Inventory Summary
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-center">
-                  <div className="border border-border bg-card/40 p-2.5">
-                    <div className="text-[8px] text-muted-foreground uppercase">Status</div>
-                    <div className="text-xs font-black text-primary mt-1">{inspection.inspection_status}</div>
-                  </div>
-                  <div className="border border-border bg-card/40 p-2.5">
-                    <div className="text-[8px] text-muted-foreground uppercase font-bold">Total Files</div>
-                    <div className="text-xs font-black text-foreground mt-1">{inspection.total_files}</div>
-                  </div>
-                  <div className="border border-border bg-card/40 p-2.5">
-                    <div className="text-[8px] text-muted-foreground uppercase font-bold">TIF (Bands)</div>
-                    <div className="text-xs font-black text-cyan-400 mt-1">{inspection.total_tif_files}</div>
-                  </div>
-                  <div className="border border-border bg-card/40 p-2.5">
-                    <div className="text-[8px] text-muted-foreground uppercase font-bold">TXT (Report)</div>
-                    <div className="text-xs font-black text-foreground mt-1">{inspection.total_txt_files}</div>
-                  </div>
-                  <div className="border border-border bg-card/40 p-2.5">
-                    <div className="text-[8px] text-muted-foreground uppercase font-bold">XML (Aux)</div>
-                    <div className="text-xs font-black text-amber-500 mt-1">{inspection.total_xml_files}</div>
-                  </div>
-                  <div className="border border-border bg-card/40 p-2.5">
-                    <div className="text-[8px] text-muted-foreground uppercase font-bold">META (Profile)</div>
-                    <div className="text-xs font-black text-pink-500 mt-1">{inspection.total_meta_files}</div>
-                  </div>
-                  <div className="border border-border bg-card/40 p-2.5">
-                    <div className="text-[8px] text-muted-foreground uppercase font-bold">JPG (Preview)</div>
-                    <div className="text-xs font-black text-emerald-400 mt-1">{inspection.total_jpg_files}</div>
-                  </div>
-                  <div className="border border-border bg-card/40 p-2.5">
-                    <div className="text-[8px] text-muted-foreground uppercase font-bold">Scan Date</div>
-                    <div className="text-[9px] font-black text-muted-foreground mt-1 truncate" title={new Date(inspection.updated_at).toLocaleString()}>
-                      {new Date(inspection.updated_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Discovered files index list */}
-              <div className="space-y-1.5">
-                <div className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-wider">
-                  Detailed Discovered File Inventory
-                </div>
-                {loadingFiles ? (
-                  <div className="flex items-center space-x-2 text-[10px] text-muted-foreground p-4 bg-muted/10 border border-border border-dashed">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>FETCHING FILE INVENTORY...</span>
-                  </div>
-                ) : files.length === 0 ? (
-                  <div className="text-[10px] text-muted-foreground p-3 border border-border border-dashed italic">
-                    No files indexed on disc workspace.
-                  </div>
-                ) : (
-                  <div className="border border-border bg-card/15 overflow-hidden">
-                    <div className="overflow-x-auto max-h-[180px] overflow-y-auto">
-                      <table className="w-full text-left border-collapse text-[10px]">
-                        <thead>
-                          <tr className="border-b border-border bg-muted/20 text-muted-foreground uppercase tracking-widest text-[9px] sticky top-0 bg-background/95 backdrop-blur z-10">
-                            <th className="p-3 font-bold">File Name</th>
-                            <th className="p-3 font-bold">Ext</th>
-                            <th className="p-3 font-bold">Category</th>
-                            <th className="p-3 font-bold">Relative Path</th>
-                            <th className="p-3 font-bold text-right">Size</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/60 text-slate-300">
-                          {files.map((file) => (
-                            <tr key={file.file_id} className="hover:bg-muted/5 transition-colors">
-                              <td className="p-3 font-bold text-foreground truncate max-w-[150px]" title={file.file_name}>
-                                {file.file_name}
-                              </td>
-                              <td className="p-3 text-muted-foreground">{file.file_extension}</td>
-                              <td className="p-3">
-                                <span className={`px-1.5 py-0.5 border text-[8px] font-bold tracking-wider uppercase ${
-                                  file.file_category === "TIF"
-                                    ? "border-cyan-500/20 text-cyan-400 bg-cyan-500/5"
-                                    : file.file_category === "XML"
-                                    ? "border-amber-500/20 text-amber-500 bg-amber-500/5"
-                                    : file.file_category === "TXT"
-                                    ? "border-foreground/20 text-foreground bg-muted/10"
-                                    : file.file_category === "META"
-                                    ? "border-pink-500/20 text-pink-400 bg-pink-500/5"
-                                    : file.file_category === "JPG"
-                                    ? "border-emerald-500/20 text-emerald-400 bg-emerald-500/5"
-                                    : "border-border text-muted-foreground bg-muted/5"
-                                }`}>
-                                  {file.file_category}
-                                </span>
-                              </td>
-                              <td className="p-3 text-muted-foreground truncate max-w-[220px]" title={file.relative_path}>
-                                {file.relative_path}
-                              </td>
-                              <td className="p-3 text-right text-muted-foreground">{formatSize(file.file_size_bytes)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          <button
+            disabled={isPipelineRunning || loadingDataset}
+            onClick={handleRunCompletePipeline}
+            className="px-6 py-3 bg-primary text-primary-foreground text-sm font-bold tracking-wider uppercase flex items-center gap-2 hover:bg-primary/90 transition-all disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed shrink-0 rounded-xl"
+          >
+            {isPipelineRunning ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Running...
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 fill-current" />
+                Run Complete Inspection
+              </>
+            )}
+          </button>
         </div>
 
-        {/* Step 2: Metadata extraction & properties modal */}
-        <div className="border border-border bg-card/20 p-5 space-y-4 relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-3 py-0.5 text-[8px] text-primary tracking-widest uppercase">
-            STEP 02 // METADATA ATTRIBUTES
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-3">
-            <div className="flex items-center space-x-2">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">2. Metadata Intelligence</h2>
-              {metadata && (
-                <span className={`px-1.5 py-0.5 border text-[8px] font-bold tracking-widest uppercase ${
-                  metadata.metadata_status === "COMPLETED"
-                    ? "border-emerald-500/20 text-emerald-400 bg-emerald-500/5"
-                    : metadata.metadata_status === "EXTRACTING"
-                    ? "border-amber-500/20 text-amber-500 bg-amber-500/5 animate-pulse"
-                    : "border-red-500/20 text-red-400 bg-red-500/5"
-                }`}>
-                  {metadata.metadata_status}
-                </span>
-              )}
+        {/* Pipeline Progress */}
+        {(isPipelineRunning || pipelineStage === "complete" || completedStages.size > 0) && (
+          <div className="space-y-4">
+            {/* Progress Bar */}
+            <div className="progress-track">
+              <div
+                className={`progress-fill ${pipelineStage === "complete" ? "progress-fill-success" : ""}`}
+                style={{ width: `${getProgressPercent()}%` }}
+              />
             </div>
-            <button
-              disabled={runningMetadata || loadingMetadata}
-              onClick={handleRunMetadata}
-              className="px-3 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/30 hover:border-primary transition-all font-bold tracking-widest uppercase text-[9px] flex items-center gap-1.5 disabled:opacity-50 shrink-0"
-            >
-              {runningMetadata ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  EXTRACTING...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-3 h-3" />
-                  {metadata ? "RE-RUN EXTRACTION" : "RUN EXTRACTION"}
-                </>
-              )}
-            </button>
-          </div>
 
-          {loadingMetadata ? (
-            <div className="flex items-center justify-center p-6 space-x-2 text-[10px] text-muted-foreground">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-              <span>FETCHING METADATA TELEMETRY FROM PLATFORM ENGINE...</span>
+            {/* Stage Indicators */}
+            <div className="grid grid-cols-3 gap-3">
+              {STAGES.map((stage) => {
+                const isCompleted = completedStages.has(stage.key)
+                const isRunning = pipelineStage === stage.key
+                const isPending = !isCompleted && !isRunning
+
+                return (
+                  <div
+                    key={stage.key}
+                    className={`flex items-center gap-2 p-3 border rounded-lg text-xs transition-all ${
+                      isCompleted
+                        ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400"
+                        : isRunning
+                        ? "border-primary/30 bg-primary/5 text-primary stage-running"
+                        : "border-border bg-card/10 text-muted-foreground"
+                    }`}
+                  >
+                    {isCompleted ? (
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                    ) : isRunning ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
+                    ) : (
+                      <Circle className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                    )}
+                    <span className="font-semibold">{stage.label}</span>
+                  </div>
+                )
+              })}
             </div>
-          ) : !metadata ? (
-            <div className="border border-dashed border-border bg-muted/5 p-8 text-center flex flex-col items-center justify-center space-y-2 min-h-[120px]">
+          </div>
+        )}
+      </div>
+
+      {/* Individual Step Controls */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <button
+          disabled={runningInspection || isPipelineRunning}
+          onClick={handleRunInspection}
+          className={`px-4 py-3 border font-bold tracking-wider uppercase text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-xl ${
+            inspection
+              ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10"
+              : "border-border bg-card/20 text-foreground hover:border-primary/30"
+          }`}
+        >
+          {runningInspection ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+          {inspection ? "Re-run Scan" : "Run Scan"}
+        </button>
+        <button
+          disabled={runningMetadata || isPipelineRunning}
+          onClick={handleRunMetadata}
+          className={`px-4 py-3 border font-bold tracking-wider uppercase text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-xl ${
+            metadata
+              ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10"
+              : "border-border bg-card/20 text-foreground hover:border-primary/30"
+          }`}
+        >
+          {runningMetadata ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+          {metadata ? "Re-extract Metadata" : "Extract Metadata"}
+        </button>
+        <button
+          disabled={runningPreview || isPipelineRunning}
+          onClick={handleRunPreview}
+          className={`px-4 py-3 border font-bold tracking-wider uppercase text-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-xl ${
+            preview
+              ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10"
+              : "border-border bg-card/20 text-foreground hover:border-primary/30"
+          }`}
+        >
+          {runningPreview ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+          {preview ? "Re-generate Preview" : "Generate Preview"}
+        </button>
+      </div>
+
+      {/* Results Section */}
+      <div className="space-y-6">
+        {/* Inspection Results */}
+        {loadingInspection ? (
+          <div className="flex items-center justify-center p-8 space-x-2 text-xs text-muted-foreground">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span>Loading inspection data...</span>
+          </div>
+        ) : !inspection ? (
+          !isPipelineRunning && (
+            <div className="border border-dashed border-border bg-muted/5 p-8 text-center flex flex-col items-center justify-center space-y-2 min-h-[100px] rounded-xl">
               <Info className="w-5 h-5 text-muted-foreground/50" />
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">No Metadata Extracted</h4>
+                <h4 className="text-xs font-bold text-foreground">No Inspection Data</h4>
                 <p className="text-[10px] text-muted-foreground max-w-sm mt-0.5 leading-normal">
-                  The geospatial metadata intelligence profile is missing. Run the extraction engine to analyze TIFF tags.
+                  Run the complete inspection pipeline above to scan and index your dataset files.
                 </p>
               </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Properties Cards Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-[10px]">
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase font-bold">CRS</div>
-                  <div className="text-xs font-bold text-foreground mt-1 truncate" title={metadata.coordinate_system || "N/A"}>
-                    {metadata.coordinate_system || "N/A"}
-                  </div>
+          )
+        ) : (
+          <div className="border border-border bg-card/20 rounded-xl p-5 space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">
+              Scan Summary
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 text-center">
+              <div className="border border-border bg-card/40 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase">Status</div>
+                <div className="text-xs font-black text-primary mt-1">{inspection.inspection_status}</div>
+              </div>
+              <div className="border border-border bg-card/40 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase font-bold">Total Files</div>
+                <div className="text-xs font-black text-foreground mt-1">{inspection.total_files}</div>
+              </div>
+              <div className="border border-border bg-card/40 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase font-bold">TIF Bands</div>
+                <div className="text-xs font-black text-cyan-400 mt-1">{inspection.total_tif_files}</div>
+              </div>
+              <div className="border border-border bg-card/40 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase font-bold">TXT Reports</div>
+                <div className="text-xs font-black text-foreground mt-1">{inspection.total_txt_files}</div>
+              </div>
+              <div className="border border-border bg-card/40 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase font-bold">XML Aux</div>
+                <div className="text-xs font-black text-amber-500 mt-1">{inspection.total_xml_files}</div>
+              </div>
+              <div className="border border-border bg-card/40 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase font-bold">META</div>
+                <div className="text-xs font-black text-pink-500 mt-1">{inspection.total_meta_files}</div>
+              </div>
+              <div className="border border-border bg-card/40 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase font-bold">JPG</div>
+                <div className="text-xs font-black text-emerald-400 mt-1">{inspection.total_jpg_files}</div>
+              </div>
+              <div className="border border-border bg-card/40 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase font-bold">Scan Date</div>
+                <div className="text-[9px] font-black text-muted-foreground mt-1 truncate" title={new Date(inspection.updated_at).toLocaleString()}>
+                  {new Date(inspection.updated_at).toLocaleDateString()}
                 </div>
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase font-bold">Projection</div>
-                  <div className="text-xs font-bold text-foreground mt-1 truncate" title={metadata.projection_name || "N/A"}>
-                    {metadata.projection_name || "N/A"}
-                  </div>
+              </div>
+            </div>
+
+            {/* File inventory */}
+            {files.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-[9px] font-bold text-muted-foreground/80 uppercase tracking-wider">
+                  Discovered Files
                 </div>
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase font-bold">EPSG Code</div>
-                  <div className="text-xs font-bold text-cyan-400 mt-1">{metadata.epsg_code || "N/A"}</div>
-                </div>
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase font-bold">UTM Zone</div>
-                  <div className="text-xs font-bold text-foreground mt-1">{metadata.utm_zone || "N/A"}</div>
-                </div>
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase font-bold">Spectral Bands</div>
-                  <div className="text-xs font-bold text-foreground mt-1">{metadata.band_count || "N/A"}</div>
-                </div>
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase font-bold">Raster Size</div>
-                  <div className="text-xs font-bold text-foreground mt-1 truncate">
-                    {metadata.raster_width && metadata.raster_height
-                      ? `${metadata.raster_width} x ${metadata.raster_height}`
-                      : "N/A"}
-                  </div>
-                </div>
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase font-bold">Pixel Resolution</div>
-                  <div className="text-xs font-bold text-amber-500 mt-1 truncate">
-                    {metadata.pixel_size_x && metadata.pixel_size_y
-                      ? `${Math.abs(metadata.pixel_size_x).toFixed(2)}m x ${Math.abs(metadata.pixel_size_y).toFixed(2)}m`
-                      : "N/A"}
-                  </div>
-                </div>
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase font-bold">Acquisition Date</div>
-                  <div className="text-xs font-bold text-pink-500 mt-1 truncate" title={metadata.acquisition_date || "N/A"}>
-                    {metadata.acquisition_date || "N/A"}
+                <div className="border border-border bg-card/15 overflow-hidden rounded-lg">
+                  <div className="overflow-x-auto max-h-[180px] overflow-y-auto">
+                    <table className="w-full text-left border-collapse text-[10px]">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/20 text-muted-foreground uppercase tracking-widest text-[9px] sticky top-0 bg-background/95 backdrop-blur z-10">
+                          <th className="p-3 font-bold">File Name</th>
+                          <th className="p-3 font-bold">Ext</th>
+                          <th className="p-3 font-bold">Category</th>
+                          <th className="p-3 font-bold">Relative Path</th>
+                          <th className="p-3 font-bold text-right">Size</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/60 text-slate-300">
+                        {files.map((file) => (
+                          <tr key={file.file_id} className="hover:bg-muted/5 transition-colors">
+                            <td className="p-3 font-bold text-foreground truncate max-w-[150px]" title={file.file_name}>
+                              {file.file_name}
+                            </td>
+                            <td className="p-3 text-muted-foreground">{file.file_extension}</td>
+                            <td className="p-3">
+                              <span className={`px-1.5 py-0.5 border text-[8px] font-bold tracking-wider uppercase rounded-md ${
+                                file.file_category === "TIF"
+                                  ? "border-cyan-500/20 text-cyan-400 bg-cyan-500/5"
+                                  : file.file_category === "XML"
+                                  ? "border-amber-500/20 text-amber-500 bg-amber-500/5"
+                                  : file.file_category === "TXT"
+                                  ? "border-foreground/20 text-foreground bg-muted/10"
+                                  : file.file_category === "META"
+                                  ? "border-pink-500/20 text-pink-400 bg-pink-500/5"
+                                  : file.file_category === "JPG"
+                                  ? "border-emerald-500/20 text-emerald-400 bg-emerald-500/5"
+                                  : "border-border text-muted-foreground bg-muted/5"
+                              }`}>
+                                {file.file_category}
+                              </span>
+                            </td>
+                            <td className="p-3 text-muted-foreground truncate max-w-[220px]" title={file.relative_path}>
+                              {file.relative_path}
+                            </td>
+                            <td className="p-3 text-right text-muted-foreground">{formatSize(file.file_size_bytes)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
+            )}
+          </div>
+        )}
 
-              {/* View Properties Modal Trigger */}
-              <div className="flex justify-start">
+        {/* Metadata Results */}
+        {!loadingMetadata && metadata && (
+          <div className="border border-border bg-card/20 rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Metadata</h3>
+              <button
+                onClick={() => setShowMetadataModal(true)}
+                className="px-3 py-1.5 border border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground text-xs uppercase font-bold tracking-wider transition-all rounded-lg flex items-center gap-1.5"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                View Details
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-[10px]">
+              <div className="border border-border bg-card/30 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase font-bold">CRS</div>
+                <div className="text-xs font-bold text-foreground mt-1 truncate" title={metadata.coordinate_system || "N/A"}>
+                  {metadata.coordinate_system || "N/A"}
+                </div>
+              </div>
+              <div className="border border-border bg-card/30 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase font-bold">EPSG Code</div>
+                <div className="text-xs font-bold text-cyan-400 mt-1">{metadata.epsg_code || "N/A"}</div>
+              </div>
+              <div className="border border-border bg-card/30 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase font-bold">Raster Size</div>
+                <div className="text-xs font-bold text-foreground mt-1 truncate">
+                  {metadata.raster_width && metadata.raster_height
+                    ? `${metadata.raster_width} x ${metadata.raster_height}`
+                    : "N/A"}
+                </div>
+              </div>
+              <div className="border border-border bg-card/30 p-2.5 rounded-lg">
+                <div className="text-[8px] text-muted-foreground uppercase font-bold">Resolution</div>
+                <div className="text-xs font-bold text-amber-500 mt-1 truncate">
+                  {metadata.pixel_size_x && metadata.pixel_size_y
+                    ? `${Math.abs(metadata.pixel_size_x).toFixed(2)}m × ${Math.abs(metadata.pixel_size_y).toFixed(2)}m`
+                    : "N/A"}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Preview Results */}
+        {!loadingPreview && preview && preview.preview_status === "COMPLETED" && (
+          <div className="border border-border bg-card/20 rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-foreground">Preview</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] text-muted-foreground">
+                  {preview.preview_width} × {preview.preview_height} · {preview.band_count} bands · {preview.generation_time_ms}ms
+                </span>
                 <button
-                  onClick={() => setShowMetadataModal(true)}
-                  className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground text-xs uppercase font-bold tracking-widest transition-all rounded-sm flex items-center gap-1.5 shadow-[0_0_12px_-4px_rgba(6,182,212,0.3)]"
+                  onClick={() => setShowFullPreviewModal(true)}
+                  className="px-3 py-1.5 border border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground text-xs uppercase font-bold tracking-wider transition-all rounded-lg flex items-center gap-1.5"
                 >
-                  <Eye className="w-4 h-4" />
-                  View Metadata Details
+                  <Eye className="w-3.5 h-3.5" />
+                  Full View
                 </button>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Step 3: Dataset visual preview */}
-        <div className="border border-border bg-card/20 p-5 space-y-4 relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-3 py-0.5 text-[8px] text-primary tracking-widest uppercase">
-            STEP 03 // VISUAL SCAN
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-3">
-            <div className="flex items-center space-x-2">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">3. Dataset Visual Preview</h2>
-              {preview && (
-                <span className={`px-1.5 py-0.5 border text-[8px] font-bold tracking-widest uppercase ${
-                  preview.preview_status === "COMPLETED"
-                    ? "border-emerald-500/20 text-emerald-400 bg-emerald-500/5"
-                    : preview.preview_status === "GENERATING"
-                    ? "border-amber-500/20 text-amber-500 bg-amber-500/5 animate-pulse"
-                    : "border-red-500/20 text-red-400 bg-red-500/5"
-                }`}>
-                  {preview.preview_status}
-                </span>
-              )}
-            </div>
-            <button
-              disabled={runningPreview || loadingPreview}
-              onClick={handleRunPreview}
-              className="px-3 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/30 hover:border-primary transition-all font-bold tracking-widest uppercase text-[9px] flex items-center gap-1.5 disabled:opacity-50 shrink-0"
-            >
-              {runningPreview ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  GENERATING...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-3 h-3" />
-                  {preview ? "RE-GENERATE PREVIEW" : "GENERATE PREVIEW"}
-                </>
-              )}
-            </button>
-          </div>
-
-          {loadingPreview ? (
-            <div className="flex items-center justify-center p-6 space-x-2 text-[10px] text-muted-foreground">
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-              <span>FETCHING PREVIEW IMAGES FROM TELEMETRY DEPOT...</span>
-            </div>
-          ) : !preview ? (
-            <div className="border border-dashed border-border bg-muted/5 p-8 text-center flex flex-col items-center justify-center space-y-2 min-h-[120px]">
-              <Info className="w-5 h-5 text-muted-foreground/50" />
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">No Preview Available</h4>
-                <p className="text-[10px] text-muted-foreground max-w-sm mt-0.5 leading-normal">
-                  Click generate preview to assemble spectral bands into RGB composited raster maps.
-                </p>
-              </div>
-            </div>
-          ) : preview.preview_status !== "COMPLETED" ? (
-            <div className="border border-border bg-card/10 p-6 text-center text-xs text-muted-foreground">
-              {preview.preview_status === "GENERATING" ? (
-                <div className="flex flex-col items-center justify-center space-y-2">
-                  <Loader2 className="w-6 h-6 animate-spin text-primary animate-pulse" />
-                  <span>GENERATING DECI-RESOLUTION PREVIEWS (RGB STACK)...</span>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Thumbnail */}
+              <div className="md:col-span-1 border border-border bg-card/30 p-4 flex flex-col space-y-3 rounded-lg">
+                <div className="text-[9px] text-muted-foreground uppercase font-bold">Thumbnail</div>
+                <div className="border border-border/80 bg-background/50 flex items-center justify-center p-2 min-h-[140px] rounded-lg">
+                  {dataset && (
+                    <img
+                      src={getDatasetPreviewThumbnailUrl(datasetId)}
+                      alt="Thumbnail"
+                      className="max-h-[130px] max-w-full object-contain rounded"
+                      loading="lazy"
+                    />
+                  )}
                 </div>
-              ) : (
-                <div className="text-red-400 uppercase font-bold flex items-center justify-center gap-2">
-                  <AlertTriangle className="w-4 h-4" />
-                  <span>Preview Generation Failed. Check directory write access.</span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Summary Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-[10px]">
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase">Resolution</div>
-                  <div className="text-xs font-bold text-foreground mt-1">{preview.preview_width} x {preview.preview_height}</div>
-                </div>
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase font-bold">Stacked Bands</div>
-                  <div className="text-xs font-bold text-foreground mt-1">{preview.band_count} (RGB Output)</div>
-                </div>
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase font-bold">Compute Latency</div>
-                  <div className="text-xs font-bold text-cyan-400 mt-1">{preview.generation_time_ms} ms</div>
-                </div>
-                <div className="border border-border bg-card/30 p-2.5">
-                  <div className="text-[8px] text-muted-foreground uppercase font-bold">Action Control</div>
+                {/* Zoom controls */}
+                <div className="flex flex-wrap items-center gap-1.5">
                   <button
-                    onClick={() => setShowFullPreviewModal(true)}
-                    className="text-[9px] uppercase hover:underline text-primary font-bold mt-1.5 block mx-auto flex items-center justify-center gap-1"
+                    onClick={() => setPreviewZoom(Math.max(1, previewZoom - 0.5))}
+                    className="px-2 py-1 bg-muted hover:bg-muted/70 border border-border text-[9px] font-bold rounded-md"
+                    disabled={previewZoom <= 1}
                   >
-                    <Eye className="w-3 h-3" />
-                    Open Full Preview
+                    −
+                  </button>
+                  <span className="text-[9px] text-muted-foreground font-bold px-1">{previewZoom}×</span>
+                  <button
+                    onClick={() => setPreviewZoom(Math.min(4, previewZoom + 0.5))}
+                    className="px-2 py-1 bg-muted hover:bg-muted/70 border border-border text-[9px] font-bold rounded-md"
+                    disabled={previewZoom >= 4}
+                  >
+                    +
+                  </button>
+                  <button
+                    onClick={() => setPreviewZoom(1)}
+                    className="px-2 py-1 bg-muted hover:bg-muted/70 border border-border text-[9px] font-bold rounded-md"
+                  >
+                    Reset
                   </button>
                 </div>
               </div>
 
-              {/* Massive Preview display */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {/* Left Thumbnail panel */}
-                <div className="md:col-span-1 border border-border bg-card/30 p-4 flex flex-col justify-between space-y-4">
-                  <div className="space-y-2">
-                    <div className="text-[9px] text-muted-foreground uppercase font-bold">Quick Thumbnail</div>
-                    <div className="border border-border/80 bg-background/50 flex items-center justify-center p-2 min-h-[140px] rounded-sm">
-                      {dataset && (
-                        <img
-                          src={getDatasetPreviewThumbnailUrl(datasetId)}
-                          alt="Thumbnail"
-                          className="max-h-[130px] max-w-full object-contain border border-border"
-                          loading="lazy"
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 border-t border-border/40 pt-3">
-                    <div className="text-[9px] text-muted-foreground uppercase font-bold">Scale Tuning</div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <button
-                        onClick={() => setPreviewZoom(Math.max(1, previewZoom - 0.5))}
-                        className="px-2 py-1 bg-muted hover:bg-muted/70 border border-border text-[9px] font-bold"
-                        disabled={previewZoom <= 1}
-                      >
-                        Zoom -
-                      </button>
-                      <button
-                        onClick={() => setPreviewZoom(Math.min(4, previewZoom + 0.5))}
-                        className="px-2 py-1 bg-muted hover:bg-muted/70 border border-border text-[9px] font-bold"
-                        disabled={previewZoom >= 4}
-                      >
-                        Zoom +
-                      </button>
-                      <button
-                        onClick={() => setPreviewZoom(1)}
-                        className="px-2 py-1 bg-muted hover:bg-muted/70 border border-border text-[9px] font-bold"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                    <div className="text-[8px] text-muted-foreground font-bold uppercase">Zoom state: {previewZoom}x</div>
-                  </div>
-                </div>
-
-                {/* Larger main frame */}
-                <div className="md:col-span-3 border border-border bg-black/50 overflow-hidden relative flex items-center justify-center min-h-[400px] max-h-[550px] rounded-sm">
-                  <div className="absolute top-2 left-2 bg-background/80 border border-border px-2 py-0.5 text-[8px] tracking-widest text-muted-foreground uppercase z-10">
-                    Main Viewer // DECIMATED RASTER (ENLARGED)
-                  </div>
-                  <div
-                    className="w-full h-full overflow-auto flex items-center justify-center p-4 scrollbar-thin scrollbar-thumb-border"
-                    style={{ cursor: "grab" }}
-                  >
-                    {dataset && (
-                      <img
-                        src={getDatasetPreviewImageUrl(datasetId)}
-                        alt="Dataset Preview"
-                        className="object-contain transition-transform duration-200"
-                        style={{
-                          transform: `scale(${previewZoom})`,
-                          maxHeight: "480px",
-                          maxWidth: "100%",
-                        }}
-                        loading="lazy"
-                      />
-                    )}
-                  </div>
+              {/* Main image */}
+              <div className="md:col-span-3 border border-border bg-black/50 overflow-hidden relative flex items-center justify-center min-h-[400px] max-h-[550px] rounded-lg">
+                <div
+                  className="w-full h-full overflow-auto flex items-center justify-center p-4"
+                  style={{ cursor: "grab" }}
+                >
+                  {dataset && (
+                    <img
+                      src={getDatasetPreviewImageUrl(datasetId)}
+                      alt="Dataset Preview"
+                      className="object-contain transition-transform duration-200"
+                      style={{
+                        transform: `scale(${previewZoom})`,
+                        maxHeight: "480px",
+                        maxWidth: "100%",
+                      }}
+                      loading="lazy"
+                    />
+                  )}
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* MODAL 1: View Metadata Properties Table */}
+      {/* MODAL: Metadata Properties */}
       {showMetadataModal && metadata && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="border border-border bg-card max-w-2xl w-full p-6 space-y-6 shadow-[0_0_50px_-12px_rgba(6,182,212,0.3)] relative overflow-hidden font-mono text-xs">
-            <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-3 py-1 text-[8px] text-primary tracking-widest uppercase">
-              REGISTER // METADATA PROPERTIES
-            </div>
-            
-            <div className="space-y-2">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                Geospatial Metadata Properties Register
+          <div className="border border-border bg-card max-w-2xl w-full p-6 space-y-6 shadow-2xl relative overflow-hidden font-mono text-xs rounded-2xl">
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-foreground">
+                Geospatial Metadata
               </h3>
               <p className="text-[10px] text-muted-foreground">
-                Exhaustive GDAL attributes parsed from registered TIFF files.
+                GDAL attributes parsed from registered TIFF files.
               </p>
             </div>
 
-            <div className="border border-border bg-card/15 overflow-hidden rounded-sm">
+            <div className="border border-border bg-card/15 overflow-hidden rounded-lg">
               <div className="max-h-[350px] overflow-y-auto">
                 <table className="w-full text-left border-collapse text-[10px]">
                   <thead>
                     <tr className="border-b border-border bg-muted/20 text-muted-foreground uppercase tracking-widest text-[9px] sticky top-0 bg-background/95 z-10">
-                      <th className="p-2.5 font-bold">Property Field</th>
-                      <th className="p-2.5 font-bold">Extracted Value</th>
+                      <th className="p-2.5 font-bold">Property</th>
+                      <th className="p-2.5 font-bold">Value</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60 text-muted-foreground">
@@ -771,47 +759,47 @@ export default function DatasetInspectionPage() {
                       <td className="p-2.5 select-all text-foreground">{metadata.coordinate_system || "N/A"}</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 font-bold text-foreground/85">Map Projection Name</td>
+                      <td className="p-2.5 font-bold text-foreground/85">Map Projection</td>
                       <td className="p-2.5 select-all text-foreground">{metadata.projection_name || "N/A"}</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 font-bold text-foreground/85">EPSG Identifier Code</td>
+                      <td className="p-2.5 font-bold text-foreground/85">EPSG Code</td>
                       <td className="p-2.5 select-all text-cyan-400 font-bold">EPSG:{metadata.epsg_code || "N/A"}</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 font-bold text-foreground/85">UTM Grid Reference Zone</td>
+                      <td className="p-2.5 font-bold text-foreground/85">UTM Zone</td>
                       <td className="p-2.5 select-all text-foreground">{metadata.utm_zone || "N/A"}</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 font-bold text-foreground/85">Top-Left Origin Easting (X)</td>
+                      <td className="p-2.5 font-bold text-foreground/85">Origin Easting (X)</td>
                       <td className="p-2.5 select-all text-foreground">{metadata.origin_x !== null ? metadata.origin_x.toFixed(6) : "N/A"}</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 font-bold text-foreground/85">Top-Left Origin Northing (Y)</td>
+                      <td className="p-2.5 font-bold text-foreground/85">Origin Northing (Y)</td>
                       <td className="p-2.5 select-all text-foreground">{metadata.origin_y !== null ? metadata.origin_y.toFixed(6) : "N/A"}</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 font-bold text-foreground/85">Horizontal Pixel Pitch (X)</td>
+                      <td className="p-2.5 font-bold text-foreground/85">Pixel Size (X)</td>
                       <td className="p-2.5 select-all text-foreground">{metadata.pixel_size_x !== null ? `${metadata.pixel_size_x.toFixed(6)} meters` : "N/A"}</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 font-bold text-foreground/85">Vertical Pixel Pitch (Y)</td>
+                      <td className="p-2.5 font-bold text-foreground/85">Pixel Size (Y)</td>
                       <td className="p-2.5 select-all text-foreground">{metadata.pixel_size_y !== null ? `${metadata.pixel_size_y.toFixed(6)} meters` : "N/A"}</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 font-bold text-foreground/85">Raster Column Width (Pixels)</td>
+                      <td className="p-2.5 font-bold text-foreground/85">Raster Width</td>
                       <td className="p-2.5 select-all text-foreground">{metadata.raster_width || "N/A"}</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 font-bold text-foreground/85">Raster Row Height (Scan Lines)</td>
+                      <td className="p-2.5 font-bold text-foreground/85">Raster Height</td>
                       <td className="p-2.5 select-all text-foreground">{metadata.raster_height || "N/A"}</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 font-bold text-foreground/85">Multi-Spectral Band Count</td>
+                      <td className="p-2.5 font-bold text-foreground/85">Spectral Bands</td>
                       <td className="p-2.5 select-all text-foreground">{metadata.band_count || "N/A"}</td>
                     </tr>
                     <tr>
-                      <td className="p-2.5 font-bold text-foreground/85">Observation Capture Date</td>
+                      <td className="p-2.5 font-bold text-foreground/85">Acquisition Date</td>
                       <td className="p-2.5 select-all text-pink-400 font-bold">{metadata.acquisition_date || "N/A"}</td>
                     </tr>
                   </tbody>
@@ -822,34 +810,27 @@ export default function DatasetInspectionPage() {
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => setShowMetadataModal(false)}
-                className="px-4 py-2 border border-border bg-muted/20 hover:bg-muted/40 uppercase tracking-widest text-[10px] font-bold rounded-sm"
+                className="px-4 py-2 border border-border bg-muted/20 hover:bg-muted/40 uppercase tracking-wider text-xs font-bold rounded-lg"
               >
-                Close Register
+                Close
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL 2: Full Preview Image Dialog */}
+      {/* MODAL: Full Preview */}
       {showFullPreviewModal && dataset && (
         <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="border border-border bg-card max-w-5xl w-full h-[85vh] p-6 space-y-4 shadow-[0_0_50px_-12px_rgba(6,182,212,0.4)] relative flex flex-col justify-between font-mono">
-            <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-3 py-1 text-[8px] text-primary tracking-widest uppercase">
-              POPUP // RGB FULL PREVIEW
-            </div>
-
+          <div className="border border-border bg-card max-w-5xl w-full h-[85vh] p-6 space-y-4 shadow-2xl relative flex flex-col justify-between font-mono rounded-2xl">
             <div className="space-y-1">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                Fullscreen Visual Preview
+              <h3 className="text-sm font-bold text-foreground">
+                Full Preview — {dataset.dataset_name}
               </h3>
-              <p className="text-[10px] text-muted-foreground uppercase">
-                Raster stack: {dataset.dataset_name} &middot; {dataset.dataset_path}
-              </p>
             </div>
 
-            <div className="flex-1 border border-border bg-black/60 overflow-hidden relative flex items-center justify-center rounded-sm">
-              <div className="w-full h-full overflow-auto p-4 flex items-center justify-center scrollbar-thin scrollbar-thumb-border">
+            <div className="flex-1 border border-border bg-black/60 overflow-hidden relative flex items-center justify-center rounded-lg">
+              <div className="w-full h-full overflow-auto p-4 flex items-center justify-center">
                 <img
                   src={getDatasetPreviewImageUrl(datasetId)}
                   alt="Full Dataset Preview"
@@ -859,13 +840,12 @@ export default function DatasetInspectionPage() {
               </div>
             </div>
 
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-[9px] text-muted-foreground uppercase">Deci-resolution preview output (Phase 2 Visualizer)</span>
+            <div className="flex justify-end items-center pt-2">
               <button
                 onClick={() => setShowFullPreviewModal(false)}
-                className="px-4 py-2 bg-primary text-primary-foreground font-bold uppercase tracking-widest text-[10px] hover:bg-primary/95 transition-all shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)] rounded-sm"
+                className="px-4 py-2 bg-primary text-primary-foreground font-bold uppercase tracking-wider text-xs hover:bg-primary/90 transition-all rounded-lg"
               >
-                Close View
+                Close
               </button>
             </div>
           </div>

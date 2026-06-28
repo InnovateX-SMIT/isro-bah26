@@ -49,7 +49,6 @@ export default function ConfidenceOverlayPage() {
 
   const [zoom, setZoom] = useState(1)
   const [fitMode, setFitMode] = useState<"contain" | "actual">("contain")
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   // Overlay states
   const [opacity, setOpacity] = useState(0.6)
@@ -120,7 +119,7 @@ export default function ConfidenceOverlayPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
@@ -134,7 +133,7 @@ export default function ConfidenceOverlayPage() {
           onClick={() => router.push(`/datasets/${datasetId}/confidence`)}
           className="px-4 py-2 bg-muted hover:bg-muted/80 text-foreground border border-border uppercase tracking-widest text-[10px] font-bold"
         >
-          Back to Confidence Workspace
+          Back to Confidence
         </button>
       </div>
     )
@@ -155,7 +154,12 @@ export default function ConfidenceOverlayPage() {
   const baseImageUrl = baseLayer === "original" ? originalPreviewUrl : reconstructedPreviewUrl
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="confidence"
+      />
       
       {/* Central view frame */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -168,7 +172,7 @@ export default function ConfidenceOverlayPage() {
               className="inline-flex items-center space-x-1.5 text-[9px] text-primary hover:underline uppercase font-bold"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back to Confidence Workspace</span>
+              <span>Back to Confidence</span>
             </button>
             <ViewerBreadcrumb
               datasetName={dataset.dataset_name}
@@ -187,10 +191,10 @@ export default function ConfidenceOverlayPage() {
           {/* Interactive controls */}
           <div className="flex flex-wrap items-center gap-4">
             {/* Base Layer Switcher */}
-            <div className="flex items-center space-x-1 bg-background border border-border p-0.5 rounded-sm">
+            <div className="flex items-center space-x-1 bg-background border border-border p-0.5 rounded-lg">
               <button
                 onClick={() => setBaseLayer("original")}
-                className={`px-2.5 py-1 text-[9px] font-bold uppercase rounded-sm transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-2.5 py-1 text-[9px] font-bold uppercase rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                   baseLayer === "original"
                     ? "bg-primary text-background"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
@@ -201,7 +205,7 @@ export default function ConfidenceOverlayPage() {
               </button>
               <button
                 onClick={() => setBaseLayer("reconstructed")}
-                className={`px-2.5 py-1 text-[9px] font-bold uppercase rounded-sm transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-2.5 py-1 text-[9px] font-bold uppercase rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                   baseLayer === "reconstructed"
                     ? "bg-primary text-background"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
@@ -213,7 +217,7 @@ export default function ConfidenceOverlayPage() {
             </div>
 
             {/* Opacity Control */}
-            <div className="flex items-center space-x-2 bg-background border border-border px-3 py-1.5 rounded-sm">
+            <div className="flex items-center space-x-2 bg-background border border-border px-3 py-1.5 rounded-lg">
               <Sliders className="w-3.5 h-3.5 text-primary" />
               <span className="text-[9px] text-muted-foreground uppercase">Opacity:</span>
               <input
@@ -231,7 +235,7 @@ export default function ConfidenceOverlayPage() {
             </div>
 
             {/* Zoom controls */}
-            <div className="flex items-center space-x-1 bg-background border border-border p-1 rounded-sm">
+            <div className="flex items-center space-x-1 bg-background border border-border p-1 rounded-lg">
               <button
                 onClick={() => setZoom(prev => Math.max(0.5, prev - 0.25))}
                 disabled={zoom <= 0.5}
@@ -256,7 +260,7 @@ export default function ConfidenceOverlayPage() {
                 setZoom(1)
                 setFitMode(fitMode === "contain" ? "actual" : "contain")
               }}
-              className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-sm flex items-center gap-1"
+              className="px-3 py-1.5 border border-border hover:border-primary/50 text-[9px] font-bold uppercase transition-colors rounded-lg flex items-center gap-1"
             >
               <Maximize2 className="w-3 h-3" />
               {fitMode === "contain" ? "Actual Size" : "Fit Window"}
@@ -266,7 +270,7 @@ export default function ConfidenceOverlayPage() {
 
         {/* Confidence Overlay Composition Viewport */}
         <div className="flex-1 bg-black/65 overflow-hidden relative flex items-center justify-center p-6">
-          <div className="absolute top-3 left-3 bg-background/85 border border-border px-2.5 py-1 rounded-sm text-[9px] text-slate-300 font-bold uppercase z-10 select-none space-y-1">
+          <div className="absolute top-3 left-3 bg-background/85 border border-border px-2.5 py-1 rounded-lg text-[9px] text-slate-300 font-bold uppercase z-10 select-none space-y-1">
             <div>Composition Overlay Mode</div>
             <div className="text-[8px] text-muted-foreground uppercase">
               Base: {baseLayer === "original" ? "Original Bands preview" : "Optimized AI Reconstruction"}
@@ -303,7 +307,7 @@ export default function ConfidenceOverlayPage() {
               </div>
             </div>
           ) : (
-            <div className="border border-dashed border-border bg-card/10 p-8 rounded-sm text-center flex flex-col items-center justify-center space-y-3 max-w-sm">
+            <div className="border border-dashed border-border bg-card/10 p-8 rounded-lg text-center flex flex-col items-center justify-center space-y-3 max-w-sm">
               <AlertTriangle className="w-6 h-6 text-amber-500 animate-pulse" />
               <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
                 Composition Elements Missing
@@ -348,15 +352,6 @@ export default function ConfidenceOverlayPage() {
         )}
 
       </div>
-
-      {/* Sidebar Panel */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="confidence"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

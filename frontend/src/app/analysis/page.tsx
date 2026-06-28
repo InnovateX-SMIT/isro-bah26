@@ -351,10 +351,10 @@ function AnalysisSessionDashboard() {
         </div>
       )}
 
-      {/* Primary Actions / Session Listing Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-        {/* Left Column: Create New Session card */}
-        <div className="lg:col-span-1 border border-border bg-card/45 p-6 space-y-4 relative overflow-hidden">
+      {/* Primary Actions / Session Listing Stacked Layout */}
+      <div className="space-y-6">
+        {/* Top: Create New Session card */}
+        <div className="border border-border bg-card/45 p-6 space-y-4 relative overflow-hidden rounded-lg">
           <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-3 py-1 text-[8px] text-primary tracking-widest font-mono uppercase">
             ACTION // LAUNCH
           </div>
@@ -362,30 +362,32 @@ function AnalysisSessionDashboard() {
             <Plus className="w-4 h-4 text-primary" />
             Start Session
           </h2>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Create an isolated geospatial tracking environment for cloud removal tasks.
-          </p>
-          <button
-            disabled={creating}
-            onClick={handleCreateSession}
-            className="w-full py-2.5 bg-primary text-primary-foreground font-mono text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-primary/95 transition-all shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)] disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
-          >
-            {creating ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                CREATING...
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5 fill-current" />
-                START ANALYSIS
-              </>
-            )}
-          </button>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
+              Create an isolated geospatial tracking environment for cloud removal tasks. This will allocate database references for tracking coordinates, cloud density, and AI metadata.
+            </p>
+            <button
+              disabled={creating}
+              onClick={handleCreateSession}
+              className="py-2.5 px-6 bg-primary text-primary-foreground font-mono text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-primary/95 transition-all shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)] disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed rounded-md shrink-0"
+            >
+              {creating ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  CREATING...
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  START ANALYSIS
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Right Column: Sessions list table */}
-        <div className="lg:col-span-3 space-y-4">
+        {/* Bottom: Sessions list table */}
+        <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-border pb-2">
             <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80 font-mono">
               Geospatial Operations Index
@@ -407,7 +409,7 @@ function AnalysisSessionDashboard() {
             </div>
           ) : sessions.length === 0 ? (
             /* Empty State */
-            <div className="border border-dashed border-border bg-card/10 p-12 text-center space-y-6 flex flex-col items-center justify-center min-h-[300px]">
+            <div className="border border-dashed border-border bg-card/10 p-12 text-center space-y-6 flex flex-col items-center justify-center min-h-[300px] rounded-lg">
               <div className="space-y-2 max-w-md">
                 <AlertTriangle className="w-8 h-8 text-primary/45 mx-auto animate-pulse" />
                 <h3 className="text-sm font-bold uppercase tracking-wider text-foreground font-mono">
@@ -421,7 +423,7 @@ function AnalysisSessionDashboard() {
               <button
                 disabled={creating}
                 onClick={handleCreateSession}
-                className="px-5 py-2.5 bg-primary text-primary-foreground font-mono text-xs font-bold tracking-widest uppercase flex items-center gap-2 hover:bg-primary/95 transition-all shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)]"
+                className="px-5 py-2.5 bg-primary text-primary-foreground font-mono text-xs font-bold tracking-widest uppercase flex items-center gap-2 hover:bg-primary/95 transition-all shadow-[0_0_15px_-3px_rgba(6,182,212,0.4)] rounded-md"
               >
                 {creating ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

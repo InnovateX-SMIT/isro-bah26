@@ -35,7 +35,6 @@ export default function BaselineReconstructionResultPage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   // Zoom interactive state
   const [zoom, setZoom] = useState(1)
@@ -95,11 +94,11 @@ export default function BaselineReconstructionResultPage() {
 
   if (error || !dataset || !reconstructRun) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-sm space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            Imagery Link Failure
+            Could Not Load Imagery
           </h3>
         </div>
         <p className="text-xs text-muted-foreground font-sans">
@@ -118,7 +117,12 @@ export default function BaselineReconstructionResultPage() {
   const imageUrl = getReconstructionPreviewUrl(dataset.analysis_session_id)
 
   return (
-    <div className="flex h-full overflow-hidden border border-border bg-card/15 rounded-sm glow-cyan-sm font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+      <ViewerSidebar
+        dataset={dataset}
+        metadata={metadata}
+        mode="reconstruction"
+      />
       
       {/* Central Viewport */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -149,7 +153,7 @@ export default function BaselineReconstructionResultPage() {
 
           {/* Interactive controls */}
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center border border-border rounded-sm bg-background/50 text-[10px]">
+            <div className="flex items-center border border-border rounded-lg bg-background/50 text-[10px]">
               <button
                 onClick={() => setFitMode("contain")}
                 className={`px-2.5 py-1.5 border-r border-border hover:bg-muted transition-colors ${fitMode === "contain" ? "bg-primary/20 text-primary font-bold" : "text-muted-foreground"}`}
@@ -170,7 +174,7 @@ export default function BaselineReconstructionResultPage() {
               </button>
             </div>
 
-            <div className="flex items-center border border-border rounded-sm bg-background/50 text-[10px] h-[31px]">
+            <div className="flex items-center border border-border rounded-lg bg-background/50 text-[10px] h-[31px]">
               <button
                 onClick={handleZoomOut}
                 className="px-2.5 hover:bg-muted transition-colors h-full border-r border-border"
@@ -217,7 +221,7 @@ export default function BaselineReconstructionResultPage() {
             <img
               src={imageUrl}
               alt="Baseline Reconstruction composite preview"
-              className={`max-w-full max-h-full rounded-sm border border-border/20 shadow-lg ${
+              className={`max-w-full max-h-full rounded-lg border border-border/20 shadow-lg ${
                 fitMode === "cover" ? "object-cover w-full h-full" : "object-contain"
               }`}
               crossOrigin="anonymous"
@@ -232,15 +236,6 @@ export default function BaselineReconstructionResultPage() {
         </div>
 
       </div>
-
-      {/* Sidebar */}
-      <ViewerSidebar
-        dataset={dataset}
-        metadata={metadata}
-        mode="reconstruction"
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-      />
     </div>
   )
 }

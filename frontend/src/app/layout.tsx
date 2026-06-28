@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ClientHeader from "@/components/ClientHeader";
 import ClientSidebar from "@/components/ClientSidebar";
 import { SidebarProvider } from "@/components/SidebarContext";
 
@@ -30,10 +29,9 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="h-full flex flex-col bg-background text-foreground scanline-overlay relative">
+      <body className="h-full flex flex-col bg-background text-foreground relative">
         <SidebarProvider>
-          <ClientHeader />
-          <div className="flex-1 flex overflow-hidden">
+          <div className="flex-grow flex overflow-hidden">
             <ClientSidebar />
             <main className="flex-1 overflow-y-auto p-6 bg-background">
               <div className="w-full h-full">

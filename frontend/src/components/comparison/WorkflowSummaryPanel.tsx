@@ -71,7 +71,7 @@ export default function WorkflowSummaryPanel({
   })
 
   return (
-    <div className="border border-border bg-card/25 p-5 rounded-sm space-y-4 relative overflow-hidden font-mono">
+    <div className="border border-border bg-card/25 p-5 rounded-lg space-y-4 relative overflow-hidden font-mono">
       <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
         Pipeline Diagram // Flowchart
       </div>
@@ -99,7 +99,7 @@ export default function WorkflowSummaryPanel({
               )}
 
               {/* Node Card */}
-              <div className={`flex items-center md:flex-col space-x-3 md:space-x-0 md:space-y-2 p-2.5 md:p-3 border rounded-sm transition-all duration-300 min-w-[150px] text-left md:text-center select-none ${
+              <div className={`flex items-center md:flex-col space-x-3 md:space-x-0 md:space-y-2 p-2.5 md:p-3 border rounded-lg transition-all duration-300 min-w-[150px] text-left md:text-center select-none ${
                 isActive 
                   ? "border-primary bg-primary/10 shadow-[0_0_12px_-4px_rgba(6,182,212,0.35)] text-primary font-bold" 
                   : isCompleted 

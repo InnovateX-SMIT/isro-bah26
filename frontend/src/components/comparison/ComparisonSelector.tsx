@@ -49,7 +49,7 @@ export default function ComparisonSelector({ currentMode, onChangeMode }: Compar
           <button
             key={m.id}
             onClick={() => onChangeMode(m.id)}
-            className={`text-left p-3.5 border transition-all duration-300 rounded-sm font-mono flex items-start space-x-3 group cursor-pointer ${
+            className={`text-left p-3.5 border transition-all duration-300 rounded-lg font-mono flex items-start space-x-3 group cursor-pointer ${
               isActive
                 ? "border-primary bg-primary/10 shadow-[0_0_15px_-4px_rgba(6,182,212,0.4)]"
                 : "border-border/60 bg-card/10 hover:border-primary/50 hover:bg-card/20"

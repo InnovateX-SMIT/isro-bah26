@@ -154,20 +154,13 @@ export default function ReportExportPanel({ sessionId, datasetId, datasetName, i
   };
 
   return (
-    <div className="border border-border bg-card/25 p-5 font-mono space-y-5 relative overflow-hidden rounded-sm hover:border-primary/30 transition-all duration-300">
-      <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2.5 py-0.5 text-[8.5px] text-primary tracking-widest uppercase">
-        CONTROL CENTER // REPORTS
-      </div>
-
+    <div className="font-mono space-y-5">
       <div className="flex items-center gap-2 border-b border-border/50 pb-3">
         <FileText className="w-5 h-5 text-primary" />
         <div>
           <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
             Analysis Report Export Subsystem
           </h2>
-          <p className="text-[8px] text-muted-foreground uppercase tracking-wider">
-            Phase 11B Operational Subsystem
-          </p>
         </div>
       </div>
 
@@ -203,7 +196,7 @@ export default function ReportExportPanel({ sessionId, datasetId, datasetName, i
               <label className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider block">
                 Layout Contents checklist
               </label>
-              <div className="bg-background/40 border border-border/40 p-2.5 space-y-1 max-h-[85px] overflow-y-auto rounded-sm scrollbar-thin scrollbar-thumb-border">
+              <div className="bg-background/40 border border-border/40 p-2.5 space-y-1 max-h-[85px] overflow-y-auto rounded-lg scrollbar-thin scrollbar-thumb-border">
                 {includedSections.length === 0 ? (
                   <span className="text-[8px] text-muted-foreground italic uppercase block">Scanning session telemetry files...</span>
                 ) : (
@@ -249,7 +242,7 @@ export default function ReportExportPanel({ sessionId, datasetId, datasetName, i
             <button
               onClick={handleCompile}
               disabled={!isValid || isCompiling}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 font-bold text-[10px] tracking-widest uppercase transition-all rounded-sm w-full md:w-auto ${
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 font-bold text-[10px] tracking-widest uppercase transition-all rounded-lg w-full md:w-auto ${
                 !isValid || isCompiling
                   ? "bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed"
                   : "bg-primary text-background border border-primary hover:bg-primary-hover shadow-[0_0_12px_-3px_rgba(6,182,212,0.4)]"
@@ -271,7 +264,7 @@ export default function ReportExportPanel({ sessionId, datasetId, datasetName, i
         </div>
 
         {/* Col 2: Console Logs and Output details */}
-        <div className="bg-black/60 border border-border/80 p-4 rounded-sm flex flex-col justify-between min-h-[160px] text-[9px] relative overflow-hidden">
+        <div className="bg-black/60 border border-border/80 p-4 rounded-lg flex flex-col justify-between min-h-[160px] text-[9px] relative overflow-hidden">
           <div className="absolute top-0 right-0 bg-border/20 px-1.5 py-0.5 text-[7px] text-muted-foreground uppercase">
             OPERATOR LOGS
           </div>
@@ -296,7 +289,7 @@ export default function ReportExportPanel({ sessionId, datasetId, datasetName, i
             )}
 
             {isCompiling && (
-              <div className="w-full bg-slate-800/80 h-1 mt-2 rounded-sm overflow-hidden">
+              <div className="w-full bg-slate-800/80 h-1 mt-2 rounded-lg overflow-hidden">
                 <div 
                   className="bg-primary h-full transition-all duration-300"
                   style={{ width: `${compileProgress}%` }}
@@ -322,7 +315,7 @@ export default function ReportExportPanel({ sessionId, datasetId, datasetName, i
               <a
                 href={getReportDownloadUrl(sessionId, selectedReport)}
                 download
-                className="w-full inline-flex items-center justify-center gap-1.5 bg-emerald-500 text-background hover:bg-emerald-600 border border-emerald-500 font-bold px-3 py-2 text-[10px] tracking-widest uppercase transition-all rounded-sm shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)] cursor-pointer"
+                className="w-full inline-flex items-center justify-center gap-1.5 bg-emerald-500 text-background hover:bg-emerald-600 border border-emerald-500 font-bold px-3 py-2 text-[10px] tracking-widest uppercase transition-all rounded-lg shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)] cursor-pointer"
               >
                 <FileDown className="w-3.5 h-3.5" />
                 Download PDF Report

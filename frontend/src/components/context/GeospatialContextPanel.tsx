@@ -16,7 +16,7 @@ interface GeospatialContextPanelProps {
 export default function GeospatialContextPanel({ profile, loading }: GeospatialContextPanelProps) {
   if (loading) {
     return (
-      <div className="border border-border bg-card/20 p-8 flex flex-col items-center justify-center space-y-3 font-mono rounded-sm min-h-[180px]">
+      <div className="border border-border bg-card/20 p-8 flex flex-col items-center justify-center space-y-3 font-mono rounded-lg min-h-[180px]">
         <Loader2 className="w-5 h-5 text-primary animate-spin" />
         <span className="text-[10px] text-muted-foreground uppercase tracking-widest animate-pulse-slow">
           De-serializing Environmental Context...
@@ -27,7 +27,7 @@ export default function GeospatialContextPanel({ profile, loading }: GeospatialC
 
   if (!profile) {
     return (
-      <div className="border border-border border-dashed bg-card/5 p-8 flex flex-col items-center justify-center text-center space-y-3 font-mono rounded-sm min-h-[180px]">
+      <div className="border border-border border-dashed bg-card/5 p-8 flex flex-col items-center justify-center text-center space-y-3 font-mono rounded-lg min-h-[180px]">
         <Trees className="w-8 h-8 text-muted-foreground/30 animate-pulse-slow" />
         <div>
           <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Context Radar Offline</h4>

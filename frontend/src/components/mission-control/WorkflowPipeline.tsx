@@ -48,7 +48,7 @@ export default function WorkflowPipeline({ stages, overallProgress, totalTime, h
   };
 
   return (
-    <div className="border border-border bg-card/25 p-4 rounded-sm font-mono space-y-4 relative overflow-hidden">
+    <div className="border border-border bg-card/25 p-4 rounded-lg font-mono space-y-4 relative overflow-hidden">
       <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2 py-0.5 text-[8px] text-primary tracking-widest uppercase">
         MONITOR // WORKFLOW
       </div>
@@ -59,7 +59,7 @@ export default function WorkflowPipeline({ stages, overallProgress, totalTime, h
       </div>
 
       {/* Dynamic Progress Telemetry */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-background/40 border border-border/30 p-3 rounded-sm text-[10px]">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-background/40 border border-border/30 p-3 rounded-lg text-[10px]">
         {/* Progress percent */}
         <div className="space-y-2">
           <div className="flex justify-between items-center text-[9px] text-slate-400">
@@ -113,7 +113,7 @@ export default function WorkflowPipeline({ stages, overallProgress, totalTime, h
               key={stage.name}
               disabled={isPending}
               onClick={() => onStageClick(stage)}
-              className={`p-3 border rounded-sm font-mono text-[9px] flex flex-col justify-between text-left h-[75px] transition-all duration-300 relative select-none ${getStatusBgColor(stage.status)}`}
+              className={`p-3 border rounded-lg font-mono text-[9px] flex flex-col justify-between text-left h-[75px] transition-all duration-300 relative select-none ${getStatusBgColor(stage.status)}`}
             >
               <div className="flex items-center justify-between w-full border-b border-border/10 pb-1 mb-1">
                 <span className="text-slate-400 font-bold uppercase tracking-wide truncate max-w-[130px]">

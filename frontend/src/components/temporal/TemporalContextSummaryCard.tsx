@@ -17,7 +17,7 @@ export default function TemporalContextSummaryCard({ summary }: TemporalContextS
         Temporal Briefing & Summary
       </h3>
 
-      <div className="border border-primary/20 bg-black/40 p-3.5 rounded-sm relative overflow-hidden shadow-[inset_0_0_12px_rgba(0,0,0,0.5)]">
+      <div className="border border-primary/20 bg-black/40 p-3.5 rounded-lg relative overflow-hidden shadow-[inset_0_0_12px_rgba(0,0,0,0.5)]">
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.01)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px] pointer-events-none" />
         
         <div className="space-y-2 text-[10px] leading-relaxed text-slate-300 relative z-10 select-text">

@@ -14,7 +14,8 @@ import {
   Globe,
   Shield,
   Pin,
-  PinOff
+  PinOff,
+  Download
 } from "lucide-react"
 
 export default function ClientSidebar() {
@@ -24,9 +25,10 @@ export default function ClientSidebar() {
   const navItems = [
     { label: "Mission Overview", href: "/", icon: Home },
     { label: "Analysis Pipeline", href: "/analysis", icon: Cpu },
-    { label: "Mission Control", href: "/mission-control", icon: Shield },
     { label: "Data Inventory", href: "/datasets", icon: Database },
+    { label: "Mission Control", href: "/mission-control", icon: Shield },
     { label: "Geospatial Map", href: "/mission-control/geospatial", icon: Globe },
+    { label: "Export", href: "/export", icon: Download },
     { label: "Analytics Dashboard", href: "/dashboard", icon: BarChart3 },
     { label: "System Settings", href: "/settings", icon: Settings },
   ]
@@ -88,10 +90,7 @@ export default function ClientSidebar() {
             </div>
           </div>
 
-          {/* Minimal visual specs */}
-          <div className="text-[7.5px] text-muted-foreground border border-border/30 px-1 py-0.5 uppercase tracking-widest bg-muted/10">
-            0x48A9
-          </div>
+          <div></div>
         </div>
       )}
 
@@ -164,23 +163,9 @@ export default function ClientSidebar() {
           </nav>
         </div>
 
-        {/* Footer System Specs */}
-        <div className="p-4 border-t border-border bg-muted/10 space-y-2 text-[10px] text-muted-foreground">
-          <div className="flex justify-between">
-            <span>PLATFORM:</span>
-            <span className="text-foreground">LOCAL-FIRST</span>
-          </div>
-          <div className="flex justify-between">
-            <span>COMPOSER:</span>
-            <span className="text-foreground">V5.1.4</span>
-          </div>
-          <div className="flex justify-between">
-            <span>ENGINE:</span>
-            <span className="text-foreground">FASTAPI v1</span>
-          </div>
-          <div className="mt-2 text-center text-[9px] border border-border/40 py-1 uppercase tracking-widest bg-muted/20 text-muted-foreground">
-            SYS_NODE // 0x48A9
-          </div>
+        {/* Footer System Version */}
+        <div className="p-4 border-t border-border bg-muted/5 text-[9px] text-muted-foreground text-center">
+          GEOSPATIAL PLATFORM // V1.0.0
         </div>
       </aside>
     </div>

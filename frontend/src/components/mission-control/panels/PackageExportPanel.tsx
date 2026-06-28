@@ -198,20 +198,13 @@ export default function PackageExportPanel({ sessionId, datasetId, datasetName, 
   };
 
   return (
-    <div className="border border-border bg-card/25 p-5 font-mono space-y-5 relative overflow-hidden rounded-sm hover:border-primary/30 transition-all duration-300 xl:col-span-1">
-      <div className="absolute top-0 right-0 bg-primary/10 border-l border-b border-border px-2.5 py-0.5 text-[8.5px] text-primary tracking-widest uppercase">
-        CONTROL CENTER // PACKAGE EXPORTS
-      </div>
-
+    <div className="font-mono space-y-5">
       <div className="flex items-center gap-2 border-b border-border/50 pb-3">
-        <Archive className="w-5 h-5 text-primary animate-pulse" />
+        <Archive className="w-5 h-5 text-primary" />
         <div>
           <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
             Consolidated Analysis Package Export
           </h2>
-          <p className="text-[8px] text-muted-foreground uppercase tracking-wider">
-            Phase 11C Master Subsystem
-          </p>
         </div>
       </div>
 

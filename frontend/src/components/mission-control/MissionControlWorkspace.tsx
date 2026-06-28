@@ -13,6 +13,7 @@ import ReconstructionPanel from "./panels/ReconstructionPanel";
 import ConfidencePanel from "./panels/ConfidencePanel";
 import ExportPanel from "./panels/ExportPanel";
 import ReportExportPanel from "./panels/ReportExportPanel";
+import PackageExportPanel from "./panels/PackageExportPanel";
 import StatusFooter from "./panels/StatusFooter";
 import WorkflowPipeline from "./WorkflowPipeline";
 import WorkflowLogsPanel from "./WorkflowLogsPanel";
@@ -533,7 +534,7 @@ export default function MissionControlWorkspace({ profile, workflow, loadingWork
 
       {/* 4.5. Export & Report Command Center Hub */}
       {dataset.analysis_session_id && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <ExportPanel
             sessionId={dataset.analysis_session_id}
             datasetId={dataset.dataset_id}
@@ -541,6 +542,12 @@ export default function MissionControlWorkspace({ profile, workflow, loadingWork
             isSessionCompleted={status.reconstruction === "available"}
           />
           <ReportExportPanel
+            sessionId={dataset.analysis_session_id}
+            datasetId={dataset.dataset_id}
+            datasetName={dataset.dataset_name}
+            isSessionCompleted={status.reconstruction === "available"}
+          />
+          <PackageExportPanel
             sessionId={dataset.analysis_session_id}
             datasetId={dataset.dataset_id}
             datasetName={dataset.dataset_name}

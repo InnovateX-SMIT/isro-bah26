@@ -27,6 +27,7 @@ from app.api.v1.workflow import router as workflow_router
 from app.api.v1.analytics import router as analytics_router
 from app.api.v1.export import router as export_router
 from app.api.v1.reports import router as reports_router
+from app.api.v1.packages import router as packages_router
 
 api_router = APIRouter()
 
@@ -70,5 +71,6 @@ api_router.include_router(workflow_router, prefix="/workflow", tags=["Workflow M
 api_router.include_router(analytics_router, prefix="/analytics", tags=["Operational Analytics"])
 api_router.include_router(export_router, prefix="/exports", tags=["Raster Export Subsystem"])
 api_router.include_router(reports_router, prefix="/reports", tags=["Report Export Subsystem"])
+api_router.include_router(packages_router, prefix="/packages", tags=["Analysis Package Export Subsystem"])
 
 

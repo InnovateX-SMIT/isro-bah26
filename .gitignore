@@ -82,4 +82,8 @@ datasets/exports/*
 # Reports
 datasets/reports/*
 !datasets/reports/.gitkeep
+
+# Backend generated folders
+backend/datasets/
+
 

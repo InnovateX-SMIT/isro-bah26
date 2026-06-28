@@ -156,7 +156,7 @@ class ReportService:
 
         # Resolve output paths
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+        workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", "..", ".."))
         reports_dir = os.path.abspath(os.path.join(workspace_root, "datasets", "reports", session_id))
         os.makedirs(reports_dir, exist_ok=True)
 
@@ -227,7 +227,7 @@ class ReportService:
         Retrieves the absolute path of a cached or generated PDF report for download.
         """
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+        workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", "..", ".."))
         report_path = os.path.join(workspace_root, "datasets", "reports", session_id, f"{report_type.lower()}_report.pdf")
 
         if os.path.exists(report_path):

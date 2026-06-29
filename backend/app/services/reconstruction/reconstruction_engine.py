@@ -134,7 +134,9 @@ def execute_reconstruction(
     padding = 32
     H, W = mask_height, mask_width
     
-    reconstructed_bands_uint8 = [np.zeros_like(b_u8) for b_u8 in bands_uint8]
+    # Accumulators for OLA tile blending
+    accumulators = [np.zeros((H + 2 * padding, W + 2 * padding), dtype=np.float32) for _ in range(3)]
+    weight_accumulator = np.zeros((H + 2 * padding, W + 2 * padding), dtype=np.float32)
     
     # Pad images to handle boundary tiles seamlessly
     padded_bands_u8 = [np.pad(b, padding, mode='reflect') for b in bands_uint8]
@@ -144,7 +146,7 @@ def execute_reconstruction(
         padded_bands_norm = [np.pad(b, padding, mode='reflect') for b in bands_normalized]
         padded_guidance_norm = [np.pad(g, padding, mode='reflect') for g in guidance_bands_normalized]
     
-    logger.info(f"Starting tile-based reconstruction with tile size {tile_size} and padding {padding}.")
+    logger.info(f"Starting OLA tile-based reconstruction with tile size {tile_size} and padding {padding}.")
     
     for y in range(0, H, tile_size):
         for x in range(0, W, tile_size):
@@ -154,73 +156,91 @@ def execute_reconstruction(
             x_end_pad = min(x + tile_size + 2 * padding, W + 2 * padding)
             
             tile_mask = padded_mask[y_start_pad:y_end_pad, x_start_pad:x_end_pad]
+            tile_h = y_end_pad - y_start_pad
+            tile_w = x_end_pad - x_start_pad
             
-            y_start_out = y
-            y_end_out = min(y + tile_size, H)
-            x_start_out = x
-            x_end_out = min(x + tile_size, W)
-            
-            crop_h = y_end_out - y_start_out
-            crop_w = x_end_out - x_start_out
+            tile_reconstructed_u8 = []
             
             # Skip computation entirely if tile has no clouds
             if not np.any(tile_mask > 0):
-                for i in range(3):
-                    reconstructed_bands_uint8[i][y_start_out:y_end_out, x_start_out:x_end_out] = \
-                        bands_uint8[i][y_start_out:y_end_out, x_start_out:x_end_out]
-                continue
-                
-            tile_reconstructed_u8 = []
-            if model:
-                try:
-                    # Form 7-channel input for model: masked bands (3) + mask (1) + temporal guidance (3)
-                    tile_bands_norm = []
-                    for i in range(3):
-                        t_b = padded_bands_norm[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad].copy()
-                        t_b[tile_mask > 0] = 0.0
-                        tile_bands_norm.append(t_b)
-                        
-                    tile_guidance_norm = [
-                        padded_guidance_norm[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad]
-                        for i in range(3)
-                    ]
-                    
-                    t_mask_float = (tile_mask > 0).astype(np.float32)[np.newaxis, ...]
-                    input_p = np.concatenate([
-                        np.stack(tile_bands_norm, axis=0),
-                        t_mask_float,
-                        np.stack(tile_guidance_norm, axis=0)
-                    ], axis=0)
-                    input_tensor = input_p[np.newaxis, ...] # Add batch dimension [1, 7, H, W]
-                    
-                    if model_type == "ONNX":
-                        outputs = model.run(None, {'input': input_tensor.astype(np.float32)})
-                        out_patch = outputs[0][0]
-                    else:
-                        import torch
-                        with torch.no_grad():
-                            t_in = torch.from_numpy(input_tensor).float()
-                            t_out = model(t_in)
-                            out_patch = t_out.squeeze(0).cpu().numpy()
+                tile_reconstructed_u8 = [
+                    padded_bands_u8[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad]
+                    for i in range(3)
+                ]
+            else:
+                if model:
+                    try:
+                        # Form 7-channel input for model: masked bands (3) + mask (1) + temporal guidance (3)
+                        tile_bands_norm = []
+                        for i in range(3):
+                            t_b = padded_bands_norm[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad].copy()
+                            t_b[tile_mask > 0] = 0.0
+                            tile_bands_norm.append(t_b)
                             
+                        tile_guidance_norm = [
+                            padded_guidance_norm[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad]
+                            for i in range(3)
+                        ]
+                        
+                        t_mask_float = (tile_mask > 0).astype(np.float32)[np.newaxis, ...]
+                        input_p = np.concatenate([
+                            np.stack(tile_bands_norm, axis=0),
+                            t_mask_float,
+                            np.stack(tile_guidance_norm, axis=0)
+                        ], axis=0)
+                        input_tensor = input_p[np.newaxis, ...] # Add batch dimension [1, 7, H, W]
+                        
+                        if model_type == "ONNX":
+                            outputs = model.run(None, {'input': input_tensor.astype(np.float32)})
+                            out_patch = outputs[0][0]
+                        else:
+                            import torch
+                            with torch.no_grad():
+                                t_in = torch.from_numpy(input_tensor).float()
+                                t_out = model(t_in)
+                                out_patch = t_out.squeeze(0).cpu().numpy()
+                                
+                        for i in range(3):
+                            p_u8 = (np.clip(out_patch[i], 0.0, 1.0) * 255.0).astype(np.uint8)
+                            tile_reconstructed_u8.append(p_u8)
+                    except Exception as e:
+                        logger.error(f"Error during tile U-Net inference: {e}. Falling back to cv2.inpaint.")
+                        tile_reconstructed_u8 = []
+                        
+                if not tile_reconstructed_u8:
+                    # Fallback to classical inpainting on tile
                     for i in range(3):
-                        p_u8 = (np.clip(out_patch[i], 0.0, 1.0) * 255.0).astype(np.uint8)
-                        tile_reconstructed_u8.append(p_u8)
-                except Exception as e:
-                    logger.error(f"Error during tile U-Net inference: {e}. Falling back to cv2.inpaint.")
-                    tile_reconstructed_u8 = []
-                    
-            if not tile_reconstructed_u8:
-                # Fallback to classical inpainting on tile
-                for i in range(3):
-                    t_b_u8 = padded_bands_u8[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad].copy()
-                    inp_tile = cv2.inpaint(t_b_u8, tile_mask, inpaintRadius=5, flags=inpaint_flags)
-                    tile_reconstructed_u8.append(inp_tile)
-                    
-            # Crop padding and write to reconstructed_bands_uint8
+                        t_b_u8 = padded_bands_u8[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad].copy()
+                        inp_tile = cv2.inpaint(t_b_u8, tile_mask, inpaintRadius=5, flags=inpaint_flags)
+                        tile_reconstructed_u8.append(inp_tile)
+            
+            # Construct overlapping linear blend weight map for this tile
+            w_h = np.ones(tile_h, dtype=np.float32)
+            w_w = np.ones(tile_w, dtype=np.float32)
+            for i in range(padding):
+                val = float(i) / padding
+                if y_start_pad > 0:
+                    w_h[i] = min(w_h[i], val)
+                if y_end_pad < H + 2 * padding:
+                    w_h[tile_h - 1 - i] = min(w_h[tile_h - 1 - i], val)
+                if x_start_pad > 0:
+                    w_w[i] = min(w_w[i], val)
+                if x_end_pad < W + 2 * padding:
+                    w_w[tile_w - 1 - i] = min(w_w[tile_w - 1 - i], val)
+            
+            W_tile = np.outer(w_h, w_w)
+            
+            # Accumulate tile results and weight map
             for i in range(3):
-                cropped = tile_reconstructed_u8[i][padding:padding+crop_h, padding:padding+crop_w]
-                reconstructed_bands_uint8[i][y_start_out:y_end_out, x_start_out:x_end_out] = cropped
+                accumulators[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad] += tile_reconstructed_u8[i].astype(np.float32) * W_tile
+            weight_accumulator[y_start_pad:y_end_pad, x_start_pad:x_end_pad] += W_tile
+
+    # Normalize accumulator values and crop padding back to (H, W)
+    reconstructed_bands_uint8 = []
+    for i in range(3):
+        recon_padded = accumulators[i] / np.maximum(weight_accumulator, 1e-5)
+        recon_cropped = recon_padded[padding:padding+H, padding:padding+W]
+        reconstructed_bands_uint8.append(np.clip(recon_cropped, 0.0, 255.0).astype(np.uint8))
 
     # 7. Blend Temporal Guidance (Only for fallback tiles, model already fused guidance)
     final_bands_uint8 = []
@@ -260,7 +280,7 @@ def execute_reconstruction(
             dst.write(final_bands_restored[i], i + 1)
 
     # 10. Generate visual preview PNG
-    output_png_path = generate_reconstruction_preview(final_bands_uint8, output_dir)
+    output_png_path = generate_reconstruction_preview(final_bands_uint8, bands_uint8, output_dir)
 
     elapsed_time_ms = int((time.perf_counter() - start_time) * 1000)
     logger.info(f"Reconstruction completed using {method_name} in {elapsed_time_ms} ms.")

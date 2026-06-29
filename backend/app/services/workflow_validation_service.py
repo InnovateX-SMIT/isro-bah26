@@ -181,7 +181,7 @@ class WorkflowValidationService:
                 # Add granular bounds validation
                 lat_ok = -90.0 <= geospatial.center_lat <= 90.0
                 lon_ok = -180.0 <= geospatial.center_lon <= 180.0
-                crs_ok = geospatial.crs is not None or geospatial.epsg is not None
+                crs_ok = (geospatial.crs is not None or geospatial.epsg is not None) and (geospatial.epsg != 4326 and metadata.epsg_code != 4326)
                 loc_ok = location is not None and location.country != "Unknown"
 
                 meta_details.update({
@@ -198,7 +198,7 @@ class WorkflowValidationService:
                 if not (lat_ok and lon_ok):
                     meta_msg = f"Geospatial error: coordinates out of bounds (lat={geospatial.center_lat}, lon={geospatial.center_lon})."
                 elif not crs_ok:
-                    meta_msg = "Coordinate Reference System (CRS) coordinates could not be georeferenced."
+                    meta_msg = "Coordinate Reference System (CRS) coordinates could not be georeferenced, or are unprojected (EPSG:4326). Projected UTM system is required."
                 elif not loc_ok:
                     meta_msg = "Nominatim location context has not been resolved."
                     metadata_valid = True # Mark valid since Location provider Nominatim has offline fallback

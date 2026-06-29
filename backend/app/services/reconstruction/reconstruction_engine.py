@@ -134,6 +134,12 @@ def execute_reconstruction(
     padding = 32
     H, W = mask_height, mask_width
     
+    # Analytics tracking
+    inference_time_ms = 0
+    total_tiles = 0
+    cloudy_tiles = 0
+    clean_tiles = 0
+    
     # Accumulators for OLA tile blending
     accumulators = [np.zeros((H + 2 * padding, W + 2 * padding), dtype=np.float32) for _ in range(3)]
     weight_accumulator = np.zeros((H + 2 * padding, W + 2 * padding), dtype=np.float32)
@@ -150,6 +156,7 @@ def execute_reconstruction(
     
     for y in range(0, H, tile_size):
         for x in range(0, W, tile_size):
+            total_tiles += 1
             y_start_pad = y
             y_end_pad = min(y + tile_size + 2 * padding, H + 2 * padding)
             x_start_pad = x
@@ -163,11 +170,14 @@ def execute_reconstruction(
             
             # Skip computation entirely if tile has no clouds
             if not np.any(tile_mask > 0):
+                clean_tiles += 1
                 tile_reconstructed_u8 = [
                     padded_bands_u8[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad]
                     for i in range(3)
                 ]
             else:
+                cloudy_tiles += 1
+                t0 = time.perf_counter()
                 if model:
                     try:
                         # Form 7-channel input for model: masked bands (3) + mask (1) + temporal guidance (3)
@@ -213,6 +223,8 @@ def execute_reconstruction(
                         t_b_u8 = padded_bands_u8[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad].copy()
                         inp_tile = cv2.inpaint(t_b_u8, tile_mask, inpaintRadius=5, flags=inpaint_flags)
                         tile_reconstructed_u8.append(inp_tile)
+                
+                inference_time_ms += int((time.perf_counter() - t0) * 1000)
             
             # Construct overlapping linear blend weight map for this tile
             w_h = np.ones(tile_h, dtype=np.float32)
@@ -284,6 +296,41 @@ def execute_reconstruction(
 
     elapsed_time_ms = int((time.perf_counter() - start_time) * 1000)
     logger.info(f"Reconstruction completed using {method_name} in {elapsed_time_ms} ms.")
+
+    # 11. Compile and write Reconstruction Technical Analytics
+    try:
+        import psutil
+        process = psutil.Process(os.getpid())
+        memory_usage_mb = float(process.memory_info().rss / (1024 * 1024))
+    except Exception:
+        # Fallback approximation based on float32 image sizes
+        memory_usage_mb = float((H * W * 3 * 4) / (1024 * 1024))
+
+    cloud_cov_pct = round(float(np.sum(inpaint_mask > 0) / inpaint_mask.size * 100.0), 2)
+    analytics = {
+        "cloud_coverage_percent": cloud_cov_pct,
+        "reconstructed_area_percent": cloud_cov_pct,
+        "processing_duration_ms": elapsed_time_ms,
+        "inference_duration_ms": inference_time_ms,
+        "memory_usage_mb": round(memory_usage_mb, 2),
+        "tile_processing_statistics": {
+            "total_tiles": total_tiles,
+            "cloudy_tiles": cloudy_tiles,
+            "clean_tiles": clean_tiles,
+            "tile_size": tile_size,
+            "padding": padding
+        },
+        "reconstruction_success": True
+    }
+    
+    analytics_path = os.path.join(output_dir, "reconstruction_analytics.json")
+    try:
+        import json
+        with open(analytics_path, "w") as f:
+            json.dump(analytics, f, indent=4)
+        logger.info(f"Saved reconstruction analytics to {analytics_path}")
+    except Exception as e:
+        logger.warning(f"Could not save reconstruction analytics: {e}")
 
     return {
         "output_tif_path": output_tif_path,

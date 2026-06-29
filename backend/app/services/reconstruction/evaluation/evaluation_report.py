@@ -20,7 +20,8 @@ def generate_and_save_reports(
     cloud_info: Dict[str, Any],
     temporal_info: Dict[str, Any],
     reconstruction_info: Dict[str, Any],
-    optimization_info: Dict[str, Any]
+    optimization_info: Dict[str, Any],
+    reconstruction_analytics: Dict[str, Any] = None
 ) -> Dict[str, Any]:
     """
     Creates and saves the 4 required JSON artifacts under datasets/reconstruction_evaluations/{dataset_id}/.
@@ -83,6 +84,7 @@ def generate_and_save_reports(
         "temporal_information": temporal_info,
         "reconstruction_information": reconstruction_info,
         "optimization_information": optimization_info,
+        "reconstruction_analytics": reconstruction_analytics or {},
         "evaluation_metrics": metrics,
         "strengths": strengths,
         "weaknesses": weaknesses,
@@ -112,7 +114,12 @@ def generate_and_save_reports(
         "temporal_agreement_score": metrics["temporal_agreement_score"],
         "structural_preservation_score": metrics["structural_preservation_score"],
         "artifact_score": metrics["artifact_score"],
-        "overall_score": overall_score
+        "overall_score": overall_score,
+        "psnr": metrics.get("psnr", 0.0),
+        "ssim": metrics.get("ssim", 0.0),
+        "mae": metrics.get("mae", 0.0),
+        "rmse": metrics.get("rmse", 0.0),
+        "sam_degrees": metrics.get("sam_degrees", 0.0)
     }
     with open(os.path.join(output_dir, "quality_metrics.json"), "w") as f:
         json.dump(metrics_data, f, indent=4)

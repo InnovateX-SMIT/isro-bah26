@@ -179,19 +179,74 @@ class StageExecutor:
             temporal_window_days=context.temporal_window_days
         )
         
-        # Select references
-        temporal_service.run_reference_selection(
-            session_id=context.session_id,
-            db=context.db,
-            num_references=context.num_references
-        )
+        # Check if any candidates were discovered
+        from app.repositories.temporal_candidate_repository import TemporalCandidateRepository
+        from app.repositories.temporal_discovery_repository import TemporalDiscoveryRepository
         
-        # Generate final context package
-        res = temporal_service.generate_temporal_context(
-            session_id=context.session_id,
-            db=context.db
-        )
-        return res.model_dump()
+        discovery_repo = TemporalDiscoveryRepository(context.db)
+        candidate_repo = TemporalCandidateRepository(context.db)
+        
+        discovery = discovery_repo.get_latest(context.session_id)
+        candidates = []
+        if discovery:
+            candidates = candidate_repo.get_by_discovery(discovery.id)
+            
+        if not candidates:
+            # Create a fallback/empty Temporal Context in the database
+            from app.repositories.temporal_reference_stack_repository import TemporalReferenceStackRepository
+            from app.repositories.temporal_context_repository import TemporalContextRepository
+            
+            stack_repo = TemporalReferenceStackRepository(context.db)
+            context_repo = TemporalContextRepository(context.db)
+            
+            # Create empty stack
+            stack = stack_repo.create(
+                session_id=context.session_id,
+                dataset_id=context.dataset_id,
+                discovery_id=discovery.id if discovery else "",
+                selected_count=0
+            )
+            
+            # Create empty context
+            context_record = context_repo.create(
+                session_id=context.session_id,
+                dataset_id=context.dataset_id,
+                reference_stack_id=stack.id,
+                provider_count=0,
+                reference_count=0,
+                average_cloud_cover=0.0,
+                average_temporal_distance=0.0,
+                average_spatial_overlap=0.0,
+                summary="No historical candidates discovered. Pure spatial reconstruction will be performed.",
+                metadata_json="{}"
+            )
+            
+            return {
+                "dataset_id": context.dataset_id,
+                "provider_count": 0,
+                "reference_count": 0,
+                "average_cloud_cover": 0.0,
+                "average_temporal_distance": 0.0,
+                "average_spatial_overlap": 0.0,
+                "context_summary": "No historical candidates discovered. Pure spatial reconstruction will be performed.",
+                "selected_references": [],
+                "providers_represented": [],
+                "metadata": {}
+            }
+        else:
+            # Select references
+            temporal_service.run_reference_selection(
+                session_id=context.session_id,
+                db=context.db,
+                num_references=context.num_references
+            )
+            
+            # Generate final context package
+            res = temporal_service.generate_temporal_context(
+                session_id=context.session_id,
+                db=context.db
+            )
+            return res.model_dump()
 
     def execute_cloud_detection(self, context: ExecutionContext) -> dict:
         detection_repo = CloudDetectionRepository(context.db)

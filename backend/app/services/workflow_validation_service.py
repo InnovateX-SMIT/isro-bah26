@@ -246,7 +246,11 @@ class WorkflowValidationService:
                 })
 
                 if stack.selected_count <= 0:
-                    temporal_msg = "Temporal Stack is empty. No valid historical references discovered for guided reconstruction."
+                    if discovery.candidate_count == 0:
+                        temporal_valid = True
+                        temporal_msg = "Temporal workflows validation succeeded: no historical imagery available. Pure spatial-only reconstruction mode enabled."
+                    else:
+                        temporal_msg = "Temporal Stack is empty. No valid historical references discovered for guided reconstruction."
                 else:
                     temporal_valid = True
                     temporal_msg = f"Temporal workflows validation succeeded: stack is populated with {stack.selected_count} reference frames from provider '{discovery.provider_used}' (average cloud cover: {temporal_context.average_cloud_cover}%)."

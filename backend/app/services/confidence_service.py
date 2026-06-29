@@ -142,14 +142,42 @@ class ConfidenceService:
                 except Exception:
                     pass
 
+            # Resolve absolute paths of temporal reference imagery files on disk
+            ref_images = []
+            for ref in references:
+                cand = ref.candidate
+                if not cand:
+                    continue
+                candidate_rel_path = f"datasets/temporal_references/{cand.candidate_id}.tif"
+                candidate_abs_path = os.path.abspath(os.path.join(workspace_root, candidate_rel_path))
+                if os.path.exists(candidate_abs_path):
+                    ref_images.append(candidate_abs_path)
+
+            # Resolve absolute path and load reconstructed band 2 (Green) for spatial-temporal structure guidance
+            recon_band = np.zeros(mask_shape, dtype=np.float32)
+            recon_abs_path = os.path.abspath(os.path.join(workspace_root, run.output_image_path))
+            if os.path.exists(recon_abs_path):
+                try:
+                    with rasterio.open(recon_abs_path) as r_src:
+                        recon_band = r_src.read(1).astype(np.float32)
+                except Exception as e:
+                    logger.warning(f"Could not load reconstructed image for confidence guidance: {e}")
+
             # Step 4: Run scoring signals
             class_score, basis_class = score_by_cloud_class(class_map_path, mask_shape, workspace_root)
             boundary_score = score_by_boundary_distance(mask)
             temporal_score, basis_temp = score_by_temporal_agreement(references, mask_shape, workspace_root)
             global_mod, basis_mod = score_global_modulation(overall_score)
 
-            # Combine signals
-            combined = combine_confidence(class_score, boundary_score, temporal_score, global_mod)
+            # Combine signals with advanced U-Net uncertainty and Guided Filter smoothing
+            combined = combine_confidence(
+                class_score=class_score,
+                boundary_score=boundary_score,
+                temporal_score=temporal_score,
+                global_modulation=global_mod,
+                recon_band=recon_band,
+                ref_images=ref_images
+            )
 
             # Scale to 0-100 and enforce 100.0 for clean background pixels
             confidence_map = np.full(mask_shape, 100.0, dtype=np.float32)
@@ -182,7 +210,9 @@ class ConfidenceService:
                 "- Boundary Proximity: Boundary Distance Transform applied (clipped at 30px max influence).",
                 f"- {basis_temp}",
                 f"- {basis_mod}",
-                "Weights: Cloud Class (35%), Boundary Distance (25%), Temporal Agreement (25%). Sum normalized and multiplied by Global Modulation."
+                "- Reconstruction Uncertainty & Neighborhood Consistency calculated dynamically.",
+                "- Spatial-Temporal Edge Continuity preservation applied.",
+                "Weights: Cloud Class (20%), Boundary Distance (15%), Temporal Agreement (15%), Uncertainty (20%), Consistency (15%), Edge Continuity (15%). Guided Filter smoothed."
             ]
             inference_basis = "\n".join(basis_parts)
 

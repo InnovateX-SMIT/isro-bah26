@@ -128,28 +128,130 @@ def score_global_modulation(overall_score: float) -> Tuple[float, str]:
     modulation = max(0.0, min(1.0, overall_score / 100.0))
     return modulation, f"Global Quality Modulation: {modulation:.2f} (from Phase 7E Overall Score of {overall_score})"
 
+def guided_filter_local(I: np.ndarray, p: np.ndarray, r: int, eps: float) -> np.ndarray:
+    """
+    Local box-filter based Guided Filter helper for confidence maps.
+    """
+    win_size = (2 * r + 1, 2 * r + 1)
+    mean_I = cv2.boxFilter(I, -1, win_size)
+    mean_p = cv2.boxFilter(p, -1, win_size)
+    mean_Ip = cv2.boxFilter(I * p, -1, win_size)
+    cov_Ip = mean_Ip - mean_I * mean_p
+    mean_II = cv2.boxFilter(I * I, -1, win_size)
+    var_I = mean_II - mean_I * mean_I
+    a = cov_Ip / (var_I + eps)
+    b = mean_p - a * mean_I
+    mean_a = cv2.boxFilter(a, -1, win_size)
+    mean_b = cv2.boxFilter(b, -1, win_size)
+    q = mean_a * I + mean_b
+    return q
+
 def combine_confidence(
     class_score: np.ndarray,
     boundary_score: np.ndarray,
     temporal_score: np.ndarray,
     global_modulation: float,
-    weights: dict = None
+    weights: dict = None,
+    recon_band: np.ndarray = None,
+    ref_images: List[str] = None
 ) -> np.ndarray:
     """
-    Combines the four confidence signals into a final combined score in [0.0, 1.0].
+    Combines the confidence signals into a final combined score in [0.0, 1.0].
+    If recon_band is provided, computes advanced signals: Reconstruction Uncertainty,
+    Neighborhood Consistency, and Edge Continuity, then applies a Guided Filter to smooth the result.
     """
+    # 1. Setup weights for signals
     if weights is None:
-        weights = {"class": 0.35, "boundary": 0.25, "temporal": 0.25}
+        weights = {"class": 0.20, "boundary": 0.15, "temporal": 0.15, "uncertainty": 0.20, "consistency": 0.15, "edge": 0.15}
         
-    w_class = weights.get("class", 0.35)
-    w_bound = weights.get("boundary", 0.25)
-    w_temp = weights.get("temporal", 0.25)
+    w_class = weights.get("class", 0.20)
+    w_bound = weights.get("boundary", 0.15)
+    w_temp = weights.get("temporal", 0.15)
+    w_unc = weights.get("uncertainty", 0.20)
+    w_cons = weights.get("consistency", 0.15)
+    w_edge = weights.get("edge", 0.15)
     
-    sum_w = w_class + w_bound + w_temp
+    # 2. Check if we can compute advanced signals
+    has_advanced = (recon_band is not None and np.any(recon_band > 0))
     
-    combined = (class_score * w_class + boundary_score * w_bound + temporal_score * w_temp)
-    if sum_w > 0:
-        combined = combined / sum_w
+    # Build temporal guidance composite if references exist
+    guidance_band = None
+    if has_advanced and ref_images and len(ref_images) >= 2:
+        try:
+            bands_data = []
+            for path in ref_images:
+                with rasterio.open(path) as src:
+                    data = src.read(1, out_shape=recon_band.shape, resampling=rasterio.enums.Resampling.bilinear)
+                    bands_data.append(data.astype(np.float32))
+            if bands_data:
+                guidance_band = np.mean(bands_data, axis=0)
+        except Exception:
+            pass
+            
+    # 3. Compute signals
+    if has_advanced:
+        recon_band_float = recon_band.astype(np.float32)
+        
+        # A. Reconstruction Uncertainty
+        if guidance_band is not None:
+            diff = np.abs(recon_band_float - guidance_band)
+            uncertainty_score = np.exp(-diff / 30.0)
+        else:
+            # Spatial uncertainty: local variance of reconstruction
+            local_mean = cv2.boxFilter(recon_band_float, -1, (9, 9))
+            local_sq_mean = cv2.boxFilter(recon_band_float * recon_band_float, -1, (9, 9))
+            local_std = np.sqrt(np.maximum(local_sq_mean - local_mean * local_mean, 0.0))
+            uncertainty_score = np.exp(-local_std / 20.0)
+            
+        # B. Neighborhood Consistency
+        if guidance_band is not None:
+            recon_mean = cv2.boxFilter(recon_band_float, -1, (15, 15))
+            guidance_mean = cv2.boxFilter(guidance_band, -1, (15, 15))
+            consistency_score = np.exp(-np.abs(recon_mean - guidance_mean) / 15.0)
+        else:
+            local_mean = cv2.boxFilter(recon_band_float, -1, (31, 31))
+            # Compare with global mean of non-zero pixels
+            clean_mean = np.mean(recon_band_float[recon_band_float > 0]) if np.any(recon_band_float > 0) else 127.0
+            consistency_score = np.exp(-np.abs(local_mean - clean_mean) / 40.0)
+            
+        # C. Edge Confidence
+        sobel_x = cv2.Sobel(recon_band_float, cv2.CV_32F, 1, 0, ksize=3)
+        sobel_y = cv2.Sobel(recon_band_float, cv2.CV_32F, 0, 1, ksize=3)
+        grad_mag = np.sqrt(sobel_x**2 + sobel_y**2)
+        if guidance_band is not None:
+            g_sobel_x = cv2.Sobel(guidance_band, cv2.CV_32F, 1, 0, ksize=3)
+            g_sobel_y = cv2.Sobel(guidance_band, cv2.CV_32F, 0, 1, ksize=3)
+            g_grad_mag = np.sqrt(g_sobel_x**2 + g_sobel_y**2)
+            edge_score = np.exp(-np.abs(grad_mag - g_grad_mag) / 15.0)
+        else:
+            edge_score = np.exp(-grad_mag / 30.0)
+            
+        # D. Combine signals
+        sum_w = w_class + w_bound + w_temp + w_unc + w_cons + w_edge
+        combined = (
+            class_score * w_class +
+            boundary_score * w_bound +
+            temporal_score * w_temp +
+            uncertainty_score * w_unc +
+            consistency_score * w_cons +
+            edge_score * w_edge
+        )
+        if sum_w > 0:
+            combined = combined / sum_w
+            
+        # E. Edge-Preserving Heatmap Smoothing using Guided Filter guided by recon_band
+        b_min, b_max = float(recon_band_float.min()), float(recon_band_float.max())
+        if b_max > b_min:
+            I = (recon_band_float - b_min) / (b_max - b_min)
+        else:
+            I = np.zeros_like(recon_band_float)
+            
+        smoothed_combined = guided_filter_local(I, combined, r=4, eps=0.005)
+        combined = np.clip(smoothed_combined, 0.0, 1.0)
+    else:
+        # Fallback to standard combine
+        sum_w = 0.35 + 0.25 + 0.25
+        combined = (class_score * 0.35 + boundary_score * 0.25 + temporal_score * 0.25) / sum_w
         
     final_score = combined * global_modulation
     return final_score

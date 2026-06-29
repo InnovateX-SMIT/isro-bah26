@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from typing import List
+from typing import List, Optional
 
 def guided_filter(I: np.ndarray, p: np.ndarray, r: int, eps: float) -> np.ndarray:
     """
@@ -37,7 +37,8 @@ def preserve_edges(
     bands: List[np.ndarray],
     mask: np.ndarray,
     radius: int = 4,
-    eps: float = 0.01
+    eps: float = 0.01,
+    guidance_bands: Optional[List[np.ndarray]] = None
 ) -> List[np.ndarray]:
     """
     Applies Guided Filtering on each band specifically within the reconstruction mask.
@@ -48,11 +49,12 @@ def preserve_edges(
         mask: Reconstruction mask (2D array).
         radius: Window radius parameter.
         eps: Regularization parameter.
+        guidance_bands: Optional list of 2D guidance bands to use as spatial reference.
     """
     out_bands = []
     mask_idx = (mask > 0)
     
-    for band in bands:
+    for i, band in enumerate(bands):
         orig_dtype = band.dtype
         # Handle empty/constant bands
         b_min = float(band.min())
@@ -62,8 +64,18 @@ def preserve_edges(
         else:
             norm_band = np.zeros_like(band, dtype=np.float32)
             
-        # Filter using self-guidance for optimal structural alignment
-        filtered = guided_filter(norm_band, norm_band, r=radius, eps=eps)
+        # Select guidance image: use guidance_band if provided
+        I = norm_band
+        if guidance_bands and i < len(guidance_bands):
+            g_band = guidance_bands[i]
+            g_min, g_max = float(g_band.min()), float(g_band.max())
+            if g_max > g_min:
+                I = (g_band.astype(np.float32) - g_min) / (g_max - g_min)
+            else:
+                I = np.zeros_like(g_band, dtype=np.float32)
+            
+        # Filter using selected guidance for optimal structural alignment
+        filtered = guided_filter(I, norm_band, r=radius, eps=eps)
         
         # Scale back to original range
         restored = filtered * (b_max - b_min) + b_min

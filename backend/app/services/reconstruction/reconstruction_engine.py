@@ -1,11 +1,26 @@
 import os
 import time
+import logging
 import cv2
 import numpy as np
 import rasterio
-from typing import Dict, Any
+import concurrent.futures
+from typing import Dict, Any, List
+
 from app.services.reconstruction.temporal_guidance import get_temporal_guidance, blend_temporal_guidance
 from app.services.reconstruction.reconstruction_preview import generate_reconstruction_preview
+from app.services.reconstruction.model import get_reconstruction_model
+
+logger = logging.getLogger("reconstruction_engine")
+
+def load_and_resample_band(bp: str, target_height: int, target_width: int) -> np.ndarray:
+    """Loads a single band TIFF and resamples it in a thread-safe manner."""
+    with rasterio.open(bp) as src_band:
+        return src_band.read(
+            1,
+            out_shape=(target_height, target_width),
+            resampling=rasterio.enums.Resampling.bilinear
+        )
 
 def execute_reconstruction(
     dataset_path: str,
@@ -16,14 +31,14 @@ def execute_reconstruction(
     provider_name: str = "GoogleEarthEngine"
 ) -> Dict[str, Any]:
     """
-    Executes the reconstruction engine pipeline:
-    1. Loads the source LISS-IV band TIFFs (B2, B3, B4).
+    Executes the improved reconstruction engine pipeline (Phase 12E):
+    1. Loads LISS-IV bands B2, B3, B4 in parallel using a ThreadPoolExecutor.
     2. Loads the binary reconstruction mask.
-    3. Resamples band TIFFs to match mask shape.
-    4. Computes the inpainted bands using cv2.inpaint (TELEA or NS).
-    5. Retrieves and blends temporal guidance to improve spectral consistency.
-    6. Writes a 3-band georeferenced GeoTIFF (reconstructed_image.tif) preserving CRS/transform.
-    7. Generates visual preview PNG.
+    3. Normalizes bands and sets up inputs.
+    4. Dynamically compiles/exports the spatial-temporal fusion U-Net model (ONNX/TorchScript).
+    5. Performs overlapping tile-based reconstruction (tile_size=512, padding=32) for memory efficiency.
+    6. Seamlessly blends temporal guidance for classical fallback tiles.
+    7. Restores original radiometry, writes georeferenced output GeoTIFF, and creates preview PNG.
     """
     start_time = time.perf_counter()
     os.makedirs(output_dir, exist_ok=True)
@@ -53,58 +68,205 @@ def execute_reconstruction(
         mask_width = src_mask.width
         mask_height = src_mask.height
 
-    # 3. Load bands resampled to match mask shape
-    bands = []
-    for bp in (band2_path, band3_path, band4_path):
-        with rasterio.open(bp) as src_band:
-            band_data = src_band.read(
-                1,
-                out_shape=(mask_height, mask_width),
-                resampling=rasterio.enums.Resampling.bilinear
-            )
-            bands.append(band_data)
+    # 3. Load bands in parallel resampled to match mask shape
+    logger.info("Starting parallel band loading and resampling.")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        futures = [
+            executor.submit(load_and_resample_band, bp, mask_height, mask_width)
+            for bp in (band2_path, band3_path, band4_path)
+        ]
+        bands = [f.result() for f in futures]
 
-    # 4. Normalize bands to uint8 range for OpenCV inpainting
+    # 4. Normalize bands to uint8 range for OpenCV and [0, 1] for U-Net
     orig_mins = []
     orig_maxs = []
     bands_uint8 = []
+    bands_normalized = []
     for b in bands:
         b_min = float(b.min())
         b_max = float(b.max())
         orig_mins.append(b_min)
         orig_maxs.append(b_max)
+        
+        # [0, 255] uint8 normalization
         if b_max > b_min:
             b_u8 = ((b - b_min) / (b_max - b_min) * 255.0).astype(np.uint8)
+            b_norm = (b.astype(np.float32) - b_min) / (b_max - b_min)
         else:
             b_u8 = np.zeros_like(b, dtype=np.uint8)
+            b_norm = np.zeros_like(b, dtype=np.float32)
         bands_uint8.append(b_u8)
+        bands_normalized.append(b_norm)
 
     # Create binary inpainting mask (OpenCV expects 8-bit single channel, 255 for pixels to fill)
     inpaint_mask = (mask_data > 0).astype(np.uint8) * 255
 
-    # 5. Execute inpainting flags based on strategy
-    inpaint_flags = cv2.INPAINT_TELEA
+    # Retrieve Temporal Guidance
+    guidance_bands_uint8 = get_temporal_guidance(bands_uint8, inpaint_mask, temporal_relevance)
+    
+    guidance_bands_normalized = []
+    for i in range(3):
+        g_min = float(guidance_bands_uint8[i].min())
+        g_max = float(guidance_bands_uint8[i].max())
+        if g_max > g_min:
+            g_norm = (guidance_bands_uint8[i].astype(np.float32) - g_min) / (g_max - g_min)
+        else:
+            g_norm = np.zeros_like(guidance_bands_uint8[i], dtype=np.float32)
+        guidance_bands_normalized.append(g_norm)
+
+    # 5. Load or Compile U-Net Reconstruction Model
+    model_type = None
+    model = None
+    if strategy and strategy.upper() not in ("TELEA", "NS"):
+        model_type, model = get_reconstruction_model(output_dir, bands_normalized, mask_data, guidance_bands_normalized)
+    
     method_name = "cv2.INPAINT_TELEA"
+    inpaint_flags = cv2.INPAINT_TELEA
     if strategy and "NS" in strategy.upper():
         inpaint_flags = cv2.INPAINT_NS
         method_name = "cv2.INPAINT_NS"
 
-    inpainted_bands_uint8 = []
-    for b_u8 in bands_uint8:
-        inpainted = cv2.inpaint(b_u8, inpaint_mask, inpaintRadius=5, flags=inpaint_flags)
-        inpainted_bands_uint8.append(inpainted)
+    if model:
+        method_name = f"U-Net Autoencoder ({model_type})"
 
-    # 6. Retrieve and Blend Temporal Guidance
-    guidance_bands = get_temporal_guidance(bands_uint8, inpaint_mask, temporal_relevance)
+    # 6. Execute overlapping tile-based reconstruction
+    tile_size = 512
+    padding = 32
+    H, W = mask_height, mask_width
     
+    # Analytics tracking
+    inference_time_ms = 0
+    total_tiles = 0
+    cloudy_tiles = 0
+    clean_tiles = 0
+    
+    # Accumulators for OLA tile blending
+    accumulators = [np.zeros((H + 2 * padding, W + 2 * padding), dtype=np.float32) for _ in range(3)]
+    weight_accumulator = np.zeros((H + 2 * padding, W + 2 * padding), dtype=np.float32)
+    
+    # Pad images to handle boundary tiles seamlessly
+    padded_bands_u8 = [np.pad(b, padding, mode='reflect') for b in bands_uint8]
+    padded_mask = np.pad(inpaint_mask, padding, mode='constant', constant_values=0)
+    
+    if model:
+        padded_bands_norm = [np.pad(b, padding, mode='reflect') for b in bands_normalized]
+        padded_guidance_norm = [np.pad(g, padding, mode='reflect') for g in guidance_bands_normalized]
+    
+    logger.info(f"Starting OLA tile-based reconstruction with tile size {tile_size} and padding {padding}.")
+    
+    for y in range(0, H, tile_size):
+        for x in range(0, W, tile_size):
+            total_tiles += 1
+            y_start_pad = y
+            y_end_pad = min(y + tile_size + 2 * padding, H + 2 * padding)
+            x_start_pad = x
+            x_end_pad = min(x + tile_size + 2 * padding, W + 2 * padding)
+            
+            tile_mask = padded_mask[y_start_pad:y_end_pad, x_start_pad:x_end_pad]
+            tile_h = y_end_pad - y_start_pad
+            tile_w = x_end_pad - x_start_pad
+            
+            tile_reconstructed_u8 = []
+            
+            # Skip computation entirely if tile has no clouds
+            if not np.any(tile_mask > 0):
+                clean_tiles += 1
+                tile_reconstructed_u8 = [
+                    padded_bands_u8[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad]
+                    for i in range(3)
+                ]
+            else:
+                cloudy_tiles += 1
+                t0 = time.perf_counter()
+                if model:
+                    try:
+                        # Form 7-channel input for model: masked bands (3) + mask (1) + temporal guidance (3)
+                        tile_bands_norm = []
+                        for i in range(3):
+                            t_b = padded_bands_norm[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad].copy()
+                            t_b[tile_mask > 0] = 0.0
+                            tile_bands_norm.append(t_b)
+                            
+                        tile_guidance_norm = [
+                            padded_guidance_norm[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad]
+                            for i in range(3)
+                        ]
+                        
+                        t_mask_float = (tile_mask > 0).astype(np.float32)[np.newaxis, ...]
+                        input_p = np.concatenate([
+                            np.stack(tile_bands_norm, axis=0),
+                            t_mask_float,
+                            np.stack(tile_guidance_norm, axis=0)
+                        ], axis=0)
+                        input_tensor = input_p[np.newaxis, ...] # Add batch dimension [1, 7, H, W]
+                        
+                        if model_type == "ONNX":
+                            outputs = model.run(None, {'input': input_tensor.astype(np.float32)})
+                            out_patch = outputs[0][0]
+                        else:
+                            import torch
+                            with torch.no_grad():
+                                t_in = torch.from_numpy(input_tensor).float()
+                                t_out = model(t_in)
+                                out_patch = t_out.squeeze(0).cpu().numpy()
+                                
+                        for i in range(3):
+                            p_u8 = (np.clip(out_patch[i], 0.0, 1.0) * 255.0).astype(np.uint8)
+                            tile_reconstructed_u8.append(p_u8)
+                    except Exception as e:
+                        logger.error(f"Error during tile U-Net inference: {e}. Falling back to cv2.inpaint.")
+                        tile_reconstructed_u8 = []
+                        
+                if not tile_reconstructed_u8:
+                    # Fallback to classical inpainting on tile
+                    for i in range(3):
+                        t_b_u8 = padded_bands_u8[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad].copy()
+                        inp_tile = cv2.inpaint(t_b_u8, tile_mask, inpaintRadius=5, flags=inpaint_flags)
+                        tile_reconstructed_u8.append(inp_tile)
+                
+                inference_time_ms += int((time.perf_counter() - t0) * 1000)
+            
+            # Construct overlapping linear blend weight map for this tile
+            w_h = np.ones(tile_h, dtype=np.float32)
+            w_w = np.ones(tile_w, dtype=np.float32)
+            for i in range(padding):
+                val = float(i) / padding
+                if y_start_pad > 0:
+                    w_h[i] = min(w_h[i], val)
+                if y_end_pad < H + 2 * padding:
+                    w_h[tile_h - 1 - i] = min(w_h[tile_h - 1 - i], val)
+                if x_start_pad > 0:
+                    w_w[i] = min(w_w[i], val)
+                if x_end_pad < W + 2 * padding:
+                    w_w[tile_w - 1 - i] = min(w_w[tile_w - 1 - i], val)
+            
+            W_tile = np.outer(w_h, w_w)
+            
+            # Accumulate tile results and weight map
+            for i in range(3):
+                accumulators[i][y_start_pad:y_end_pad, x_start_pad:x_end_pad] += tile_reconstructed_u8[i].astype(np.float32) * W_tile
+            weight_accumulator[y_start_pad:y_end_pad, x_start_pad:x_end_pad] += W_tile
+
+    # Normalize accumulator values and crop padding back to (H, W)
+    reconstructed_bands_uint8 = []
+    for i in range(3):
+        recon_padded = accumulators[i] / np.maximum(weight_accumulator, 1e-5)
+        recon_cropped = recon_padded[padding:padding+H, padding:padding+W]
+        reconstructed_bands_uint8.append(np.clip(recon_cropped, 0.0, 255.0).astype(np.uint8))
+
+    # 7. Blend Temporal Guidance (Only for fallback tiles, model already fused guidance)
     final_bands_uint8 = []
     for i in range(3):
-        inpainted = inpainted_bands_uint8[i]
-        guidance = guidance_bands[i]
-        blended = blend_temporal_guidance(inpainted, guidance, inpaint_mask, temporal_relevance)
-        final_bands_uint8.append(blended)
+        rec_b = reconstructed_bands_uint8[i]
+        guidance = guidance_bands_uint8[i]
+        if model is not None:
+            # Model already has guidance fused natively
+            final_bands_uint8.append(rec_b)
+        else:
+            blended = blend_temporal_guidance(rec_b, guidance, inpaint_mask, temporal_relevance)
+            final_bands_uint8.append(blended)
 
-    # 7. Convert back to original band ranges to preserve radiometry
+    # 8. Convert back to original band ranges to preserve radiometry
     final_bands_restored = []
     for i in range(3):
         b_u8 = final_bands_uint8[i]
@@ -116,7 +278,7 @@ def execute_reconstruction(
         else:
             final_bands_restored.append(bands[i])
 
-    # 8. Write 3-band output raster preserving metadata
+    # 9. Write 3-band output raster preserving metadata
     output_tif_path = os.path.join(output_dir, "reconstructed_image.tif")
     out_profile = mask_profile.copy()
     out_profile.update(
@@ -129,10 +291,46 @@ def execute_reconstruction(
         for i in range(3):
             dst.write(final_bands_restored[i], i + 1)
 
-    # 9. Generate visual preview PNG
-    output_png_path = generate_reconstruction_preview(final_bands_uint8, output_dir)
+    # 10. Generate visual preview PNG
+    output_png_path = generate_reconstruction_preview(final_bands_uint8, bands_uint8, output_dir)
 
     elapsed_time_ms = int((time.perf_counter() - start_time) * 1000)
+    logger.info(f"Reconstruction completed using {method_name} in {elapsed_time_ms} ms.")
+
+    # 11. Compile and write Reconstruction Technical Analytics
+    try:
+        import psutil
+        process = psutil.Process(os.getpid())
+        memory_usage_mb = float(process.memory_info().rss / (1024 * 1024))
+    except Exception:
+        # Fallback approximation based on float32 image sizes
+        memory_usage_mb = float((H * W * 3 * 4) / (1024 * 1024))
+
+    cloud_cov_pct = round(float(np.sum(inpaint_mask > 0) / inpaint_mask.size * 100.0), 2)
+    analytics = {
+        "cloud_coverage_percent": cloud_cov_pct,
+        "reconstructed_area_percent": cloud_cov_pct,
+        "processing_duration_ms": elapsed_time_ms,
+        "inference_duration_ms": inference_time_ms,
+        "memory_usage_mb": round(memory_usage_mb, 2),
+        "tile_processing_statistics": {
+            "total_tiles": total_tiles,
+            "cloudy_tiles": cloudy_tiles,
+            "clean_tiles": clean_tiles,
+            "tile_size": tile_size,
+            "padding": padding
+        },
+        "reconstruction_success": True
+    }
+    
+    analytics_path = os.path.join(output_dir, "reconstruction_analytics.json")
+    try:
+        import json
+        with open(analytics_path, "w") as f:
+            json.dump(analytics, f, indent=4)
+        logger.info(f"Saved reconstruction analytics to {analytics_path}")
+    except Exception as e:
+        logger.warning(f"Could not save reconstruction analytics: {e}")
 
     return {
         "output_tif_path": output_tif_path,
@@ -143,3 +341,4 @@ def execute_reconstruction(
         "temporal_relevance": temporal_relevance,
         "provider_name": provider_name
     }
+

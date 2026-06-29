@@ -142,10 +142,15 @@ class ReconstructionService:
         # Step 3: Validate Temporal Context
         temporal_context = self.temporal_context_repo.get_by_dataset(dataset_id)
         if not temporal_context:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Temporal context not found for dataset {dataset_id}. Run temporal context generation first."
-            )
+            class FallbackTemporalContext:
+                provider_count = 0
+                reference_count = 0
+                average_cloud_cover = 0.0
+                average_temporal_distance = 0.0
+                average_spatial_overlap = 0.0
+                summary = "No temporal imagery available."
+                metadata_json = "{}"
+            temporal_context = FallbackTemporalContext()
 
         # Step 4: Validate Cloud Intelligence
         cloud_analytics = self.cloud_analytics_repo.get_by_dataset(dataset_id)
@@ -249,14 +254,19 @@ class ReconstructionService:
             temporal_relevance = 85.0
             provider_name = "GoogleEarthEngine"
             
-            try:
-                fusion_run = self.temporal_fusion_repo.get_latest_by_session(session_id)
-                if fusion_run and fusion_run.fusion_status == "COMPLETED":
-                    provider_name = "GoogleEarthEngine"  # primary provider
-                    # calculate simulated relevance score
-                    temporal_relevance = max(10.0, min(100.0, 100.0 - temporal_context.average_cloud_cover - (temporal_context.average_temporal_distance * 0.1)))
-            except Exception:
-                pass
+            if getattr(temporal_context, 'reference_count', 0) == 0:
+                temporal_relevance = 0.0
+            else:
+                try:
+                    fusion_run = self.temporal_fusion_repo.get_latest_by_session(session_id)
+                    if fusion_run and fusion_run.fusion_status == "COMPLETED":
+                        provider_name = "GoogleEarthEngine"  # primary provider
+                        # calculate simulated relevance score
+                        temporal_relevance = max(10.0, min(100.0, 100.0 - temporal_context.average_cloud_cover - (temporal_context.average_temporal_distance * 0.1)))
+                    else:
+                        temporal_relevance = 0.0
+                except Exception:
+                    pass
 
             # Execute Reconstruction Engine V1
             from app.services.reconstruction.reconstruction_engine import execute_reconstruction

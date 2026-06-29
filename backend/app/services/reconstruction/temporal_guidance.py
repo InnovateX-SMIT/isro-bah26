@@ -39,6 +39,9 @@ def blend_temporal_guidance(
     - Low relevance (e.g. 50) -> 10% guidance, 90% inpainting
     Never directly replaces pixels to ensure seamless spatial blending.
     """
+    if temporal_relevance <= 0.0:
+        return inpainted.copy()
+        
     # Map relevance (0-100) to alpha weight (0.05 to 0.40) for guidance influence
     guidance_weight = min(0.40, max(0.05, (temporal_relevance / 100.0) * 0.40))
     inpaint_weight = 1.0 - guidance_weight

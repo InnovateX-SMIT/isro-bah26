@@ -48,7 +48,8 @@ def optimize_reconstruction_pipeline(
     reconstructed_image_path: str,
     mask_path: str,
     dataset_path: str,
-    output_dir: str
+    output_dir: str,
+    temporal_relevance: float = 85.0
 ) -> Dict[str, Any]:
     """
     Executes Phase 7D Reconstruction Optimization:
@@ -111,12 +112,44 @@ def optimize_reconstruction_pipeline(
         kernel_size=15
     )
     
+    # Generate temporal guidance bands for edge-preservation guidance
+    guidance_bands = None
+    if temporal_relevance > 0:
+        try:
+            original_uint8 = []
+            for b in original_bands:
+                b_min, b_max = float(b.min()), float(b.max())
+                if b_max > b_min:
+                    b_u8 = ((b - b_min) / (b_max - b_min) * 255.0).astype(np.uint8)
+                else:
+                    b_u8 = np.zeros_like(b, dtype=np.uint8)
+                original_uint8.append(b_u8)
+                
+            from app.services.reconstruction.temporal_guidance import get_temporal_guidance
+            inpaint_mask = (mask_data > 0).astype(np.uint8) * 255
+            guidance_bands_uint8 = get_temporal_guidance(original_uint8, inpaint_mask, temporal_relevance)
+            
+            guidance_bands = []
+            for i, b_u8 in enumerate(guidance_bands_uint8):
+                b_min, b_max = float(original_bands[i].min()), float(original_bands[i].max())
+                if b_max > b_min:
+                    g_float = b_u8.astype(np.float32) / 255.0 * (b_max - b_min) + b_min
+                    guidance_bands.append(g_float.astype(original_bands[i].dtype))
+                else:
+                    guidance_bands.append(original_bands[i])
+        except Exception as e:
+            import logging
+            logger = logging.getLogger("reconstruction_optimizer")
+            logger.warning(f"Could not generate guidance bands for edge preservation: {e}")
+            guidance_bands = None
+
     # --- PIPELINE STEP 2: Edge Preservation (Guided Filter) ---
     edge_preserved_bands = preserve_edges(
         bands=refined_bands,
         mask=mask_data,
         radius=4,
-        eps=0.01
+        eps=0.01,
+        guidance_bands=guidance_bands
     )
     
     # --- PIPELINE STEP 3: Spectral Consistency (Mean/Std Matching) ---

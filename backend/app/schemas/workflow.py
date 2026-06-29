@@ -58,3 +58,23 @@ class WorkflowResponse(BaseModel):
     stages: List[WorkflowStageDetail] = Field(default_factory=list, description="Workflow pipeline stages status list")
     timeline: List[WorkflowTimelineItem] = Field(default_factory=list, description="Historical execution event sequence")
     logs: List[WorkflowLogEntry] = Field(default_factory=list, description="Consolidated terminal console logs list")
+
+class ValidationComponentResponse(BaseModel):
+    """
+    Validation response detailing status, message and properties of a specific workflow component.
+    """
+    valid: bool = Field(..., description="Whether this workflow group is valid/healthy")
+    message: str = Field(..., description="Explanation or summary message")
+    details: Dict[str, Any] = Field(default_factory=dict, description="Detailed validation key-value properties")
+
+class WorkflowValidationResponse(BaseModel):
+    """
+    Overall validation response for the end-to-end analysis session workflow.
+    """
+    session_id: str = Field(..., description="UUID of the parent Analysis Session")
+    overall_valid: bool = Field(..., description="True if all workflow groups are valid")
+    upload: ValidationComponentResponse = Field(..., description="Upload workflow validation results")
+    metadata: ValidationComponentResponse = Field(..., description="Metadata workflow validation results")
+    temporal: ValidationComponentResponse = Field(..., description="Temporal workflow validation results")
+    reconstruction: ValidationComponentResponse = Field(..., description="Reconstruction workflow validation results")
+    export: ValidationComponentResponse = Field(..., description="Export workflow validation results")

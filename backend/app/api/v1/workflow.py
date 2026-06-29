@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.schemas.workflow import WorkflowResponse, WorkflowRunRequest
+from app.schemas.workflow import WorkflowResponse, WorkflowRunRequest, WorkflowValidationResponse
 from app.services.workflow_service import WorkflowService
 from app.services.workflow_orchestrator import WorkflowOrchestrator
+from app.services.workflow_validation_service import WorkflowValidationService
 
 router = APIRouter(
     tags=["Workflow Monitoring"]
@@ -16,6 +17,14 @@ def get_workflow_profile(session_id: str, db: Session = Depends(get_db)):
     """
     service = WorkflowService(db)
     return service.get_session_workflow(session_id)
+
+@router.get("/validate/{session_id}", response_model=WorkflowValidationResponse)
+def validate_session_workflows(session_id: str, db: Session = Depends(get_db)):
+    """
+    Trigger deep system diagnostic validation of the Upload, Metadata, Temporal, Reconstruction, and Export workflows.
+    """
+    service = WorkflowValidationService(db)
+    return service.validate_session_workflows(session_id)
 
 @router.post("/run/{session_id}")
 def run_orchestrated_workflow(

@@ -36,3 +36,19 @@ export interface WorkflowResponse {
   timeline: WorkflowTimelineItem[];
   logs: WorkflowLogEntry[];
 }
+
+export interface ValidationComponentResponse {
+  valid: boolean;
+  message: string;
+  details: Record<string, any>;
+}
+
+export interface WorkflowValidationResponse {
+  session_id: string;
+  overall_valid: boolean;
+  upload: ValidationComponentResponse;
+  metadata: ValidationComponentResponse;
+  temporal: ValidationComponentResponse;
+  reconstruction: ValidationComponentResponse;
+  export: ValidationComponentResponse;
+}

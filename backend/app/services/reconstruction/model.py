@@ -122,11 +122,15 @@ def fit_model_on_unmasked_patches(
     patch_size = 128
     clean_patches = []
     
+    bands_stack = np.stack(bands_normalized, axis=0) # [3, H, W]
+    
     # Simple grid search for 3-5 clean patches
     for y in range(0, H - patch_size, patch_size):
         for x in range(0, W - patch_size, patch_size):
             m_patch = mask[y:y+patch_size, x:x+patch_size]
-            if np.sum(m_patch) == 0: # 100% clean patch
+            b_patch = bands_stack[:, y:y+patch_size, x:x+patch_size]
+            # Ensure the patch has no clouds and has valid imagery (not border/nodata)
+            if np.sum(m_patch) == 0 and np.mean(b_patch) > 0.05:
                 clean_patches.append((y, x))
                 if len(clean_patches) >= 4:
                     break
@@ -134,13 +138,24 @@ def fit_model_on_unmasked_patches(
             break
             
     if not clean_patches:
-        # Fall back to using whatever patches have the least mask presence
-        clean_patches = [(0, 0)]
+        # Fall back to patches with minimum mask sum that are not completely black/empty
+        candidates = []
+        for y in range(0, H - patch_size, patch_size):
+            for x in range(0, W - patch_size, patch_size):
+                b_patch = bands_stack[:, y:y+patch_size, x:x+patch_size]
+                if np.mean(b_patch) > 0.05:
+                    m_patch = mask[y:y+patch_size, x:x+patch_size]
+                    candidates.append((int(np.sum(m_patch)), (y, x)))
+        if candidates:
+            candidates.sort(key=lambda item: item[0])
+            clean_patches = [item[1] for item in candidates[:4]]
+        else:
+            # Absolute fallback
+            clean_patches = [(0, 0)]
         
     # Format patch tensors
     logger.info(f"Dynamically fitting U-Net weights on {len(clean_patches)} local clean patches for texture alignment.")
     
-    bands_stack = np.stack(bands_normalized, axis=0) # [3, H, W]
     guidance_stack = np.stack(guidance_bands_normalized, axis=0) # [3, H, W]
     
     for epoch in range(epochs):

@@ -32,6 +32,7 @@ export default function IndividualReferencePage() {
   const router = useRouter()
   const datasetId = params.dataset_id as string
   const referenceId = params.reference_id as string
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
   const [dataset, setDataset] = useState<Dataset | null>(null)
   const [metadata, setMetadata] = useState<DatasetMetadata | null>(null)
@@ -113,7 +114,9 @@ export default function IndividualReferencePage() {
   }
 
   const cand = reference.candidate
-  const previewUrl = cand?.preview_url
+  const previewUrl = cand 
+    ? `${API_URL}/api/v1/temporal/references/${dataset.analysis_session_id}/candidate/${cand.id}/preview`
+    : null
 
   return (
     <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
@@ -155,7 +158,7 @@ export default function IndividualReferencePage() {
           <div className="flex items-center space-x-2 text-[10px] border border-border px-3 py-1.5 bg-muted/30">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             <span className="text-muted-foreground uppercase text-[9px] tracking-wider">
-              Score: {(reference.ranking_score * 100).toFixed(1)}/100
+              Score: {reference.ranking_score.toFixed(1)}/100
             </span>
           </div>
         </div>

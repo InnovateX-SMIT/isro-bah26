@@ -90,4 +90,8 @@ datasets/packages/*
 # Backend generated folders
 backend/datasets/
 
+# Temporal references
+datasets/temporal_references/*
+!datasets/temporal_references/.gitkeep
+
 

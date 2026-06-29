@@ -30,6 +30,7 @@ export default function HistoricalReferencesPage() {
   const params = useParams()
   const router = useRouter()
   const datasetId = params.dataset_id as string
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
   const [dataset, setDataset] = useState<Dataset | null>(null)
   const [metadata, setMetadata] = useState<DatasetMetadata | null>(null)
@@ -164,7 +165,9 @@ export default function HistoricalReferencesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {references.map((ref) => {
               const cand = ref.candidate
-              const previewUrl = cand?.preview_url
+              const previewUrl = cand 
+                ? `${API_URL}/api/v1/temporal/references/${dataset.analysis_session_id}/candidate/${cand.id}/preview`
+                : null
 
               return (
                 <div 
@@ -180,7 +183,7 @@ export default function HistoricalReferencesPage() {
                       </span>
                     </div>
                     <div className="text-cyan-400 font-black">
-                      Score: {(ref.ranking_score * 100).toFixed(1)}
+                      Score: {ref.ranking_score.toFixed(1)}
                     </div>
                   </div>
 

@@ -190,7 +190,9 @@ export default function ComparisonWorkspacePage() {
     LeftIcon = Cloud
     leftColor = "text-amber-400"
   } else if (currentMode === "reference") {
-    leftUrl = primaryRef?.candidate?.preview_url || ""
+    leftUrl = primaryRef?.candidate
+      ? `${API_URL}/api/v1/temporal/references/${dataset.analysis_session_id}/candidate/${primaryRef.candidate.id}/preview`
+      : ""
     leftLabel = `Historical Reference (Obs #1)`
     leftDesc = `Acquisition offset: ${primaryRef?.candidate?.acquisition_date || "N/A"}`
     LeftIcon = Clock

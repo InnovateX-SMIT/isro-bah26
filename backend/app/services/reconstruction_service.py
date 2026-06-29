@@ -17,6 +17,8 @@ from app.repositories.cloud_classification_repository import CloudClassification
 from app.repositories.cloud_shadow_repository import CloudShadowRepository
 from app.repositories.cloud_segmentation_repository import CloudSegmentationRepository
 from app.repositories.temporal_fusion_repository import TemporalFusionRepository
+from app.repositories.temporal_reference_stack_repository import TemporalReferenceStackRepository
+from app.repositories.selected_reference_repository import SelectedReferenceRepository
 
 from app.schemas.reconstruction import ReconstructionResponse, ReconstructionRunResponse, ReconstructionSummaryResponse
 
@@ -43,7 +45,9 @@ class ReconstructionService:
         cloud_classification_repo: CloudClassificationRepository,
         cloud_shadow_repo: CloudShadowRepository,
         cloud_segmentation_repo: CloudSegmentationRepository,
-        temporal_fusion_repo: TemporalFusionRepository
+        temporal_fusion_repo: TemporalFusionRepository,
+        reference_stack_repo: Optional[TemporalReferenceStackRepository] = None,
+        selected_reference_repo: Optional[SelectedReferenceRepository] = None
     ):
         self.db = db
         self.reconstruction_repo = reconstruction_repo
@@ -59,6 +63,8 @@ class ReconstructionService:
         self.cloud_shadow_repo = cloud_shadow_repo
         self.cloud_segmentation_repo = cloud_segmentation_repo
         self.temporal_fusion_repo = temporal_fusion_repo
+        self.reference_stack_repo = reference_stack_repo or TemporalReferenceStackRepository(db)
+        self.selected_reference_repo = selected_reference_repo or SelectedReferenceRepository(db)
 
     def get_latest_run(self, session_id: str) -> ReconstructionRunResponse:
         """
@@ -151,6 +157,44 @@ class ReconstructionService:
                 summary = "No temporal imagery available."
                 metadata_json = "{}"
             temporal_context = FallbackTemporalContext()
+
+        # Resolve real historical reference GeoTIFF path from selected references
+        historical_reference_path = None
+        try:
+            if self.reference_stack_repo and self.selected_reference_repo:
+                ref_stack = None
+                if temporal_context and getattr(temporal_context, 'reference_stack_id', None):
+                    ref_stack = self.reference_stack_repo.get_by_id(temporal_context.reference_stack_id)
+                if not ref_stack:
+                    ref_stack = self.reference_stack_repo.get_latest_by_session(session_id)
+                
+                if ref_stack:
+                    selected_refs = self.selected_reference_repo.get_by_stack(ref_stack.id)
+                    if selected_refs:
+                        # Sort by rank_position ascending and ranking_score descending to take the first (top choice)
+                        sorted_refs = sorted(selected_refs, key=lambda x: (x.rank_position, -x.ranking_score))
+                        top_ref = sorted_refs[0]
+                        cand = top_ref.candidate
+                        if cand:
+                            from app.services.temporal_service import TemporalService
+                            temporal_service = TemporalService()
+                            candidate_abs_path = temporal_service.get_candidate_geotiff_path(cand)
+                            if candidate_abs_path and os.path.exists(candidate_abs_path):
+                                historical_reference_path = candidate_abs_path
+                                print(f"[Reconstruction] Resolved historical reference: {candidate_abs_path}")
+                            else:
+                                print(f"[Reconstruction] WARNING: Historical reference file not found on disk: {candidate_abs_path}")
+                        else:
+                            print("[Reconstruction] WARNING: Top selected reference has no candidate.")
+                    else:
+                        print("[Reconstruction] WARNING: No selected references found in stack.")
+                else:
+                    print("[Reconstruction] WARNING: No reference stack found for session.")
+            else:
+                print("[Reconstruction] WARNING: Reference stack/selection repositories not available.")
+        except Exception as ref_err:
+            print(f"[Reconstruction] WARNING: Could not resolve historical reference path: {ref_err}")
+
 
         # Step 4: Validate Cloud Intelligence
         cloud_analytics = self.cloud_analytics_repo.get_by_dataset(dataset_id)
@@ -268,6 +312,10 @@ class ReconstructionService:
                 except Exception:
                     pass
 
+            # Resolve real historical reference GeoTIFF path from selected references
+            # Already resolved earlier in run_reconstruction_pipeline, so we reuse it
+            pass
+
             # Execute Reconstruction Engine V1
             from app.services.reconstruction.reconstruction_engine import execute_reconstruction
             result = execute_reconstruction(
@@ -276,7 +324,8 @@ class ReconstructionService:
                 output_dir=output_dir,
                 strategy=strategy,
                 temporal_relevance=temporal_relevance,
-                provider_name=provider_name
+                provider_name=provider_name,
+                historical_reference_path=historical_reference_path
             )
 
             # Write reconstruction_metadata.json on disk

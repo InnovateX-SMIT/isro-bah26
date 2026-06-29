@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import {
   Clock,
@@ -10,16 +10,14 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  Sparkles,
-  Calendar
+  Calendar,
+  Globe,
+  Tag
 } from "lucide-react"
 
 import { getDataset } from "@/lib/dataset-api"
 import { getDatasetMetadata } from "@/lib/dataset-metadata-api"
-import { getReconstructionStatus } from "@/lib/reconstruction-api"
-import { getCloudDetection } from "@/lib/cloud-api"
 import { getSelectedReferences } from "@/lib/temporal-context-api"
-import { getConfidenceEstimation, getReliabilityScore } from "@/lib/confidence-api"
 
 import { Dataset } from "@/lib/types/dataset"
 import { DatasetMetadata } from "@/lib/types/dataset-metadata"
@@ -27,21 +25,14 @@ import { SelectedReference } from "@/lib/types/temporal-context"
 
 import ViewerBreadcrumb from "@/components/ViewerBreadcrumb"
 import ViewerSidebar from "@/components/ViewerSidebar"
-import MetadataSidebar from "@/components/comparison/MetadataSidebar"
 
-export default function ReferenceVsReconstructionPage() {
+export default function HistoricalCloudFreePage() {
   const params = useParams()
   const router = useRouter()
   const datasetId = params.dataset_id as string
 
   const [dataset, setDataset] = useState<Dataset | null>(null)
   const [metadata, setMetadata] = useState<DatasetMetadata | null>(null)
-
-  // Sub-pipeline responses
-  const [reconRun, setReconRun] = useState<any | null>(null)
-  const [cloudDetection, setCloudDetection] = useState<any | null>(null)
-  const [estimation, setEstimation] = useState<any | null>(null)
-  const [reliability, setReliability] = useState<any | null>(null)
   const [references, setReferences] = useState<SelectedReference[] | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -49,6 +40,10 @@ export default function ReferenceVsReconstructionPage() {
 
   const [zoom, setZoom] = useState(1)
   const [fitMode, setFitMode] = useState<"contain" | "actual">("contain")
+
+  const leftScrollRef = useRef<HTMLDivElement>(null)
+  const rightScrollRef = useRef<HTMLDivElement>(null)
+  const activeRef = useRef<string | null>(null)
 
   useEffect(() => {
     async function loadData() {
@@ -66,42 +61,12 @@ export default function ReferenceVsReconstructionPage() {
 
         const sessionId = ds.analysis_session_id
 
-        // Fetch cloud status
-        try {
-          const cd = await getCloudDetection(datasetId)
-          setCloudDetection(cd)
-        } catch (e) {
-          console.log("No cloud detection found")
-        }
-
         // Fetch references stack
         try {
           const refs = await getSelectedReferences(sessionId)
           setReferences(refs)
         } catch (e) {
           console.log("No references stack found")
-        }
-
-        // Fetch reconstruction status
-        let rRun: any = null
-        try {
-          rRun = await getReconstructionStatus(sessionId)
-          setReconRun(rRun)
-        } catch (e) {
-          console.log("No reconstruction status found")
-        }
-
-        // Fetch confidence status
-        if (rRun && rRun.reconstruction_status === "COMPLETED") {
-          try {
-            const est = await getConfidenceEstimation(rRun.id)
-            setEstimation(est)
-
-            const rel = await getReliabilityScore(est.confidence_id)
-            setReliability(rel)
-          } catch (e) {
-            console.log("No confidence parameters found")
-          }
         }
       } catch (err: any) {
         console.error(err)
@@ -115,12 +80,40 @@ export default function ReferenceVsReconstructionPage() {
     }
   }, [datasetId])
 
+  const handleScroll = (source: "left" | "right") => {
+    const left = leftScrollRef.current
+    const right = rightScrollRef.current
+    if (!left || !right) return
+
+    if (activeRef.current === null) {
+      activeRef.current = source
+    }
+
+    if (activeRef.current === source) {
+      if (source === "left") {
+        right.scrollLeft = left.scrollLeft
+        right.scrollTop = left.scrollTop
+      } else {
+        left.scrollLeft = right.scrollLeft
+        left.scrollTop = right.scrollTop
+      }
+    }
+  }
+
+  const handleMouseOver = (source: "left" | "right") => {
+    activeRef.current = source
+  }
+
+  const handleMouseLeave = () => {
+    activeRef.current = null
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 font-mono">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
         <span className="text-xs uppercase text-muted-foreground tracking-widest">
-          Loading reference comparison...
+          Loading comparison page...
         </span>
       </div>
     )
@@ -128,7 +121,7 @@ export default function ReferenceVsReconstructionPage() {
 
   if (error || !dataset) {
     return (
-      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12">
+      <div className="border border-destructive/30 bg-destructive/5 p-6 rounded-lg space-y-4 font-mono max-w-xl mx-auto my-12 text-slate-100">
         <div className="flex items-center space-x-3 text-red-400">
           <AlertTriangle className="w-6 h-6 shrink-0" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
@@ -150,15 +143,31 @@ export default function ReferenceVsReconstructionPage() {
 
   const primaryRef = references && references.length > 0 ? references[0] : null
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+
+  const uploadedUrl = `${API_URL}/api/v1/preview/${datasetId}/image`
   const referenceUrl = primaryRef?.candidate
     ? `${API_URL}/api/v1/temporal/references/${dataset.analysis_session_id}/candidate/${primaryRef.candidate.id}/preview`
     : null
 
-  const reconstructedUrl = reconRun 
-    ? (reconRun.optimization_status === "COMPLETED" 
-        ? `${API_URL}/api/v1/reconstruction/${reconRun.session_id}/optimized-preview`
-        : `${API_URL}/api/v1/reconstruction/${reconRun.session_id}/preview`)
-    : ""
+  // Safely parse candidate metadata
+  let candidateSensor = "N/A"
+  if (primaryRef?.candidate?.metadata) {
+    const meta = primaryRef.candidate.metadata as any
+    candidateSensor = meta.sensor || primaryRef.candidate.provider_name || "N/A"
+  }
+
+  const getTemporalOffset = () => {
+    if (!primaryRef?.candidate?.acquisition_date || !metadata?.acquisition_date) return "N/A"
+    try {
+      const d1 = new Date(primaryRef.candidate.acquisition_date)
+      const d2 = new Date(metadata.acquisition_date)
+      const diffTime = Math.abs(d1.getTime() - d2.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      return isNaN(diffDays) ? "N/A" : `${diffDays} days`
+    } catch (e) {
+      return "N/A"
+    }
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
@@ -186,12 +195,12 @@ export default function ReferenceVsReconstructionPage() {
               datasetId={datasetId}
               items={[
                 { label: "Comparison Engine", href: `/datasets/${datasetId}/comparison` },
-                { label: "Reference vs Reconstruction" }
+                { label: "Historical Cloud-Free Comparison" }
               ]}
             />
             <h1 className="text-md font-bold uppercase text-foreground flex items-center gap-1.5 mt-1">
               <Clock className="w-4.5 h-4.5 text-primary animate-pulse" />
-              Historical Reference vs AI Reconstruction Output Comparison
+              Historical Cloud-Free Comparison
             </h1>
           </div>
 
@@ -233,17 +242,67 @@ export default function ReferenceVsReconstructionPage() {
         {/* Side-by-side splits area */}
         <div className="flex-1 flex flex-col md:flex-row bg-black/65 overflow-hidden">
           
-          {/* Left panel: Top historical reference */}
+          {/* Left panel: Uploaded Cloud-Affected image */}
           <div className="flex-1 border-r border-border p-4 flex flex-col relative overflow-hidden">
             <div className="absolute top-6 left-6 bg-background/85 border border-border px-2.5 py-1 text-[9px] text-pink-400 font-bold uppercase z-10 select-none flex items-center gap-1.5 animate-pulse">
-              <Clock className="w-3.5 h-3.5" />
-              <span>Historical Reference (Observation #1)</span>
+              <AlertTriangle className="w-3.5 h-3.5 text-pink-400" />
+              <span>Uploaded Dataset (Cloud Covered)</span>
             </div>
-            <div className="flex-1 overflow-auto flex items-center justify-center p-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+            
+            <div 
+              ref={leftScrollRef}
+              onScroll={() => handleScroll("left")}
+              onMouseOver={() => handleMouseOver("left")}
+              onMouseLeave={handleMouseLeave}
+              className="flex-1 overflow-auto flex items-center justify-center p-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+            >
+              <img
+                src={uploadedUrl}
+                alt="Uploaded cloud-covered preview"
+                className="transition-transform duration-100 ease-out select-none shadow-[0_0_30px_rgba(0,0,0,0.85)] border border-border/40"
+                style={{
+                  transform: `scale(${zoom})`,
+                  maxHeight: fitMode === "contain" ? "380px" : "none",
+                  maxWidth: fitMode === "contain" ? "100%" : "none",
+                  objectFit: fitMode === "contain" ? "contain" : "none",
+                }}
+                draggable={false}
+              />
+            </div>
+
+            {/* Left metadata card */}
+            <div className="p-3 border border-border/40 bg-background/30 rounded-lg text-[10px] font-sans space-y-1.5">
+              <h3 className="font-bold text-foreground text-[11px] uppercase tracking-wider border-b border-border/30 pb-1 flex items-center gap-1">
+                <Globe className="w-3.5 h-3.5 text-pink-400" />
+                Uploaded Scene Profile
+              </h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                <div><span className="text-muted-foreground">Acquisition Date:</span> {metadata?.acquisition_date || "N/A"}</div>
+                <div><span className="text-muted-foreground">Satellite/Sensor:</span> LISS-IV</div>
+                <div><span className="text-muted-foreground">CRS:</span> {metadata?.coordinate_system || "N/A"} (EPSG:{metadata?.epsg_code || "N/A"})</div>
+                <div><span className="text-muted-foreground">Resolution:</span> {metadata?.pixel_size_x ? `${metadata.pixel_size_x}m` : "N/A"}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right panel: Historical Cloud-Free image */}
+          <div className="flex-1 p-4 flex flex-col relative overflow-hidden">
+            <div className="absolute top-6 left-6 bg-background/85 border border-border px-2.5 py-1 text-[9px] text-emerald-400 font-bold uppercase z-10 select-none flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Historical Reference (Cloud Free)</span>
+            </div>
+            
+            <div 
+              ref={rightScrollRef}
+              onScroll={() => handleScroll("right")}
+              onMouseOver={() => handleMouseOver("right")}
+              onMouseLeave={handleMouseLeave}
+              className="flex-1 overflow-auto flex items-center justify-center p-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent"
+            >
               {referenceUrl ? (
                 <img
                   src={referenceUrl}
-                  alt="Top historical reference preview"
+                  alt="Historical cloud-free preview"
                   className="transition-transform duration-100 ease-out select-none shadow-[0_0_30px_rgba(0,0,0,0.85)] border border-border/40"
                   style={{
                     transform: `scale(${zoom})`,
@@ -252,72 +311,45 @@ export default function ReferenceVsReconstructionPage() {
                     objectFit: fitMode === "contain" ? "contain" : "none",
                   }}
                   draggable={false}
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none"
+                  }}
                 />
               ) : (
-                <div className="border border-dashed border-border bg-card/10 p-8 rounded-lg text-center flex flex-col items-center justify-center space-y-3 max-w-sm">
+                <div className="border border-dashed border-border bg-card/10 p-8 rounded-lg text-center flex flex-col items-center justify-center space-y-3 max-w-sm mx-auto my-auto">
                   <AlertTriangle className="w-6 h-6 text-amber-500 animate-pulse" />
                   <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
-                    Reference Image Absent
+                    No historical cloud-free image found
                   </h4>
                   <p className="text-[10px] text-muted-foreground font-sans leading-normal">
-                    This reference observation image could not be resolved from local cache index.
+                    Could not load or resolve historical reference imagery for the selected session.
                   </p>
                 </div>
               )}
             </div>
-            {primaryRef && (
-              <div className="p-2 border border-border/40 bg-background/30 text-[9.5px] text-muted-foreground leading-normal font-sans space-y-1">
-                <div className="flex justify-between font-bold text-slate-200">
-                  <span>Sensor: {String(primaryRef.candidate?.provider_name || "GEE")}</span>
-                  <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-pink-400" /> {primaryRef.candidate?.acquisition_date}</span>
-                </div>
-                <div>Selection Reason: "{primaryRef.selection_reason}"</div>
-              </div>
-            )}
-          </div>
 
-          {/* Right panel: AI Reconstructed output */}
-          <div className="flex-1 p-4 flex flex-col relative overflow-hidden">
-            <div className="absolute top-6 left-6 bg-background/85 border border-border px-2.5 py-1 text-[9px] text-emerald-400 font-bold uppercase z-10 select-none flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>AI Reconstructed Output</span>
-            </div>
-            <div className="flex-1 overflow-auto flex items-center justify-center p-4 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-              {reconstructedUrl ? (
-                <img
-                  src={reconstructedUrl}
-                  alt="AI Reconstructed Preview"
-                  className="transition-transform duration-100 ease-out select-none shadow-[0_0_30px_rgba(0,0,0,0.85)] border border-border/40"
-                  style={{
-                    transform: `scale(${zoom})`,
-                    maxHeight: fitMode === "contain" ? "380px" : "none",
-                    maxWidth: fitMode === "contain" ? "100%" : "none",
-                    objectFit: fitMode === "contain" ? "contain" : "none",
-                  }}
-                  draggable={false}
-                />
+            {/* Right metadata card */}
+            <div className="p-3 border border-border/40 bg-background/30 rounded-lg text-[10px] font-sans space-y-1.5">
+              <h3 className="font-bold text-foreground text-[11px] uppercase tracking-wider border-b border-border/30 pb-1 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                Historical Scene Profile
+              </h3>
+              {primaryRef ? (
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  <div><span className="text-muted-foreground">Acquisition Date:</span> {primaryRef.candidate?.acquisition_date || "N/A"}</div>
+                  <div><span className="text-muted-foreground">Satellite/Sensor:</span> {candidateSensor}</div>
+                  <div><span className="text-muted-foreground">Cloud Cover:</span> {primaryRef.candidate?.cloud_cover !== undefined ? `${primaryRef.candidate.cloud_cover.toFixed(2)}%` : "N/A"}</div>
+                  <div><span className="text-muted-foreground">Temporal Offset:</span> {getTemporalOffset()}</div>
+                  <div><span className="text-muted-foreground">Spatial Overlap:</span> {primaryRef.candidate?.spatial_overlap !== undefined ? `${primaryRef.candidate.spatial_overlap.toFixed(1)}%` : "N/A"}</div>
+                  <div><span className="text-muted-foreground">Provider:</span> {primaryRef.candidate?.provider_name || "N/A"}</div>
+                </div>
               ) : (
-                <div className="text-center text-muted-foreground text-[10px]">Reconstruction data absent.</div>
+                <div className="text-muted-foreground italic text-center py-2">No historical candidate selected.</div>
               )}
             </div>
-            <div className="p-2 border border-border/40 bg-background/30 text-[9.5px] text-muted-foreground leading-normal font-sans">
-              Displays the reconstructed raster composite guided by the spatial features and clean terrain textures of the historical image.
-            </div>
           </div>
-
         </div>
-
       </div>
-
-      {/* Workspace Sidebar / Metadata Sidebar */}
-      <MetadataSidebar
-        dataset={dataset}
-        metadata={metadata}
-        reconRun={reconRun}
-        cloud={cloudDetection}
-        estimation={estimation}
-        reliability={reliability}
-      />
     </div>
   )
 }

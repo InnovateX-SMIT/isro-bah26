@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import rasterio
 import concurrent.futures
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from app.services.reconstruction.temporal_guidance import get_temporal_guidance, blend_temporal_guidance
 from app.services.reconstruction.reconstruction_preview import generate_reconstruction_preview
@@ -28,7 +28,8 @@ def execute_reconstruction(
     output_dir: str,
     strategy: str = "DEFAULT",
     temporal_relevance: float = 85.0,
-    provider_name: str = "GoogleEarthEngine"
+    provider_name: str = "GoogleEarthEngine",
+    historical_reference_path: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Executes the improved reconstruction engine pipeline (Phase 12E):
@@ -77,6 +78,48 @@ def execute_reconstruction(
         ]
         bands = [f.result() for f in futures]
 
+    # Load and resample historical reference bands if provided
+    historical_bands_uint8 = None
+    if historical_reference_path:
+        if os.path.exists(historical_reference_path):
+            try:
+                with rasterio.open(historical_reference_path) as src_hist:
+                    hist_count = src_hist.count
+                    if hist_count != 3:
+                        logger.warning(f"Historical reference band count differs from 3 (found {hist_count}).")
+                    
+                    hist_bands = []
+                    for b_idx in range(1, hist_count + 1):
+                        band_data = src_hist.read(
+                            b_idx,
+                            out_shape=(mask_height, mask_width),
+                            resampling=rasterio.enums.Resampling.bilinear
+                        )
+                        hist_bands.append(band_data)
+                    
+                    loaded_bands_u8 = []
+                    for b in hist_bands:
+                        b_min = float(b.min())
+                        b_max = float(b.max())
+                        if b_max > b_min:
+                            b_u8 = ((b - b_min) / (b_max - b_min) * 255.0).astype(np.uint8)
+                        else:
+                            b_u8 = np.zeros_like(b, dtype=np.uint8)
+                        loaded_bands_u8.append(b_u8)
+                    
+                    if len(loaded_bands_u8) >= 3:
+                        historical_bands_uint8 = loaded_bands_u8[:3]
+                    elif len(loaded_bands_u8) == 1:
+                        historical_bands_uint8 = [loaded_bands_u8[0]] * 3
+                    elif len(loaded_bands_u8) == 2:
+                        historical_bands_uint8 = [loaded_bands_u8[0], loaded_bands_u8[1], loaded_bands_u8[1]]
+                    else:
+                        logger.warning("Historical reference has 0 bands.")
+            except Exception as e:
+                logger.warning(f"Could not load/resample historical reference file {historical_reference_path}: {e}")
+        else:
+            logger.warning(f"Historical reference file does not exist on disk: {historical_reference_path}")
+
     # 4. Normalize bands to uint8 range for OpenCV and [0, 1] for U-Net
     orig_mins = []
     orig_maxs = []
@@ -102,7 +145,12 @@ def execute_reconstruction(
     inpaint_mask = (mask_data > 0).astype(np.uint8) * 255
 
     # Retrieve Temporal Guidance
-    guidance_bands_uint8 = get_temporal_guidance(bands_uint8, inpaint_mask, temporal_relevance)
+    guidance_bands_uint8 = get_temporal_guidance(
+        bands_uint8,
+        inpaint_mask,
+        temporal_relevance,
+        historical_bands_uint8=historical_bands_uint8
+    )
     
     guidance_bands_normalized = []
     for i in range(3):
@@ -339,6 +387,7 @@ def execute_reconstruction(
         "execution_time_ms": elapsed_time_ms,
         "strategy": strategy,
         "temporal_relevance": temporal_relevance,
-        "provider_name": provider_name
+        "provider_name": provider_name,
+        "historical_reference_path": historical_reference_path
     }
 

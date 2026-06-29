@@ -1,18 +1,21 @@
 import numpy as np
 import cv2
-from typing import List
+from typing import List, Optional
 
 def get_temporal_guidance(
     bands_uint8: List[np.ndarray],
     inpaint_mask: np.ndarray,
-    temporal_relevance: float
+    temporal_relevance: float,
+    historical_bands_uint8: Optional[List[np.ndarray]] = None
 ) -> List[np.ndarray]:
     """
-    Simulates/extracts temporal guidance from the target bands.
-    Since external historical references might be mocked, we synthesize a guidance image by:
-    - Applying a bilateral filter to smooth out local noise while maintaining structural edges.
-    - Adding a slight offset or contrast shift based on the temporal relevance to simulate atmospheric difference.
+    Retrieves or simulates temporal guidance from target bands.
+    Uses real historical pixel data when available.
+    Only falls back to the bilateral-filter synthesis if historical_bands_uint8 is None.
     """
+    if historical_bands_uint8 is not None:
+        return historical_bands_uint8
+
     guidance_bands = []
     for b_u8 in bands_uint8:
         # Bilateral filter retains sharp edges but smooths textures to simulate historical/coarse references

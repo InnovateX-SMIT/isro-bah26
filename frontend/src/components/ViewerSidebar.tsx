@@ -84,6 +84,7 @@ export default function ViewerSidebar({
     ],
     comparison: [
       { label: "Overview", href: `/datasets/${datasetId}/comparison`, icon: GitCompare },
+      { label: "Historical Cloud-Free", href: `/datasets/${datasetId}/comparison/historical-cloud-free`, icon: Clock },
       { label: "Original vs Recon", href: `/datasets/${datasetId}/comparison/original-vs-reconstruction`, icon: ImageIcon },
       { label: "Cloud vs Recon", href: `/datasets/${datasetId}/comparison/cloud-vs-reconstruction`, icon: Activity },
       { label: "Reference vs Recon", href: `/datasets/${datasetId}/comparison/reference-vs-reconstruction`, icon: Clock },

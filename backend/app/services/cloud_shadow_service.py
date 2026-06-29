@@ -226,21 +226,44 @@ class CloudShadowService:
             casting_cloud_id = np.zeros(class_raster.shape, dtype=np.int32)
             shadow_pixels = np.zeros(class_raster.shape, dtype=bool)
 
-            def shift_image(img: np.ndarray, shx: float, shy: float) -> np.ndarray:
-                M = np.float32([[1, 0, shx], [0, 1, shy]])
-                return cv2.warpAffine(img, M, (img.shape[1], img.shape[0]), flags=cv2.INTER_NEAREST)
-
-            # Cast rays by shifting each cloud region mask along the shadow vector
+            # Cast rays by shifting each cloud region mask's coordinates along the shadow vector
             for r in valid_cloud_regions:
-                region_mask = (labeled_clouds == r.label)
+                cloud_coords = r.coords # Shape: (N, 2), contains coordinates [y, x]
+                if len(cloud_coords) == 0:
+                    continue
                 for t in t_steps:
-                    shifted = shift_image(region_mask.astype(np.uint8), t * dx, t * dy) > 0
-                    hits = shifted & candidate_mask
+                    # Translate coordinates in y and x directions
+                    sy = (cloud_coords[:, 0] + t * dy).astype(np.int32)
+                    sx = (cloud_coords[:, 1] + t * dx).astype(np.int32)
+
+                    # Filter coordinates that fall outside the image boundaries
+                    in_bounds = (sy >= 0) & (sy < target_height) & (sx >= 0) & (sx < target_width)
+                    if not np.any(in_bounds):
+                        # If the coordinates have shifted entirely out of bounds in the direction of the ray, break
+                        if (dy > 0 and np.all(sy >= target_height)) or (dy < 0 and np.all(sy < 0)):
+                            break
+                        if (dx > 0 and np.all(sx >= target_width)) or (dx < 0 and np.all(sx < 0)):
+                            break
+                        continue
+                    sy = sy[in_bounds]
+                    sx = sx[in_bounds]
+
+                    # Check which shifted coordinates hit the candidate shadow mask
+                    hits = candidate_mask[sy, sx]
                     if np.any(hits):
-                        shadow_pixels[hits] = True
-                        mask_to_update = hits & (t < min_t_map)
-                        min_t_map[mask_to_update] = t
-                        casting_cloud_id[mask_to_update] = r.label
+                        hit_y = sy[hits]
+                        hit_x = sx[hits]
+
+                        shadow_pixels[hit_y, hit_x] = True
+
+                        # Update minimum distance mapping where this t is smaller
+                        current_min_t = min_t_map[hit_y, hit_x]
+                        update_mask = t < current_min_t
+                        if np.any(update_mask):
+                            update_y = hit_y[update_mask]
+                            update_x = hit_x[update_mask]
+                            min_t_map[update_y, update_x] = t
+                            casting_cloud_id[update_y, update_x] = r.label
 
             # 8. Connected component segment and linkage for shadow regions
             labeled_shadows, num_shadows = label(shadow_pixels, return_num=True)

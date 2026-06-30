@@ -6,6 +6,7 @@ from typing import List, Dict, Any
 from app.services.temporal.providers.base import TemporalProvider
 from app.schemas.temporal import TemporalReferenceCandidate
 from app.services.geospatial.utils import parse_date_safely
+from app.core.initialization import initialize_earth_engine
 
 class GoogleEarthEngineProvider(TemporalProvider):
     """
@@ -29,11 +30,7 @@ class GoogleEarthEngineProvider(TemporalProvider):
         """
         Runs connection check to verify Earth Engine API service is reachable.
         """
-        try:
-            ee.Initialize(project='isro-bah26')
-            return True
-        except Exception:
-            return False
+        return initialize_earth_engine()
 
     def search_imagery(
         self,
@@ -45,10 +42,8 @@ class GoogleEarthEngineProvider(TemporalProvider):
         Query the GEE catalog dynamically for LISS-IV matching scenes.
         Uses progressive search windows and lowest-cloud fallbacks.
         """
-        try:
-            ee.Initialize(project='isro-bah26')
-        except Exception as e:
-            print(f"[Error] ee.Initialize failed in search_imagery: {e}")
+        if not initialize_earth_engine():
+            print("[Error] ee.Initialize failed in search_imagery")
             return []
 
         # Parse target date
@@ -299,10 +294,8 @@ class GoogleEarthEngineProvider(TemporalProvider):
         Fetches Red, Green, Blue bands for candidate ID, applies proper Surface Reflectance scaling,
         and downloads the visual composite GeoTIFF locally.
         """
-        try:
-            ee.Initialize(project='isro-bah26')
-        except Exception as e:
-            raise RuntimeError(f"ee.Initialize failed in download_image: {e}")
+        if not initialize_earth_engine():
+            raise RuntimeError("ee.Initialize failed in download_image")
 
         min_lon, min_lat = bounding_box[0]
         max_lon, max_lat = bounding_box[1]
@@ -342,10 +335,8 @@ class GoogleEarthEngineProvider(TemporalProvider):
         Accepts region_geometry either as a list of lists of floats (bounding box) or an ee.Geometry object.
         """
         try:
-            try:
-                ee.Initialize(project='isro-bah26')
-            except Exception as e:
-                raise RuntimeError(f"ee.Initialize failed in get_thumbnail_url: {e}")
+            if not initialize_earth_engine():
+                raise RuntimeError("ee.Initialize failed in get_thumbnail_url")
 
             if isinstance(region_geometry, list):
                 min_lon, min_lat = region_geometry[0]

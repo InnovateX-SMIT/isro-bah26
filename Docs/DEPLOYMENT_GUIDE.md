@@ -62,14 +62,13 @@ sudo systemctl enable --now docker
 ### Step 3: Google Earth Engine Service Account Setup
 The GEE provider runs headless and authenticates using a Google Cloud Service Account.
 1. Download your service account private key JSON file from Google Cloud Console.
-2. Place this file securely on the VPS (e.g. at `/opt/isro-platform/backend/credentials.json`).
-3. Set the environment variable `GOOGLE_APPLICATION_CREDENTIALS` inside your backend configuration file to point to this path inside the container:
-   `/app/credentials.json`
-4. Mount the key file inside the container by adding it to the backend volumes section in `docker-compose.prod.yml`:
+2. Place this file in the `backend/credentials/` directory of the project.
+3. Name the file `gee-service-account.json` (or customize via the environment variable).
+4. Verify that the credentials directory is mapped to the container inside `docker-compose.prod.yml`:
    ```yaml
    volumes:
      - ./datasets:/datasets
-     - ./backend/credentials.json:/app/credentials.json
+     - ./backend/credentials:/app/backend/credentials
      - backend_db:/app/data
    ```
 
@@ -88,8 +87,8 @@ SQLALCHEMY_DATABASE_URL=sqlite:////app/data/platform.db
 # CORS configurations matching your target Vercel domain name
 BACKEND_CORS_ORIGINS=["https://isro-platform.vercel.app"]
 
-# Path to the mounted Earth Engine credentials JSON
-GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
+# Path to the Google Earth Engine Service Account JSON credentials file
+GEE_SERVICE_ACCOUNT_KEY=backend/credentials/gee-service-account.json
 
 # Buffer settings (in KM) for Earth Engine catalog searches
 GEE_BUFFER_KM=50.0

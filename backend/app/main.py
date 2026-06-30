@@ -20,7 +20,7 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-from app.core.initialization import initialize_directories
+from app.core.initialization import initialize_directories, initialize_earth_engine
 
 # Initialize SQLite database on startup
 @app.on_event("startup")
@@ -29,14 +29,7 @@ def startup_event():
     init_db()
     
     # Verify Earth Engine credentials on boot
-    import ee
-    try:
-        # Check if project configuration can initialize
-        ee.Initialize(project='isro-bah26')
-        print("[STARTUP GEE] Google Earth Engine initialized successfully.")
-    except Exception as e:
-        print(f"[STARTUP GEE WARNING] GEE client initialization failed on boot: {e}")
-        print("[STARTUP GEE WARNING] Verify that GOOGLE_APPLICATION_CREDENTIALS points to a valid Earth Engine service account key JSON.")
+    initialize_earth_engine()
 
 @app.on_event("shutdown")
 def shutdown_event():

@@ -11,8 +11,8 @@ services:
     volumes:
       - ./datasets:/datasets # Mount host datasets root for uploads and demo files
       - backend_db:/app/data # Mount named volume for persistent SQLite file storage
-      # Uncomment to mount Google Earth Engine credentials file securely in the container
-      # - ./backend/credentials.json:/app/credentials.json
+      # Mount Google Earth Engine credentials folder securely in the container
+      - ./backend/credentials:/app/backend/credentials
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s

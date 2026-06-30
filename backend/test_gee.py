@@ -1,3 +1,5 @@
+import sys
+import os
 import ee
 import json
 import math
@@ -5,11 +7,12 @@ import requests
 import rasterio
 import numpy as np
 
-try:
-    ee.Initialize(project='isro-bah26')
-    print("EE Initialized successfully")
-except Exception as e:
-    print(f"Error initializing EE: {e}")
+# Load backend settings and helpers
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from app.core.initialization import initialize_earth_engine
+
+if not initialize_earth_engine():
+    print("Error initializing EE")
     exit(1)
 
 # Center and bbox of the demo dataset

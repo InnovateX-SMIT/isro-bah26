@@ -34,6 +34,8 @@ import { getAnalysisSessions } from "@/lib/analysis-api"
 import { DemoDataset, Dataset } from "@/lib/types/dataset"
 import { AnalysisSession } from "@/lib/types/analysis"
 
+const OFFICIAL_DEMO_DATASET_URL = "https://drive.google.com/drive/folders/1xB-oTqETR_O_9ucFu0hT_jebR5xgGZRO?usp=sharing"
+
 function DatasetsDashboard() {
   const router = useRouter()
 
@@ -578,7 +580,7 @@ function DatasetsDashboard() {
       {/* Dialog Modal: Register Dataset */}
       {showRegisterModal && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="border border-border bg-card max-w-md w-full p-6 space-y-5 shadow-2xl relative overflow-hidden font-mono text-xs text-slate-100 rounded-2xl">
+          <div className="border border-border bg-card max-w-2xl w-full p-6 space-y-5 shadow-2xl relative overflow-hidden font-mono text-xs text-slate-100 rounded-2xl">
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <h2 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
                 <Plus className="w-4 h-4 text-primary" />
@@ -816,34 +818,74 @@ function DatasetsDashboard() {
 
                 {registerSource === "upload" && (
                   /* Upload ZIP inputs */
-                  <div className="space-y-3">
-                    <div className="space-y-1.5">
-                      <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
-                        Dataset Name
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Hyderabad_LISS_IV (Leave blank to use ZIP name)"
-                        value={uploadName}
-                        onChange={(e) => setUploadName(e.target.value)}
-                        className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
-                      />
+                  <div className="space-y-4">
+                    {/* Official Demo Dataset Download Help Box - Placed FIRST */}
+                    <div className="pb-4 border-b border-border/60 space-y-3 font-sans text-slate-300">
+                      <div className="flex items-center space-x-2 text-primary">
+                        <FolderOpen className="w-4 h-4" />
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Recommended for First-Time Users</span>
+                      </div>
+                      
+                      <div className="space-y-1 text-[11px] leading-relaxed">
+                        <p className="font-semibold text-slate-100 font-mono text-[10px] uppercase tracking-wider">Don't have a LISS-IV dataset?</p>
+                        <p className="text-muted-foreground">Download the official pre-packaged demo dataset containing the necessary Green, Red, and NIR band TIFF files to run the entire analysis pipeline.</p>
+                      </div>
+
+                      <a
+                        href={OFFICIAL_DEMO_DATASET_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 border border-primary bg-primary/5 hover:bg-primary hover:text-primary-foreground text-primary font-bold tracking-wider uppercase text-[10px] rounded-lg transition-all font-mono"
+                      >
+                        <Compass className="w-3.5 h-3.5" />
+                        Download Official Demo Dataset
+                      </a>
+
+                      <div className="text-[10px] text-muted-foreground space-y-1.5 pt-1">
+                        <p className="font-bold uppercase tracking-wider text-slate-400 font-mono">Setup Guide:</p>
+                        <ol className="list-decimal list-inside space-y-0.5 font-mono text-[9px] uppercase tracking-wide">
+                          <li>Create a new Analysis Session.</li>
+                          <li>Download and save the official demo ZIP archive.</li>
+                          <li>Browse and select the downloaded ZIP file below.</li>
+                          <li>Click <b>Upload & Register</b> to start ingestion.</li>
+                          <li>Begin Dataset Inspection and run the temporal pipelines.</li>
+                        </ol>
+                        <p className="italic pt-1 leading-normal text-[9px] font-mono tracking-wide text-slate-400">
+                          * The demo dataset only needs to be downloaded once. After downloading, upload the ZIP and the platform will automatically extract, validate, and register it.
+                        </p>
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
-                        LISS-IV ZIP Archive
-                      </label>
-                      <input
-                        type="file"
-                        accept=".zip"
-                        required
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files.length > 0) {
-                            setUploadFile(e.target.files[0])
-                          }
-                        }}
-                        className="w-full bg-background border border-border p-2 focus:outline-none focus:border-primary text-xs text-foreground file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 file:cursor-pointer rounded-lg"
-                      />
+
+                    {/* Ingestion upload controls - Placed SECOND */}
+                    <div className="space-y-3 pt-2">
+                      <div className="space-y-1.5">
+                        <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                          Dataset Name
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Hyderabad_LISS_IV (Leave blank to use ZIP name)"
+                          value={uploadName}
+                          onChange={(e) => setUploadName(e.target.value)}
+                          className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                          LISS-IV ZIP Archive
+                        </label>
+                        <input
+                          type="file"
+                          accept=".zip"
+                          required
+                          onChange={(e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              setUploadFile(e.target.files[0])
+                            }
+                          }}
+                          className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 file:cursor-pointer rounded-lg"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

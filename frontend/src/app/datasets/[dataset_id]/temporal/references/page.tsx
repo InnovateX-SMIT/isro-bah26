@@ -39,6 +39,17 @@ export default function HistoricalReferencesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({})
+
+  const handleImageLoad = (refId: string) => {
+    setLoadedImages(prev => ({ ...prev, [refId]: true }))
+  }
+
+  const totalImages = references.filter(r => r.candidate).length
+  const loadedCount = Object.keys(loadedImages).length
+  const isAllReady = references.length === 0 || loadedCount >= totalImages
+  const percent = totalImages > 0 ? (loadedCount / totalImages) * 100 : 100
+
   useEffect(() => {
     async function loadData() {
       setLoading(true)
@@ -57,6 +68,7 @@ export default function HistoricalReferencesPage() {
         try {
           const refs = await getSelectedReferences(ds.analysis_session_id)
           setReferences(refs)
+          setLoadedImages({}) // Reset image loaded tracking
         } catch (err: any) {
           console.error(err)
           setError(err.message || "Failed to load historical references list.")
@@ -146,6 +158,47 @@ export default function HistoricalReferencesPage() {
           </div>
         </div>
 
+        {/* Loading Progress Section / Success Banner */}
+        {references.length > 0 && (
+          <div className="w-full">
+            {!isAllReady ? (
+              <div className="border border-border bg-card/25 p-4 rounded-xl space-y-2.5 relative overflow-hidden shadow-lg">
+                <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider">
+                  <span className="text-primary animate-pulse flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Fetching & warming GEE references cache...
+                  </span>
+                  <span className="text-muted-foreground font-mono">
+                    {loadedCount} / {totalImages} scenes ready ({Math.round(percent)}%)
+                  </span>
+                </div>
+                <div className="h-2 bg-muted/50 rounded-full overflow-hidden border border-border/30 relative">
+                  <div 
+                    className="h-full bg-gradient-to-r from-cyan-500 to-primary transition-all duration-500 ease-out shadow-[0_0_8px_#06b6d4]" 
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-normal font-sans">
+                  The platform is calling the spatial reprojection engine on Google Earth Engine references.
+                  This ensures high alignment precision. Previews will display once cached.
+                </p>
+              </div>
+            ) : (
+              <div className="border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 rounded-xl flex items-center justify-between text-[11px] font-mono shadow-[0_0_15px_-5px_rgba(16,185,129,0.1)]">
+                <div className="flex items-center gap-2 text-emerald-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold uppercase tracking-wider">
+                    All Orbit References Cached & Ready
+                  </span>
+                </div>
+                <span className="text-muted-foreground uppercase text-[9px] tracking-wider">
+                  Operational state: fully unlocked
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Empty State */}
         {references.length === 0 ? (
           <div className="border border-dashed border-border/40 p-8 rounded text-center max-w-lg mx-auto space-y-4">
@@ -195,6 +248,8 @@ export default function HistoricalReferencesPage() {
                         alt={`Candidate observation ${ref.candidate_id}`}
                         className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300"
                         crossOrigin="anonymous"
+                        onLoad={() => handleImageLoad(ref.id)}
+                        onError={() => handleImageLoad(ref.id)}
                       />
                     ) : (
                       <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground/60 text-[9px] uppercase">

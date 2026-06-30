@@ -432,15 +432,6 @@ function DatasetsDashboard() {
                     {/* Spacer */}
                     <div className="flex-1" />
 
-                    {/* Session */}
-                    <button
-                      onClick={() => handleViewSession(ds.analysis_session_id)}
-                      className="px-3 py-2 border border-border hover:border-primary/30 text-muted-foreground hover:text-foreground font-semibold tracking-wider uppercase text-[10px] flex items-center gap-1.5 rounded-lg transition-all"
-                    >
-                      <Play className="w-3.5 h-3.5" />
-                      Session
-                    </button>
-
                     {/* Unregister */}
                     <button
                       disabled={isDeleting}

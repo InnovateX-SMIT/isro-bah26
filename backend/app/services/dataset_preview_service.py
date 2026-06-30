@@ -9,6 +9,8 @@ from app.repositories.dataset_preview_repository import DatasetPreviewRepository
 from app.repositories.dataset_repository import DatasetRepository
 from app.schemas.dataset_preview import PreviewResponse, PreviewStatus
 
+MAX_PREVIEW_DIM = 1024
+
 class DatasetPreviewService:
     """
     Service responsible for loading multi-file or multi-band dataset rasters,
@@ -88,8 +90,8 @@ class DatasetPreviewService:
                 orig_width = src.width
                 orig_height = src.height
 
-            # Target preview width is 1024 pixels. Proportional height.
-            preview_width = 1024
+            # Target preview width is MAX_PREVIEW_DIM pixels. Proportional height.
+            preview_width = MAX_PREVIEW_DIM
             preview_height = int(orig_height * (preview_width / orig_width))
 
             channels = []

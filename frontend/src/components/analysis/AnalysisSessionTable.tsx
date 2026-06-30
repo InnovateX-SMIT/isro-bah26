@@ -109,15 +109,6 @@ export default function AnalysisSessionTable({
                   </td>
                   <td className="p-4 text-right">
                     <div className="inline-flex items-center space-x-2">
-                      {/* View Action */}
-                      <button
-                        onClick={() => onView(session.session_id)}
-                        className="px-3 py-1 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/30 hover:border-primary transition-all font-bold tracking-widest uppercase text-[10px] flex items-center gap-1.5"
-                      >
-                        <Play className="w-3 h-3 fill-current" />
-                        Open
-                      </button>
-
                       {/* Delete Action */}
                       <button
                         disabled={isDeleting || isActive}

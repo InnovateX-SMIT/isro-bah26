@@ -414,19 +414,6 @@ class TemporalService:
                     # Duplicate single band for grayscale preview
                     r_idx, g_idx, b_idx = 1, 1, 1
             
-            # Warp/Crop/Resample historical reference bands to matching destination array
-            dest_data = np.zeros((3, dest_height, dest_width), dtype=src_hist.dtypes[0])
-            for band_num, source_idx in [(1, r_idx), (2, g_idx), (3, b_idx)]:
-                reproject(
-                    source=rasterio.band(src_hist, source_idx),
-                    destination=dest_data[band_num - 1],
-                    src_transform=src_hist.transform,
-                    src_crs=src_hist.crs,
-                    dst_transform=dest_transform,
-                    dst_crs=dest_crs,
-                    resampling=Resampling.bilinear
-                )
-                
             # Save the aligned GeoTIFF alongside the PNG for future scientific use
             out_profile = {
                 "driver": "GTiff",
@@ -440,9 +427,45 @@ class TemporalService:
                 "compress": "lzw"
             }
             with rasterio.open(aligned_tiff_path, "w", **out_profile) as dst_tiff:
-                for b_num in range(1, 4):
-                    dst_tiff.write(dest_data[b_num - 1], b_num)
-                    
+                for band_num, source_idx in [(1, r_idx), (2, g_idx), (3, b_idx)]:
+                    band_dest = np.zeros((dest_height, dest_width), dtype=src_hist.dtypes[0])
+                    reproject(
+                        source=rasterio.band(src_hist, source_idx),
+                        destination=band_dest,
+                        src_transform=src_hist.transform,
+                        src_crs=src_hist.crs,
+                        dst_transform=dest_transform,
+                        dst_crs=dest_crs,
+                        resampling=Resampling.bilinear
+                    )
+                    dst_tiff.write(band_dest, band_num)
+
+            # Compute a capped destination transform/shape for the PNG preview
+            from app.services.dataset_preview_service import MAX_PREVIEW_DIM
+            from rasterio.warp import calculate_default_transform
+
+            scale_factor = min(1.0, MAX_PREVIEW_DIM / max(dest_width, dest_height))
+            capped_width = max(1, int(dest_width * scale_factor))
+            capped_height = max(1, int(dest_height * scale_factor))
+
+            capped_transform, capped_width, capped_height = calculate_default_transform(
+                dest_crs, dest_crs, dest_width, dest_height, *dest_bounds,
+                dst_width=capped_width, dst_height=capped_height
+            )
+
+            # Warp/Crop/Resample historical reference bands to capped destination array
+            preview_dest_data = np.zeros((3, capped_height, capped_width), dtype=src_hist.dtypes[0])
+            for band_num, source_idx in [(1, r_idx), (2, g_idx), (3, b_idx)]:
+                reproject(
+                    source=rasterio.band(src_hist, source_idx),
+                    destination=preview_dest_data[band_num - 1],
+                    src_transform=src_hist.transform,
+                    src_crs=src_hist.crs,
+                    dst_transform=capped_transform,
+                    dst_crs=dest_crs,
+                    resampling=Resampling.bilinear
+                )
+
         # Stretch between 2nd and 98th percentile for visualization
         def stretch_band(band_data):
             valid_pixels = band_data[~np.isnan(band_data) & (band_data > 0)]
@@ -452,21 +475,21 @@ class TemporalService:
                 return np.zeros_like(band_data, dtype=np.uint8)
             p2 = np.percentile(valid_pixels, 2)
             p98 = np.percentile(valid_pixels, 98)
-            
+
             if p98 > p2:
                 stretched = (band_data.astype(np.float32) - p2) / (p98 - p2) * 255.0
                 stretched = np.nan_to_num(stretched, nan=0.0)
                 return np.clip(stretched, 0, 255).astype(np.uint8)
             return np.zeros_like(band_data, dtype=np.uint8)
-            
-        r_norm = stretch_band(dest_data[0])
-        g_norm = stretch_band(dest_data[1])
-        b_norm = stretch_band(dest_data[2])
-        
+
+        r_norm = stretch_band(preview_dest_data[0])
+        g_norm = stretch_band(preview_dest_data[1])
+        b_norm = stretch_band(preview_dest_data[2])
+
         rgb_stack = np.stack([r_norm, g_norm, b_norm], axis=-1)
         img = Image.fromarray(rgb_stack)
         img.save(preview_png_path, "PNG")
-        
+
         return preview_png_path
 
 

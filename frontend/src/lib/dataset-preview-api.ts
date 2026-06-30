@@ -8,7 +8,7 @@ export async function runDatasetPreview(datasetId: string): Promise<DatasetPrevi
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ detail: "Failed to generate dataset preview image" }));
-    throw new Error(errorData.detail || "Failed to generate dataset preview image");
+    throw new Error(`[${res.status}] ${errorData.detail || "Failed to generate dataset preview image"}`);
   }
   return await res.json();
 }
@@ -19,7 +19,7 @@ export async function getDatasetPreview(datasetId: string): Promise<DatasetPrevi
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ detail: "Failed to fetch preview summary" }));
-    throw new Error(errorData.detail || "Failed to fetch preview summary");
+    throw new Error(`[${res.status}] ${errorData.detail || "Failed to fetch preview summary"}`);
   }
   return await res.json();
 }
@@ -30,7 +30,7 @@ export async function deleteDatasetPreview(datasetId: string): Promise<boolean> 
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ detail: "Failed to purge preview records" }));
-    throw new Error(errorData.detail || "Failed to purge preview records");
+    throw new Error(`[${res.status}] ${errorData.detail || "Failed to purge preview records"}`);
   }
   return true;
 }

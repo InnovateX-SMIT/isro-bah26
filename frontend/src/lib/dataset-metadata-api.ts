@@ -8,7 +8,7 @@ export async function runDatasetMetadata(datasetId: string): Promise<DatasetMeta
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ detail: "Failed to extract metadata intelligence" }));
-    throw new Error(errorData.detail || "Failed to extract metadata intelligence");
+    throw new Error(`[${res.status}] ${errorData.detail || "Failed to extract metadata intelligence"}`);
   }
   return await res.json();
 }
@@ -19,7 +19,7 @@ export async function getDatasetMetadata(datasetId: string): Promise<DatasetMeta
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ detail: "Failed to fetch metadata summary" }));
-    throw new Error(errorData.detail || "Failed to fetch metadata summary");
+    throw new Error(`[${res.status}] ${errorData.detail || "Failed to fetch metadata summary"}`);
   }
   return await res.json();
 }
@@ -30,7 +30,7 @@ export async function deleteDatasetMetadata(datasetId: string): Promise<boolean>
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ detail: "Failed to delete metadata profile" }));
-    throw new Error(errorData.detail || "Failed to delete metadata profile");
+    throw new Error(`[${res.status}] ${errorData.detail || "Failed to delete metadata profile"}`);
   }
   return true;
 }

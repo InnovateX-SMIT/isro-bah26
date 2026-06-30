@@ -122,6 +122,7 @@ export default function DatasetInspectionPage() {
         setInspection(null)
       } else {
         console.error(err)
+        setError(err.message || "Failed to load filesystem scan summary.")
       }
     } finally {
       setLoadingInspection(false)
@@ -141,6 +142,7 @@ export default function DatasetInspectionPage() {
         setMetadata(null)
       } else {
         console.error(err)
+        setError(err.message || "Failed to load metadata summary.")
       }
     } finally {
       setLoadingMetadata(false)
@@ -159,6 +161,7 @@ export default function DatasetInspectionPage() {
         setPreview(null)
       } else {
         console.error(err)
+        setError(err.message || "Failed to load preview summary.")
       }
     } finally {
       setLoadingPreview(false)
@@ -227,6 +230,12 @@ export default function DatasetInspectionPage() {
 
     setPipelineStage("complete")
     triggerSuccess("Complete inspection finished successfully.")
+    
+    // Automatically refresh/reload page data in React state
+    loadDatasetRecord()
+    loadInspectionData()
+    loadMetadata()
+    loadPreview()
   }
 
   // Individual step runners
@@ -493,13 +502,18 @@ export default function DatasetInspectionPage() {
           </div>
         ) : !inspection ? (
           !isPipelineRunning && (
-            <div className="border border-dashed border-border bg-muted/5 p-8 text-center flex flex-col items-center justify-center space-y-2 min-h-[100px] rounded-xl">
+            <div className="border border-dashed border-border bg-muted/5 p-8 text-center flex flex-col items-center justify-center space-y-3 min-h-[120px] rounded-xl">
               <Info className="w-5 h-5 text-muted-foreground/50" />
-              <div>
-                <h4 className="text-xs font-bold text-foreground">No Inspection Data</h4>
-                <p className="text-[10px] text-muted-foreground max-w-sm mt-0.5 leading-normal">
-                  Run the complete inspection pipeline above to scan and index your dataset files.
+              <div className="space-y-1">
+                <h4 className="text-xs font-bold text-foreground">Inspection has not been generated yet.</h4>
+                <p className="text-[10px] text-muted-foreground max-w-sm leading-normal">
+                  Run the inspection pipeline to generate:
                 </p>
+                <div className="text-[10px] text-muted-foreground max-w-sm mt-1 text-left inline-block space-y-0.5">
+                  <div>• Inspection Profile</div>
+                  <div>• Metadata Summary</div>
+                  <div>• Preview Images</div>
+                </div>
               </div>
             </div>
           )

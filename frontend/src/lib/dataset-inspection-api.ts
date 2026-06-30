@@ -8,7 +8,7 @@ export async function runDatasetInspection(datasetId: string): Promise<DatasetIn
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ detail: "Failed to execute filesystem inspection" }));
-    throw new Error(errorData.detail || "Failed to execute filesystem inspection");
+    throw new Error(`[${res.status}] ${errorData.detail || "Failed to execute filesystem inspection"}`);
   }
   return await res.json();
 }
@@ -19,7 +19,7 @@ export async function getDatasetInspection(datasetId: string): Promise<DatasetIn
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ detail: "Failed to fetch inspection summary" }));
-    throw new Error(errorData.detail || "Failed to fetch inspection summary");
+    throw new Error(`[${res.status}] ${errorData.detail || "Failed to fetch inspection summary"}`);
   }
   return await res.json();
 }
@@ -29,7 +29,7 @@ export async function getDatasetInspectionFiles(datasetId: string): Promise<Data
     cache: "no-store",
   });
   if (!res.ok) {
-    throw new Error("Failed to fetch discovered files inventory");
+    throw new Error(`[${res.status}] Failed to fetch discovered files inventory`);
   }
   return await res.json();
 }
@@ -40,7 +40,7 @@ export async function deleteDatasetInspection(datasetId: string): Promise<boolea
   });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({ detail: "Failed to purge inspection record" }));
-    throw new Error(errorData.detail || "Failed to purge inspection record");
+    throw new Error(`[${res.status}] ${errorData.detail || "Failed to purge inspection record"}`);
   }
   return true;
 }

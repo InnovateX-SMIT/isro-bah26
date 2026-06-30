@@ -11,6 +11,7 @@ services:
       - ./backend:/app
       - ./datasets:/datasets
       - backend_db:/app/data
+      - ./backend/credentials:/root/.config/earthengine
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 5s

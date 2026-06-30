@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # GEE Configuration
     GEE_BUFFER_KM: float = 50.0
     GEE_SERVICE_ACCOUNT_KEY: str | None = "backend/credentials/gee-service-account.json"
+    GEE_PROJECT_ID: str = "isro-bah26"
 
     model_config = SettingsConfigDict(
         env_file=".env",

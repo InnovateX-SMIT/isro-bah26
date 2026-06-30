@@ -90,6 +90,7 @@ datasets/packages/*
 # Backend generated folders
 backend/datasets/
 backend/credentials/*.json
+backend/credentials/credentials
 
 # Temporal references
 datasets/temporal_references/*

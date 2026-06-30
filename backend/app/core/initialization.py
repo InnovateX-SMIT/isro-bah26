@@ -116,22 +116,29 @@ def initialize_earth_engine() -> bool:
                 test_path3 = os.path.abspath(os.path.join(app_parent, stripped))
                 if os.path.exists(test_path3) and os.path.isfile(test_path3):
                     resolved_path = test_path3
+                else:
+                    # Try container mapped credentials mount path
+                    test_path4 = "/root/.config/earthengine/gee-service-account.json"
+                    if os.path.exists(test_path4) and os.path.isfile(test_path4):
+                        resolved_path = test_path4
 
     # 2. Check if key file exists
+    project_id = settings.GEE_PROJECT_ID
     if resolved_path and os.path.exists(resolved_path) and os.path.isfile(resolved_path):
         try:
             # Parse the service account email directly from the key JSON
             with open(resolved_path, "r", encoding="utf-8") as f:
                 key_data = json.load(f)
                 email = key_data.get("client_email")
+                project_id = key_data.get("project_id", project_id)
             
             if not email:
                 raise ValueError("Missing 'client_email' in the service account JSON key.")
             
             # Use native ServiceAccountCredentials from Earth Engine
             credentials = ee.ServiceAccountCredentials(email, resolved_path)
-            ee.Initialize(credentials=credentials, project='isro-bah26')
-            print(f"[STARTUP GEE] Native Service Account auth successful. Client email: {email}")
+            ee.Initialize(credentials=credentials, project=project_id)
+            print(f"[STARTUP GEE] Native Service Account auth successful. Client email: {email}, Project: {project_id}")
             return True
         except Exception as e:
             print(f"[STARTUP GEE ERROR] Service Account auth failed: {e}")
@@ -142,8 +149,8 @@ def initialize_earth_engine() -> bool:
     
     # 3. Fallback to default user authentication
     try:
-        ee.Initialize(project='isro-bah26')
-        print("[STARTUP GEE] Earth Engine initialized successfully using default/user credentials.")
+        ee.Initialize(project=project_id)
+        print(f"[STARTUP GEE] Earth Engine initialized successfully using default/user credentials. Project: {project_id}")
         return True
     except Exception as e:
         print(f"[STARTUP GEE ERROR] Default Earth Engine initialization failed: {e}")

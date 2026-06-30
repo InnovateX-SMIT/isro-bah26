@@ -173,6 +173,80 @@ class DatasetService:
             except Exception as io_err:
                 print(f"Warning: Could not remove cloud analytics directory {analytics_dir} on dataset purge: {io_err}")
 
+        # Clean up physical reconstructions directory on disk if it exists
+        recon_dir = os.path.join(workspace_root, "datasets", "reconstructions", dataset_id)
+        if os.path.exists(recon_dir):
+            import shutil
+            try:
+                shutil.rmtree(recon_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove reconstructions directory {recon_dir} on dataset purge: {io_err}")
+
+        # Clean up physical reconstruction_evaluations directory on disk if it exists
+        recon_eval_dir = os.path.join(workspace_root, "datasets", "reconstruction_evaluations", dataset_id)
+        if os.path.exists(recon_eval_dir):
+            import shutil
+            try:
+                shutil.rmtree(recon_eval_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove reconstruction_evaluations directory {recon_eval_dir} on dataset purge: {io_err}")
+
+        # Clean up physical confidence_estimations directory on disk if it exists
+        conf_est_dir = os.path.join(workspace_root, "datasets", "confidence_estimations", dataset_id)
+        if os.path.exists(conf_est_dir):
+            import shutil
+            try:
+                shutil.rmtree(conf_est_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove confidence_estimations directory {conf_est_dir} on dataset purge: {io_err}")
+
+        # Clean up physical confidence_heatmaps directory on disk if it exists
+        conf_heatmap_dir = os.path.join(workspace_root, "datasets", "confidence_heatmaps", dataset_id)
+        if os.path.exists(conf_heatmap_dir):
+            import shutil
+            try:
+                shutil.rmtree(conf_heatmap_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove confidence_heatmaps directory {conf_heatmap_dir} on dataset purge: {io_err}")
+
+        # Clean up physical confidence_analytics directory on disk if it exists
+        conf_analytics_dir = os.path.join(workspace_root, "datasets", "confidence_analytics", dataset_id)
+        if os.path.exists(conf_analytics_dir):
+            import shutil
+            try:
+                shutil.rmtree(conf_analytics_dir)
+            except Exception as io_err:
+                print(f"Warning: Could not remove confidence_analytics directory {conf_analytics_dir} on dataset purge: {io_err}")
+
+        # Clean up physical GEE temporal stack references previews directory on disk if it exists
+        session_id = dataset.analysis_session_id
+        if session_id:
+            temp_ref_dir = os.path.join(workspace_root, "datasets", "temporal_references", "previews", session_id)
+            if os.path.exists(temp_ref_dir):
+                import shutil
+                try:
+                    shutil.rmtree(temp_ref_dir)
+                except Exception as io_err:
+                    print(f"Warning: Could not remove temporal references previews directory {temp_ref_dir} on dataset purge: {io_err}")
+
+            # Clean up packages directory on disk if it exists
+            packages_dir = os.path.join(workspace_root, "datasets", "packages", session_id)
+            if os.path.exists(packages_dir):
+                import shutil
+                try:
+                    shutil.rmtree(packages_dir)
+                except Exception as io_err:
+                    print(f"Warning: Could not remove packages directory {packages_dir} on dataset purge: {io_err}")
+
+            # Clean up reports directory on disk if it exists
+            reports_dir = os.path.join(workspace_root, "datasets", "reports", session_id)
+            if os.path.exists(reports_dir):
+                import shutil
+                try:
+                    shutil.rmtree(reports_dir)
+                except Exception as io_err:
+                    print(f"Warning: Could not remove reports directory {reports_dir} on dataset purge: {io_err}")
+
         return self.repository.delete_dataset(dataset_id)
 
 

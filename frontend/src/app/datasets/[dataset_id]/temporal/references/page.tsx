@@ -119,7 +119,17 @@ export default function HistoricalReferencesPage() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100">
+    <div className="flex flex-col h-full overflow-hidden border border-border bg-card/15 rounded-xl font-mono text-slate-100 relative">
+      {/* Full-width Top Progress Bar */}
+      {!isAllReady && references.length > 0 && (
+        <div className="fixed top-0 left-0 right-0 h-1 bg-muted/40 z-[100] overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-cyan-500 via-primary to-emerald-500 transition-all duration-500 ease-out shadow-[0_0_12px_#06b6d4]" 
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+      )}
+
       <ViewerSidebar
         dataset={dataset}
         metadata={metadata}

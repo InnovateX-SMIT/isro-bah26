@@ -37,6 +37,7 @@ export default function CloudComparisonPage() {
 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedRank, setSelectedRank] = useState<number>(1)
 
   useEffect(() => {
     async function loadData() {
@@ -105,13 +106,13 @@ export default function CloudComparisonPage() {
     )
   }
 
-  // Get Rank 1 reference candidate (least cloudy reference)
-  const rank1Ref = references.find((r) => r.rank_position === 1)
-  const rank1Cand = rank1Ref?.candidate
+  // Get selected rank reference candidate
+  const selectedRef = references.find((r) => r.rank_position === selectedRank)
+  const selectedCand = selectedRef?.candidate
 
   const cloudyImageUrl = `${API_URL}/api/v1/dataset-preview/${datasetId}/image`
-  const referenceImageUrl = rank1Cand
-    ? `${API_URL}/api/v1/temporal/references/${dataset.analysis_session_id}/candidate/${rank1Cand.id}/preview`
+  const referenceImageUrl = selectedCand
+    ? `${API_URL}/api/v1/temporal/references/${dataset.analysis_session_id}/candidate/${selectedCand.id}/preview`
     : null
 
   return (
@@ -155,7 +156,7 @@ export default function CloudComparisonPage() {
         </div>
 
         {/* Dynamic Comparison Panel */}
-        {!rank1Cand ? (
+        {!selectedCand ? (
           <div className="border border-dashed border-border/40 p-8 rounded text-center max-w-lg mx-auto space-y-4 my-12">
             <CloudSun className="w-8 h-8 text-amber-500 mx-auto" />
             <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">No Reference Scene Cached</h3>
@@ -205,17 +206,41 @@ export default function CloudComparisonPage() {
                   <span className="font-bold uppercase tracking-wider text-cyan-400">
                     RIGHT: GEE Historical Reference
                   </span>
-                  <span className="text-[9px] text-muted-foreground mt-0.5 truncate max-w-[280px]">
-                    ID: {rank1Cand.candidate_id}
+                  <span className="text-[9px] text-muted-foreground mt-0.5 truncate max-w-[140px]">
+                    ID: {selectedCand.candidate_id}
                   </span>
                 </div>
-                <div className="text-slate-300 font-bold flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-primary" />
-                    {rank1Cand.acquisition_date}
+                
+                {/* Rank Selector & Metadata */}
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center border border-border/60 rounded bg-muted/20 overflow-hidden text-[9px] font-mono shrink-0">
+                    {[1, 2, 3].map((rank) => {
+                      const hasRank = references.some((r) => r.rank_position === rank)
+                      if (!hasRank) return null
+                      return (
+                        <button
+                          key={rank}
+                          type="button"
+                          onClick={() => setSelectedRank(rank)}
+                          className={`px-2 py-0.5 border-r last:border-r-0 border-border/40 transition-all font-bold ${
+                            selectedRank === rank
+                              ? "bg-primary text-primary-foreground font-black"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                          }`}
+                        >
+                          R{rank}
+                        </button>
+                      )
+                    })}
                   </div>
-                  <div className="text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 bg-emerald-500/5 text-[9px] rounded font-bold">
-                    CLOUD: {rank1Cand.cloud_cover.toFixed(1)}%
+                  <div className="text-slate-300 font-bold flex items-center gap-2 text-[10px] shrink-0">
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-primary" />
+                      {selectedCand.acquisition_date}
+                    </div>
+                    <div className="text-emerald-400 border border-emerald-500/20 px-1 py-0.5 bg-emerald-500/5 text-[9px] rounded font-bold">
+                      {selectedCand.cloud_cover.toFixed(1)}% CLOUD
+                    </div>
                   </div>
                 </div>
               </div>

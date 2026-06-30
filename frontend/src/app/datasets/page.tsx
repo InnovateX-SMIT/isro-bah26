@@ -58,8 +58,31 @@ function DatasetsDashboard() {
   const [customName, setCustomName] = useState<string>("")
   const [customPath, setCustomPath] = useState<string>("")
 
-  // Confirm delete modal state
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  // Two-step Delete flow state
+  const [deleteFlowId, setDeleteFlowId] = useState<string | null>(null)
+  const [deleteStep, setDeleteStep] = useState<number>(0)
+
+  const initiateDeleteFlow = (id: string) => {
+    setDeleteFlowId(id)
+    setDeleteStep(1)
+  }
+
+  const handleNextDeleteStep = () => {
+    setDeleteStep(2)
+  }
+
+  const handleCancelDelete = () => {
+    setDeleteFlowId(null)
+    setDeleteStep(0)
+  }
+
+  const executeDelete = async () => {
+    if (deleteFlowId) {
+      const id = deleteFlowId
+      handleCancelDelete()
+      await handleDelete(id)
+    }
+  }
 
   // Status banners
   const [error, setError] = useState<string | null>(null)
@@ -432,10 +455,10 @@ function DatasetsDashboard() {
                     {/* Spacer */}
                     <div className="flex-1" />
 
-                    {/* Unregister */}
+                    {/* Delete Data & Purge */}
                     <button
                       disabled={isDeleting}
-                      onClick={() => setConfirmDeleteId(ds.dataset_id)}
+                      onClick={() => initiateDeleteFlow(ds.dataset_id)}
                       className="px-3 py-2 border border-red-500/30 bg-red-500/5 text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 font-semibold tracking-wider uppercase text-[10px] flex items-center gap-1.5 rounded-lg transition-all"
                     >
                       {isDeleting ? (
@@ -443,7 +466,7 @@ function DatasetsDashboard() {
                       ) : (
                         <Trash2 className="w-3 h-3" />
                       )}
-                      Remove
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -612,40 +635,76 @@ function DatasetsDashboard() {
         </div>
       )}
 
-      {/* Confirmation Modal */}
-      {confirmDeleteId && (
+      {/* Step 1: Confirm Deletion */}
+      {deleteStep === 1 && deleteFlowId && (
         <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="border border-red-500/30 bg-card max-w-md w-full p-6 space-y-6 shadow-2xl relative overflow-hidden rounded-2xl font-mono text-slate-100">
+            <div className="absolute top-0 right-0 bg-red-500/10 border-l border-b border-border px-3 py-1 text-[8px] text-red-500 tracking-widest uppercase">
+              PROMPT // DELETION STEP 1
+            </div>
             <div className="flex items-start space-x-3 text-red-400">
               <AlertTriangle className="w-5.5 h-5.5 shrink-0" />
               <div className="space-y-1">
-                <h3 className="text-sm font-bold text-foreground">
-                  Remove Dataset
+                <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
+                  Delete Generated Data?
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed font-sans">
-                  This will unregister dataset{" "}
+                  Are you sure you want to delete all generated files and registration record for dataset{" "}
                   <span className="font-mono text-foreground font-bold">
-                    {confirmDeleteId.substring(0, 8)}...
-                  </span>{" "}
-                  from the platform. Raw satellite files on disk will not be affected.
+                    {deleteFlowId.substring(0, 8)}...
+                  </span>
+                  ?
                 </p>
               </div>
             </div>
             <div className="flex items-center justify-end space-x-3 text-xs">
               <button
-                onClick={() => setConfirmDeleteId(null)}
+                onClick={handleCancelDelete}
                 className="px-4 py-2 border border-border bg-muted/20 hover:bg-muted/40 uppercase tracking-wider text-xs font-bold rounded-lg"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  handleDelete(confirmDeleteId)
-                  setConfirmDeleteId(null)
-                }}
+                onClick={handleNextDeleteStep}
                 className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white uppercase tracking-wider text-xs font-bold rounded-lg"
               >
-                Remove
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Confirm Purge */}
+      {deleteStep === 2 && deleteFlowId && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="border border-red-500/30 bg-card max-w-md w-full p-6 space-y-6 shadow-2xl relative overflow-hidden rounded-2xl font-mono text-slate-100">
+            <div className="absolute top-0 right-0 bg-red-500/10 border-l border-b border-border px-3 py-1 text-[8px] text-red-500 tracking-widest uppercase">
+              WARNING // CRITICAL PURGE
+            </div>
+            <div className="flex items-start space-x-3 text-red-500">
+              <AlertTriangle className="w-5.5 h-5.5 shrink-0 animate-bounce" />
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
+                  Are you absolutely sure?
+                </h3>
+                <p className="text-xs text-muted-foreground leading-relaxed font-sans">
+                  This will permanently delete all previews, cloud masks, reconstructions, and temporal reference files from disk. This operation is irreversible!
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end space-x-3 text-xs">
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 border border-border bg-muted/20 hover:bg-muted/40 uppercase tracking-wider text-xs font-bold rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white uppercase tracking-wider text-xs font-bold shadow-[0_0_15px_-3px_rgba(239,68,68,0.6)] rounded-lg"
+              >
+                Yes, delete everything
               </button>
             </div>
           </div>

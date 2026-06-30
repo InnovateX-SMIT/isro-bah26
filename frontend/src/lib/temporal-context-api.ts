@@ -186,3 +186,16 @@ export async function getTemporalContextPackage(sessionId: string): Promise<Temp
   return await res.json();
 }
 
+/**
+ * Retrieves the current discovery/selection progress state for a session.
+ */
+export async function getTemporalProgress(sessionId: string): Promise<{ stage: string; completed: number; total: number }> {
+  const res = await fetch(`${API_URL}/api/v1/temporal/references/${sessionId}/progress`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    throw new Error("Failed to fetch temporal progress");
+  }
+  return await res.json();
+}
+

@@ -108,3 +108,16 @@ def get_historical_reference_preview(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Internal server error during preview generation: {e}"
         )
+
+
+@router.get(
+    "/references/{session_id}/progress",
+    status_code=status.HTTP_200_OK,
+    summary="Get Reference Discovery/Selection Progress",
+    description="Returns the progress state for GEE reference discovery/selection for the session."
+)
+def get_temporal_progress(
+    session_id: str,
+    service: TemporalService = Depends(get_temporal_service)
+):
+    return service.get_progress(session_id)

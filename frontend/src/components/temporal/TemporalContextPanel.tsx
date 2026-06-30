@@ -10,7 +10,8 @@ import {
   runReferenceSelection,
   getSelectedReferences,
   generateTemporalContext,
-  getTemporalContextPackage
+  getTemporalContextPackage,
+  getTemporalProgress
 } from "@/lib/temporal-context-api";
 import { getAnalysisSession } from "@/lib/analysis-api";
 import {
@@ -84,6 +85,33 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
   // Step 5: Dashboard State (Final Package)
   const [packageData, setPackageData] = useState<TemporalContextPackageResponse | null>(null);
   const [loadingPackage, setLoadingPackage] = useState<boolean>(false);
+
+  // Active progress tracker state for polling
+  const [progress, setProgress] = useState<{ stage: string; completed: number; total: number } | null>(null);
+
+  // Poll progress from backend while active operations are running
+  useEffect(() => {
+    let intervalId: any = null;
+    if (runningDiscovery || runningSelection) {
+      const fetchProgress = async () => {
+        try {
+          const res = await getTemporalProgress(sessionId);
+          setProgress(res);
+        } catch (err) {
+          console.error("Failed to fetch progress status:", err);
+        }
+      };
+
+      fetchProgress();
+      intervalId = setInterval(fetchProgress, 750);
+    } else {
+      setProgress(null);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [runningDiscovery, runningSelection, sessionId]);
 
   // Weights Validation
   const totalWeight = parseFloat((weightCloud + weightTemporal + weightSpatial + weightQuality).toFixed(4));
@@ -343,8 +371,18 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
             <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest animate-pulse">
               STATUS: TEMPORAL_DISCOVERY_RUNNING
             </h4>
+            {progress && (
+              <div className="w-48 h-1.5 bg-muted/40 rounded-full mx-auto my-2 overflow-hidden border border-border/40">
+                <div
+                  className="bg-primary h-full transition-all duration-300"
+                  style={{ width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%` }}
+                />
+              </div>
+            )}
             <p className="text-[9px] text-muted-foreground max-w-sm mx-auto leading-relaxed uppercase">
-              Historical Discovery Engine is scanning registered archive catalogues to locate overlaps matching the geospatial footprint bounds
+              {progress
+                ? `GEE imagery search progress: ${progress.completed}/${progress.total} (${progress.stage.replace(/_/g, ' ')})`
+                : "Historical Discovery Engine is scanning registered archive catalogues to locate overlaps matching the geospatial footprint bounds"}
             </p>
           </div>
         </div>
@@ -357,8 +395,18 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
             <h4 className="text-[10px] font-bold text-primary uppercase tracking-widest animate-pulse">
               STATUS: REFERENCE_SELECTION_RUNNING
             </h4>
+            {progress && (
+              <div className="w-48 h-1.5 bg-muted/40 rounded-full mx-auto my-2 overflow-hidden border border-border/40">
+                <div
+                  className="bg-primary h-full transition-all duration-300"
+                  style={{ width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%` }}
+                />
+              </div>
+            )}
             <p className="text-[9px] text-muted-foreground max-w-sm mx-auto leading-relaxed uppercase">
-              Reference Selection Engine is running scoring algorithms across discovered candidates, executing temporal decay equations and sorting the reference stack
+              {progress
+                ? `Scoring candidates: ${progress.completed}/${progress.total} (${progress.stage.replace(/_/g, ' ')})`
+                : "Reference Selection Engine is running scoring algorithms across discovered candidates, executing temporal decay equations and sorting the reference stack"}
             </p>
           </div>
         </div>

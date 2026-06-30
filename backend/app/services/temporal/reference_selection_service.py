@@ -108,90 +108,103 @@ class ReferenceSelectionService:
         scored_candidates = []
         max_temporal_decay_days = 180.0 # Standard normalization window for temporal distance decay
 
-        for cand in candidates:
-            # Calculate Cloud Cover Score: lower cloud is better
-            cloud_score = max(0.0, 100.0 - cand.cloud_cover)
+        from app.services.temporal_service import TemporalService
+        temp_service = TemporalService()
+        total_candidates = len(candidates)
+        temp_service.set_progress(session_id, "ranking_candidates", 0, total_candidates)
 
-            # Calculate Temporal Distance Score: closer to target date is better
-            try:
-                cand_date = parse_acquisition_date(cand.acquisition_date)
-                days_diff = abs((cand_date - target_date).days)
-            except Exception:
-                days_diff = 180
-            
-            temporal_score = max(0.0, 100.0 * (1.0 - (days_diff / max_temporal_decay_days)))
+        try:
+            for idx, cand in enumerate(candidates):
+                temp_service.set_progress(session_id, "ranking_candidates", idx + 1, total_candidates)
+                
+                # Calculate Cloud Cover Score: lower cloud is better
+                cloud_score = max(0.0, 100.0 - cand.cloud_cover)
 
-            # Calculate Spatial Overlap Score: higher overlap is better
-            overlap_score = max(0.0, min(100.0, cand.spatial_overlap))
-
-            # Calculate Data Quality Score
-            quality_score = 100.0
-            if cand.metadata_json:
+                # Calculate Temporal Distance Score: closer to target date is better
                 try:
-                    m_data = json.loads(cand.metadata_json)
-                    quality_val = m_data.get("data_quality") or m_data.get("image_quality") or m_data.get("confidence")
-                    if quality_val is not None:
-                        quality_score = float(quality_val)
-                        if quality_score <= 1.0:
-                            quality_score *= 100.0
+                    cand_date = parse_acquisition_date(cand.acquisition_date)
+                    days_diff = abs((cand_date - target_date).days)
                 except Exception:
-                    pass
-            quality_score = max(0.0, min(100.0, quality_score))
+                    days_diff = 180
+                
+                temporal_score = max(0.0, 100.0 * (1.0 - (days_diff / max_temporal_decay_days)))
 
-            # Compute composite weighted score (0 - 100)
-            final_score = (
-                (cloud_score * weights["cloud_cover"]) +
-                (temporal_score * weights["temporal_distance"]) +
-                (overlap_score * weights["spatial_overlap"]) +
-                (quality_score * weights["data_quality"])
+                # Calculate Spatial Overlap Score: higher overlap is better
+                overlap_score = max(0.0, min(100.0, cand.spatial_overlap))
+
+                # Calculate Data Quality Score
+                quality_score = 100.0
+                if cand.metadata_json:
+                    try:
+                        m_data = json.loads(cand.metadata_json)
+                        quality_val = m_data.get("data_quality") or m_data.get("image_quality") or m_data.get("confidence")
+                        if quality_val is not None:
+                            quality_score = float(quality_val)
+                            if quality_score <= 1.0:
+                                quality_score *= 100.0
+                    except Exception:
+                        pass
+                quality_score = max(0.0, min(100.0, quality_score))
+
+                # Compute composite weighted score (0 - 100)
+                final_score = (
+                    (cloud_score * weights["cloud_cover"]) +
+                    (temporal_score * weights["temporal_distance"]) +
+                    (overlap_score * weights["spatial_overlap"]) +
+                    (quality_score * weights["data_quality"])
+                )
+
+                # GenerateSelection Explanation Reason
+                reason = (
+                    f"Selected due to {cand.cloud_cover:.1f}% cloud cover, "
+                    f"{cand.spatial_overlap:.1f}% spatial overlap, and "
+                    f"{days_diff}-day temporal distance."
+                )
+
+                scored_candidates.append({
+                    "candidate": cand,
+                    "score": final_score,
+                    "days_diff": days_diff,
+                    "reason": reason
+                })
+
+            # 6. Sort by final score descending
+            scored_candidates.sort(key=lambda x: x["score"], reverse=True)
+
+            # 7. Select Top N
+            top_selections = scored_candidates[:num_references]
+
+            # 8. Create Reference Stack Record
+            stack = self.stack_repo.create(
+                session_id=session_id,
+                dataset_id=discovery.dataset_id,
+                discovery_id=discovery.id,
+                selected_count=len(top_selections),
+                selection_strategy="weighted_composite"
             )
 
-            # GenerateSelection Explanation Reason
-            reason = (
-                f"Selected due to {cand.cloud_cover:.1f}% cloud cover, "
-                f"{cand.spatial_overlap:.1f}% spatial overlap, and "
-                f"{days_diff}-day temporal distance."
+            # 9. Create Selected Reference mappings
+            references_to_create = []
+            for i, sel in enumerate(top_selections):
+                references_to_create.append({
+                    "candidate_id": sel["candidate"].id,
+                    "rank_position": i + 1,
+                    "ranking_score": sel["score"],
+                    "selection_reason": sel["reason"]
+                })
+
+            db_selections = self.selected_ref_repo.bulk_create(stack.id, references_to_create)
+
+            # 10. Update parent AnalysisSession status to REFERENCE_SELECTION_COMPLETE milestone
+            self.session_repo.update_status(
+                session_id=session_id,
+                status=SessionStatus.REFERENCE_SELECTION_COMPLETE.value
             )
 
-            scored_candidates.append({
-                "candidate": cand,
-                "score": final_score,
-                "days_diff": days_diff,
-                "reason": reason
-            })
-
-        # 6. Sort by final score descending
-        scored_candidates.sort(key=lambda x: x["score"], reverse=True)
-
-        # 7. Select Top N
-        top_selections = scored_candidates[:num_references]
-
-        # 8. Create Reference Stack Record
-        stack = self.stack_repo.create(
-            session_id=session_id,
-            dataset_id=discovery.dataset_id,
-            discovery_id=discovery.id,
-            selected_count=len(top_selections),
-            selection_strategy="weighted_composite"
-        )
-
-        # 9. Create Selected Reference mappings
-        references_to_create = []
-        for i, sel in enumerate(top_selections):
-            references_to_create.append({
-                "candidate_id": sel["candidate"].id,
-                "rank_position": i + 1,
-                "ranking_score": sel["score"],
-                "selection_reason": sel["reason"]
-            })
-
-        db_selections = self.selected_ref_repo.bulk_create(stack.id, references_to_create)
-
-        # 10. Update parent AnalysisSession status to REFERENCE_SELECTION_COMPLETE milestone
-        self.session_repo.update_status(
-            session_id=session_id,
-            status=SessionStatus.REFERENCE_SELECTION_COMPLETE.value
-        )
+            temp_service.set_progress(session_id, "completed", total_candidates, total_candidates)
+        except Exception as e:
+            temp_service.set_progress(session_id, f"failed: {str(e)}", 0, total_candidates)
+            raise e
 
         return self._build_stack_response(stack, db_selections)
 

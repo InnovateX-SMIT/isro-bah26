@@ -25,6 +25,10 @@ from app.schemas.temporal_context import (
 )
 
 
+# In-memory progress tracking database for active sessions
+progress_tracker = {}
+
+
 class TemporalService:
     """
     Orchestration service layer for the Temporal intelligence provider framework.
@@ -34,6 +38,22 @@ class TemporalService:
 
     def __init__(self):
         self.registry = registry
+
+    def get_progress(self, session_id: str) -> dict:
+        """
+        Retrieves current discovery or selection progress status.
+        """
+        return progress_tracker.get(session_id, {"stage": "idle", "completed": 0, "total": 0})
+
+    def set_progress(self, session_id: str, stage: str, completed: int, total: int):
+        """
+        Updates current discovery or selection progress status.
+        """
+        progress_tracker[session_id] = {
+            "stage": stage,
+            "completed": completed,
+            "total": total
+        }
 
     def get_available_providers(self) -> List[ProviderInfoResponse]:
         """
@@ -102,12 +122,20 @@ class TemporalService:
         """
         Triggers and executes historical satellite imagery discovery.
         """
-        discovery_service = HistoricalDiscoveryService(db)
-        return discovery_service.run_discovery(
-            session_id=session_id,
-            provider_name=provider_name,
-            temporal_window_days=temporal_window_days
-        )
+        try:
+            self.set_progress(session_id, "initializing_search", 0, 3)
+            discovery_service = HistoricalDiscoveryService(db)
+            self.set_progress(session_id, "querying_catalog", 1, 3)
+            res = discovery_service.run_discovery(
+                session_id=session_id,
+                provider_name=provider_name,
+                temporal_window_days=temporal_window_days
+            )
+            self.set_progress(session_id, "completed", 3, 3)
+            return res
+        except Exception as e:
+            self.set_progress(session_id, f"failed: {str(e)}", 0, 3)
+            raise e
 
     def get_discovery(self, session_id: str, db: Session) -> TemporalDiscoveryResponse:
         """
@@ -301,7 +329,10 @@ class TemporalService:
         
         # Check cache: return path if already processed
         if os.path.exists(preview_png_path):
+            print(f"[CACHE HIT] get_candidate_preview_path: preview already exists at {preview_png_path}. Skipping GEE request.")
             return preview_png_path
+            
+        print(f"[CACHE MISS] get_candidate_preview_path: preview does not exist at {preview_png_path}. Fetching from GEE...")
             
         # Get uploaded dataset path to align extents
         uploaded_dataset_path = None

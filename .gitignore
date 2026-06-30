@@ -95,3 +95,36 @@ datasets/temporal_references/*
 !datasets/temporal_references/.gitkeep
 *.tif
 
+# ============================
+# Generated Dataset Artifacts
+# ============================
+
+# Generated previews
+datasets/previews/
+
+# Cloud Intelligence outputs
+datasets/cloud_detections/
+datasets/cloud_classifications/
+datasets/cloud_shadows/
+datasets/cloud_segmentations/
+datasets/cloud_analytics/
+
+# Reconstruction outputs
+datasets/reconstruction/
+
+# Confidence outputs
+datasets/confidence/
+
+# Exported files
+datasets/exports/
+datasets/reports/
+datasets/packages/
+
+# Temporary workspace
+datasets/temp/
+datasets/cache/
+datasets/workspace/
+
+# Python cache
+__pycache__/
+*.py[cod]

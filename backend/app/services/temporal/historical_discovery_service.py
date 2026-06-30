@@ -131,10 +131,13 @@ class HistoricalDiscoveryService:
         try:
             # 7. Execute search
             coordinates = {"lat": geo_context.center_lat, "lon": geo_context.center_lon}
-            bounding_box = [
+            original_bounding_box = [
                 [geo_context.min_lon, geo_context.min_lat],
                 [geo_context.max_lon, geo_context.max_lat]
             ]
+            from app.core.config import settings
+            from app.services.geospatial.utils import expand_bbox_by_km
+            bounding_box = expand_bbox_by_km(original_bounding_box, buffer_km=settings.GEE_BUFFER_KM)
             
             # Call provider search
             search_results = provider.search_imagery(

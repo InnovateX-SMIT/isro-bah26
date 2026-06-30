@@ -63,6 +63,7 @@ export default function ViewerSidebar({
     ],
     temporal: [
       { label: "Overview", href: `/datasets/${datasetId}/temporal`, icon: Clock },
+      { label: "Cloud Comparison", href: `/datasets/${datasetId}/temporal/cloud-comparison`, icon: GitCompare },
       { label: "References", href: `/datasets/${datasetId}/temporal/references`, icon: Layers },
       { label: "Timeline", href: `/datasets/${datasetId}/temporal/timeline`, icon: Clock },
       { label: "Metadata", href: `/datasets/${datasetId}/temporal/metadata`, icon: FileText },

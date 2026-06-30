@@ -93,5 +93,5 @@ backend/datasets/
 # Temporal references
 datasets/temporal_references/*
 !datasets/temporal_references/.gitkeep
+*.tif
 
-

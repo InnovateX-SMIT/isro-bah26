@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     # CORS Origins (to connect with frontend)
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
 
+    # GEE Configuration
+    GEE_BUFFER_KM: float = 50.0
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

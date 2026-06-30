@@ -226,6 +226,34 @@ class TemporalService:
             
         abs_path = os.path.abspath(os.path.join(workspace_root, cached_file_path))
         
+        # If the constructed path does not exist, trigger download for GEE candidates
+        if not os.path.exists(abs_path):
+            if candidate.provider_name == "GoogleEarthEngine":
+                try:
+                    expanded_bbox = cand_metadata.get("expanded_bbox")
+                    if not expanded_bbox:
+                        from sqlalchemy.orm import object_session
+                        from app.repositories.geospatial_repository import GeospatialRepository
+                        from app.services.geospatial.utils import expand_bbox_by_km
+                        from app.core.config import settings
+                        db = object_session(candidate)
+                        if db:
+                            geo_repo = GeospatialRepository(db)
+                            geo_context = geo_repo.get_by_dataset(candidate.discovery.dataset_id)
+                            if geo_context:
+                                original_bbox = [
+                                    [geo_context.min_lon, geo_context.min_lat],
+                                    [geo_context.max_lon, geo_context.max_lat]
+                                ]
+                                expanded_bbox = expand_bbox_by_km(original_bbox, buffer_km=settings.GEE_BUFFER_KM)
+                    if expanded_bbox:
+                        print(f"Lazy fetching GEE candidate {candidate.candidate_id} to cache path {abs_path}...")
+                        from app.services.temporal.providers.gee_provider import GoogleEarthEngineProvider
+                        provider = GoogleEarthEngineProvider()
+                        provider.download_image(candidate.candidate_id, abs_path, expanded_bbox)
+                except Exception as fetch_err:
+                    print(f"[Error] Failed to dynamically fetch GEE candidate {candidate.candidate_id}: {fetch_err}")
+
         # If the constructed path does not exist, run a smart dynamic search fallback
         if not os.path.exists(abs_path):
             sensor = cand_metadata.get("sensor", "")
@@ -357,12 +385,13 @@ class TemporalService:
             r_idx, g_idx, b_idx = None, None, None
             usable_bands = cand_metadata.get("usable_bands", [])
             if len(usable_bands) == src_hist.count:
-                try:
-                    r_idx = usable_bands.index("B4") + 1
-                    g_idx = usable_bands.index("B3") + 1
-                    b_idx = usable_bands.index("B2") + 1
-                except ValueError:
-                    pass
+                for idx, band_name in enumerate(usable_bands):
+                    if "B4" in band_name:
+                        r_idx = idx + 1
+                    elif "B3" in band_name:
+                        g_idx = idx + 1
+                    elif "B2" in band_name:
+                        b_idx = idx + 1
                     
             if r_idx is None or g_idx is None or b_idx is None:
                 # Fallbacks based on typical provider/sensor bands
@@ -416,14 +445,17 @@ class TemporalService:
                     
         # Stretch between 2nd and 98th percentile for visualization
         def stretch_band(band_data):
-            valid_pixels = band_data[band_data > 0]
+            valid_pixels = band_data[~np.isnan(band_data) & (band_data > 0)]
             if len(valid_pixels) == 0:
-                valid_pixels = band_data
+                valid_pixels = band_data[~np.isnan(band_data)]
+            if len(valid_pixels) == 0:
+                return np.zeros_like(band_data, dtype=np.uint8)
             p2 = np.percentile(valid_pixels, 2)
             p98 = np.percentile(valid_pixels, 98)
             
             if p98 > p2:
                 stretched = (band_data.astype(np.float32) - p2) / (p98 - p2) * 255.0
+                stretched = np.nan_to_num(stretched, nan=0.0)
                 return np.clip(stretched, 0, 255).astype(np.uint8)
             return np.zeros_like(band_data, dtype=np.uint8)
             

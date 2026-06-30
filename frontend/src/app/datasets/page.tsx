@@ -27,7 +27,8 @@ import {
   registerDataset,
   getRegisteredDatasets,
   deleteDataset,
-  uploadDataset
+  uploadDataset,
+  finalizeUpload
 } from "@/lib/dataset-api"
 import { getAnalysisSessions } from "@/lib/analysis-api"
 import { DemoDataset, Dataset } from "@/lib/types/dataset"
@@ -50,6 +51,18 @@ function DatasetsDashboard() {
 
   // Modal control
   const [showRegisterModal, setShowRegisterModal] = useState<boolean>(false)
+
+  // Metadata Recovery States
+  const [showMetadataForm, setShowMetadataForm] = useState<boolean>(false)
+  const [tempSessionId, setTempSessionId] = useState<string>("")
+  const [missingFields, setMissingFields] = useState<string[]>([])
+  const [acqDate, setAcqDate] = useState<string>("")
+  const [crsVal, setCrsVal] = useState<string>("")
+  const [latVal, setLatVal] = useState<string>("")
+  const [lonVal, setLonVal] = useState<string>("")
+  const [sensorVal, setSensorVal] = useState<string>("LISS-IV")
+  const [satelliteVal, setSatelliteVal] = useState<string>("IRS-P6")
+  const [finalizing, setFinalizing] = useState<boolean>(false)
 
   // Form states
   const [formSessionId, setFormSessionId] = useState<string>("")
@@ -196,7 +209,7 @@ function DatasetsDashboard() {
       setUploading(true)
       setUploadProgress(0)
       try {
-        await uploadDataset(
+        const uploadRes = await uploadDataset(
           formSessionId,
           uploadName,
           uploadFile,
@@ -204,14 +217,30 @@ function DatasetsDashboard() {
             setUploadProgress(progress)
           }
         )
-        triggerSuccess(`Dataset '${uploadName || uploadFile.name}' uploaded and registered successfully.`)
-        setUploadFile(null)
-        setUploadName("")
-        setShowRegisterModal(false)
-        await fetchRegistered(false)
+        
+        if (uploadRes.status === "METADATA_REQUIRED") {
+          setTempSessionId(uploadRes.temp_session_id || "")
+          setMissingFields(uploadRes.missing_fields || [])
+          
+          const meta = uploadRes.recovered_metadata || {}
+          setAcqDate(meta.acquisition_date || "")
+          setCrsVal(meta.crs || "")
+          setLatVal(meta.latitude !== null && meta.latitude !== undefined ? String(meta.latitude) : "")
+          setLonVal(meta.longitude !== null && meta.longitude !== undefined ? String(meta.longitude) : "")
+          setSensorVal(meta.sensor || "LISS-IV")
+          setSatelliteVal(meta.satellite || "IRS-P6")
+          
+          setShowMetadataForm(true)
+        } else {
+          triggerSuccess(`Dataset '${uploadName || uploadFile.name}' uploaded and registered successfully.`)
+          setUploadFile(null)
+          setUploadName("")
+          setShowRegisterModal(false)
+          await fetchRegistered(false)
+        }
       } catch (err: any) {
         console.error(err)
-        setError(err.message || "Failed to upload and register dataset.")
+        setError(`${err.message || "Failed to upload and register dataset"}. (Tip: If registration or processing fails, please continue with the pre-seeded demo data that is already pre-loaded.)`)
       } finally {
         setUploading(false)
         setUploadProgress(null)
@@ -246,9 +275,49 @@ function DatasetsDashboard() {
       await fetchRegistered(false)
     } catch (err: any) {
       console.error(err)
-      setError(err.message || "Failed to register dataset.")
+      setError(`${err.message || "Failed to register dataset"}. (Tip: If registration or processing fails, please continue with the pre-seeded demo data that is already pre-loaded.)`)
     } finally {
       setRegistering(false)
+    }
+  }
+
+  // Finalize dataset upload registration with custom metadata
+  const handleFinalize = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setFinalizing(true)
+
+    try {
+      const finalName = uploadName || (uploadFile ? uploadFile.name.replace(".zip", "") : "uploaded_dataset")
+      await finalizeUpload({
+        temp_session_id: tempSessionId,
+        analysis_session_id: formSessionId,
+        dataset_name: finalName,
+        metadata: {
+          acquisition_date: acqDate,
+          crs: crsVal,
+          latitude: parseFloat(latVal),
+          longitude: parseFloat(lonVal),
+          sensor: sensorVal,
+          satellite: satelliteVal
+        }
+      })
+
+      triggerSuccess(`Dataset '${finalName}' registered successfully with custom metadata.`)
+      
+      // Reset fields
+      setUploadFile(null)
+      setUploadName("")
+      setShowRegisterModal(false)
+      setShowMetadataForm(false)
+      setTempSessionId("")
+      setMissingFields([])
+      await fetchRegistered(false)
+    } catch (err: any) {
+      console.error(err)
+      setError(`${err.message || "Failed to finalize registration"}. (Tip: If registration or processing fails, please continue with the pre-seeded demo data that is already pre-loaded.)`)
+    } finally {
+      setFinalizing(false)
     }
   }
 
@@ -513,180 +582,308 @@ function DatasetsDashboard() {
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <h2 className="text-sm font-bold uppercase tracking-wider text-foreground flex items-center gap-2">
                 <Plus className="w-4 h-4 text-primary" />
-                Register Dataset
+                {showMetadataForm ? "Recover Missing Metadata" : "Register Dataset"}
               </h2>
               <button
-                onClick={() => setShowRegisterModal(false)}
+                onClick={() => {
+                  setShowRegisterModal(false)
+                  setShowMetadataForm(false)
+                }}
                 className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-muted/20"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleRegister} className="space-y-4">
-              
-              {/* Field 1: Analysis Session dropdown */}
-              <div className="space-y-1.5">
-                <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
-                  Target Session
-                </label>
-                {loadingSessions ? (
-                  <div className="flex items-center space-x-2 text-[10px] text-muted-foreground">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    <span>Loading Sessions...</span>
-                  </div>
-                ) : sessions.length === 0 ? (
-                  <div className="text-[10px] text-amber-500 leading-normal border border-amber-500/20 bg-amber-500/5 p-2 rounded-lg">
-                    No active sessions. Create a session on the Analysis page first.
-                  </div>
-                ) : (
-                  <select
-                    value={formSessionId}
-                    onChange={(e) => setFormSessionId(e.target.value)}
-                    className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
-                  >
-                    {sessions.map((s) => (
-                      <option key={s.session_id} value={s.session_id}>
-                        {s.session_id.substring(0, 8)}... ({s.status})
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              {/* Field 2: Source Type Toggle */}
-              <div className="space-y-1.5">
-                <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
-                  Source Type
-                </label>
-                <div className="grid grid-cols-2 gap-2 text-[10px]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRegisterSource("demo")
-                      setIsCustomPath(false)
-                    }}
-                    className={`py-2 border font-bold uppercase tracking-wider rounded-lg ${
-                      registerSource === "demo"
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-muted/10 text-muted-foreground hover:bg-muted/20"
-                    }`}
-                  >
-                    Demo Scene
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRegisterSource("upload")
-                      setIsCustomPath(false)
-                    }}
-                    className={`py-2 border font-bold uppercase tracking-wider rounded-lg ${
-                      registerSource === "upload"
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-muted/10 text-muted-foreground hover:bg-muted/20"
-                    }`}
-                  >
-                    Upload ZIP
-                  </button>
+            {showMetadataForm ? (
+              <form onSubmit={handleFinalize} className="space-y-4">
+                <div className="text-[10px] text-amber-500 border border-amber-500/20 bg-amber-500/5 p-2.5 rounded-lg leading-normal uppercase">
+                  Dataset uploaded successfully, but some mandatory fields are missing. Please complete them to finalize registration.
                 </div>
-              </div>
 
-              {/* Field 3: Dataset select/inputs */}
-              {registerSource === "demo" && (
-                /* Demo Dataset Selector */
+                {/* Field 1: Acquisition Date */}
+                <div className="space-y-1.5">
+                  <label className={`text-[10px] uppercase font-bold tracking-wider ${
+                    missingFields.includes("acquisition_date") ? "text-amber-500 font-extrabold" : "text-muted-foreground"
+                  }`}>
+                    Acquisition Date (YYYY-MM-DD)* {missingFields.includes("acquisition_date") && "(REQUIRED/MISSING)"}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. 2025-08-12"
+                    value={acqDate}
+                    onChange={(e) => setAcqDate(e.target.value)}
+                    className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
+                  />
+                </div>
+
+                {/* Field 2: CRS */}
+                <div className="space-y-1.5">
+                  <label className={`text-[10px] uppercase font-bold tracking-wider ${
+                    missingFields.includes("crs") ? "text-amber-500 font-extrabold" : "text-muted-foreground"
+                  }`}>
+                    Coordinate Reference System (CRS)* {missingFields.includes("crs") && "(REQUIRED/MISSING)"}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. EPSG:32643"
+                    value={crsVal}
+                    onChange={(e) => setCrsVal(e.target.value)}
+                    className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
+                  />
+                </div>
+
+                {/* Fields 3 & 4: Latitude & Longitude in 2 cols */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className={`text-[10px] uppercase font-bold tracking-wider ${
+                      missingFields.includes("latitude") ? "text-amber-500 font-extrabold" : "text-muted-foreground"
+                    }`}>
+                      Latitude* {missingFields.includes("latitude") && "(MISSING)"}
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      placeholder="e.g. 17.385"
+                      value={latVal}
+                      onChange={(e) => setLatVal(e.target.value)}
+                      className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className={`text-[10px] uppercase font-bold tracking-wider ${
+                      missingFields.includes("longitude") ? "text-amber-500 font-extrabold" : "text-muted-foreground"
+                    }`}>
+                      Longitude* {missingFields.includes("longitude") && "(MISSING)"}
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      placeholder="e.g. 78.486"
+                      value={lonVal}
+                      onChange={(e) => setLonVal(e.target.value)}
+                      className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                {/* Fields 5 & 6: Sensor & Satellite */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                      Sensor
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={sensorVal}
+                      onChange={(e) => setSensorVal(e.target.value)}
+                      className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                      Satellite
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={satelliteVal}
+                      onChange={(e) => setSatelliteVal(e.target.value)}
+                      className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                {/* Submit button for finalizing */}
+                <button
+                  type="submit"
+                  disabled={finalizing}
+                  className="w-full mt-2 py-3 bg-primary text-primary-foreground font-bold tracking-wider uppercase text-xs flex items-center justify-center gap-1.5 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed rounded-lg"
+                >
+                  {finalizing ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Finalizing Registration...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>Complete Registration</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleRegister} className="space-y-4">
+                
+                {/* Field 1: Analysis Session dropdown */}
                 <div className="space-y-1.5">
                   <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
-                    Select Scene
+                    Target Session
                   </label>
-                  {demoDatasets.length === 0 ? (
-                    <div className="text-[10px] text-muted-foreground italic border border-border p-2 bg-muted/10 rounded-lg">
-                      No discovered datasets.
+                  {loadingSessions ? (
+                    <div className="flex items-center space-x-2 text-[10px] text-muted-foreground">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Loading Sessions...</span>
+                    </div>
+                  ) : sessions.length === 0 ? (
+                    <div className="text-[10px] text-amber-500 leading-normal border border-amber-500/20 bg-amber-500/5 p-2 rounded-lg">
+                      No active sessions. Create a session on the Analysis page first.
                     </div>
                   ) : (
                     <select
-                      value={selectedDemoPath}
-                      onChange={(e) => handleDemoChange(e.target.value)}
+                      value={formSessionId}
+                      onChange={(e) => setFormSessionId(e.target.value)}
                       className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
                     >
-                      {demoDatasets.map((d, i) => (
-                        <option key={i} value={d.dataset_path}>
-                          {d.dataset_name}
+                      {sessions.map((s) => (
+                        <option key={s.session_id} value={s.session_id}>
+                          {s.session_id.substring(0, 8)}... ({s.status})
                         </option>
                       ))}
                     </select>
                   )}
                 </div>
-              )}
 
-              {registerSource === "upload" && (
-                /* Upload ZIP inputs */
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
-                      Dataset Name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Hyderabad_LISS_IV (Leave blank to use ZIP name)"
-                      value={uploadName}
-                      onChange={(e) => setUploadName(e.target.value)}
-                      className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
-                      LISS-IV ZIP Archive
-                    </label>
-                    <input
-                      type="file"
-                      accept=".zip"
-                      required
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files.length > 0) {
-                          setUploadFile(e.target.files[0])
-                        }
-                      }}
-                      className="w-full bg-background border border-border p-2 focus:outline-none focus:border-primary text-xs text-foreground file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 file:cursor-pointer rounded-lg"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Upload Progress Bar if uploading */}
-              {uploading && uploadProgress !== null && (
+                {/* Field 2: Source Type Toggle */}
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-                    <span>Uploading & Processing</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="bg-primary h-full rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    />
+                  <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                    Source Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRegisterSource("demo")
+                        setIsCustomPath(false)
+                      }}
+                      className={`py-2 border font-bold uppercase tracking-wider rounded-lg ${
+                        registerSource === "demo"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-muted/10 text-muted-foreground hover:bg-muted/20"
+                      }`}
+                    >
+                      Demo Scene
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRegisterSource("upload")
+                        setIsCustomPath(false)
+                      }}
+                      className={`py-2 border font-bold uppercase tracking-wider rounded-lg ${
+                        registerSource === "upload"
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-muted/10 text-muted-foreground hover:bg-muted/20"
+                      }`}
+                    >
+                      Upload ZIP
+                    </button>
                   </div>
                 </div>
-              )}
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={registering || uploading || sessions.length === 0}
-                className="w-full mt-2 py-3 bg-primary text-primary-foreground font-bold tracking-wider uppercase text-xs flex items-center justify-center gap-1.5 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed rounded-lg"
-              >
-                {registering || uploading ? (
-                  <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    {uploading ? "Uploading & Processing..." : "Registering..."}
-                  </>
-                ) : (
-                  <>
-                    {registerSource === "upload" ? <RefreshCw className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-                    {registerSource === "upload" ? "Upload & Register" : "Register Dataset"}
-                  </>
+                {/* Field 3: Dataset select/inputs */}
+                {registerSource === "demo" && (
+                  /* Demo Dataset Selector */
+                  <div className="space-y-1.5">
+                    <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                      Select Scene
+                    </label>
+                    {demoDatasets.length === 0 ? (
+                      <div className="text-[10px] text-muted-foreground italic border border-border p-2 bg-muted/10 rounded-lg">
+                        No discovered datasets.
+                      </div>
+                    ) : (
+                      <select
+                        value={selectedDemoPath}
+                        onChange={(e) => handleDemoChange(e.target.value)}
+                        className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
+                      >
+                        {demoDatasets.map((d, i) => (
+                          <option key={i} value={d.dataset_path}>
+                            {d.dataset_name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 )}
-              </button>
-            </form>
+
+                {registerSource === "upload" && (
+                  /* Upload ZIP inputs */
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                        Dataset Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Hyderabad_LISS_IV (Leave blank to use ZIP name)"
+                        value={uploadName}
+                        onChange={(e) => setUploadName(e.target.value)}
+                        className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                        LISS-IV ZIP Archive
+                      </label>
+                      <input
+                        type="file"
+                        accept=".zip"
+                        required
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            setUploadFile(e.target.files[0])
+                          }
+                        }}
+                        className="w-full bg-background border border-border p-2 focus:outline-none focus:border-primary text-xs text-foreground file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 file:cursor-pointer rounded-lg"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload Progress Bar if uploading */}
+                {uploading && uploadProgress !== null && (
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                      <span>Uploading & Processing</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-primary h-full rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={registering || uploading || sessions.length === 0}
+                  className="w-full mt-2 py-3 bg-primary text-primary-foreground font-bold tracking-wider uppercase text-xs flex items-center justify-center gap-1.5 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed rounded-lg"
+                >
+                  {registering || uploading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      {uploading ? "Uploading & Processing..." : "Registering..."}
+                    </>
+                  ) : (
+                    <>
+                      {registerSource === "upload" ? <RefreshCw className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                      {registerSource === "upload" ? "Upload & Register" : "Register Dataset"}
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}

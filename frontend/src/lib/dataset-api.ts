@@ -73,7 +73,7 @@ export async function uploadDataset(
   datasetName: string,
   file: File,
   onProgress?: (progress: number) => void
-): Promise<Dataset> {
+): Promise<any> {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -117,4 +117,32 @@ export async function uploadDataset(
     xhr.send(formData);
   });
 }
+
+export async function finalizeUpload(payload: {
+  temp_session_id: string;
+  analysis_session_id: string;
+  dataset_name: string;
+  metadata: {
+    acquisition_date: string;
+    crs: string;
+    latitude: number;
+    longitude: number;
+    sensor: string;
+    satellite: string;
+  };
+}): Promise<Dataset> {
+  const res = await fetch(`${API_URL}/api/v1/datasets/upload/finalize`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ detail: "Failed to finalize dataset registration" }));
+    throw new Error(errorData.detail || "Failed to finalize dataset registration");
+  }
+  return await res.json();
+}
+
 

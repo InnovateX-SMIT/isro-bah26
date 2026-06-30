@@ -44,3 +44,28 @@ class DatasetListResponse(BaseModel):
     Envelope response containing a list of registered datasets.
     """
     datasets: list[DatasetResponse]
+
+class UploadStatus(str, Enum):
+    SUCCESS = "SUCCESS"
+    METADATA_REQUIRED = "METADATA_REQUIRED"
+
+class RecoveredMetadata(BaseModel):
+    acquisition_date: str | None = None
+    crs: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    sensor: str | None = None
+    satellite: str | None = None
+
+class UploadValidationResponse(BaseModel):
+    status: UploadStatus
+    temp_session_id: str | None = None
+    recovered_metadata: RecoveredMetadata | None = None
+    missing_fields: list[str] | None = None
+    dataset: DatasetResponse | None = None
+
+class UploadFinalizePayload(BaseModel):
+    temp_session_id: str
+    analysis_session_id: str
+    dataset_name: str
+    metadata: RecoveredMetadata

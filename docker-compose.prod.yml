@@ -1,0 +1,24 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8000:8000" # Bind strictly to localhost so only Nginx reverse proxy can reach the backend
+    restart: always
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./datasets:/datasets # Mount host datasets root for uploads and demo files
+      - backend_db:/app/data # Mount named volume for persistent SQLite file storage
+      # Uncomment to mount Google Earth Engine credentials file securely in the container
+      # - ./backend/credentials.json:/app/credentials.json
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  backend_db:

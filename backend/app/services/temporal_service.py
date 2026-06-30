@@ -298,15 +298,10 @@ class TemporalService:
         os.makedirs(previews_dir, exist_ok=True)
         
         preview_png_path = os.path.join(previews_dir, f"{candidate.id}.png")
-        aligned_tiff_path = os.path.join(previews_dir, "aligned_reference.tif")
         
         # Check cache: return path if already processed
-        if os.path.exists(preview_png_path) and os.path.exists(aligned_tiff_path):
+        if os.path.exists(preview_png_path):
             return preview_png_path
-            
-        geotiff_path = self.get_candidate_geotiff_path(candidate)
-        if not geotiff_path or not os.path.exists(geotiff_path):
-            raise FileNotFoundError(f"Historical GeoTIFF not found on disk at {geotiff_path}")
             
         # Get uploaded dataset path to align extents
         uploaded_dataset_path = None
@@ -343,153 +338,71 @@ class TemporalService:
             raise FileNotFoundError(f"No band files found in uploaded dataset path: {uploaded_dataset_path}")
             
         import rasterio
-        from rasterio.warp import reproject, Resampling, transform_bounds
+        from rasterio.warp import transform_bounds
         
         # Read uploaded image spatial reference metadata
         with rasterio.open(uploaded_band_file) as src_up:
             dest_crs = src_up.crs
-            dest_transform = src_up.transform
-            dest_width = src_up.width
-            dest_height = src_up.height
             dest_bounds = src_up.bounds
             
-        # Open historical GeoTIFF
-        with rasterio.open(geotiff_path) as src_hist:
-            # Check geographic overlap
+        # Transform UTM bounds of the uploaded dataset to EPSG:4326 (WGS84)
+        try:
+            min_lon, min_lat, max_lon, max_lat = transform_bounds(dest_crs, "EPSG:4326", *dest_bounds)
+            native_bbox = [[min_lon, min_lat], [max_lon, max_lat]]
+        except Exception as e:
+            raise RuntimeError(f"Failed to transform user dataset bounds to WGS84: {e}")
+
+        # Expand bounds
+        from app.core.config import settings
+        from app.services.geospatial.utils import expand_bbox_by_km
+        expanded_bbox = expand_bbox_by_km(native_bbox, buffer_km=settings.GEE_BUFFER_KM)
+        
+        import requests
+        
+        # Determine bands and stretch based on sensor metadata
+        sensor = ""
+        if candidate.metadata_json:
             try:
-                up_left, up_bottom, up_right, up_top = transform_bounds(dest_crs, src_hist.crs, *dest_bounds)
-                hist_left, hist_bottom, hist_right, hist_top = src_hist.bounds
-                overlap = (
-                    up_left < hist_right and
-                    up_right > hist_left and
-                    up_bottom < hist_top and
-                    up_top > hist_bottom
-                )
-                if not overlap:
-                    print(f"[Warning] Bounding box overlap check failed for {candidate.candidate_id}")
-            except Exception as e:
-                print(f"[Warning] Overlap calculation failed: {e}")
+                cand_metadata = json.loads(candidate.metadata_json)
+                sensor = cand_metadata.get("sensor", "").lower()
+            except Exception:
+                pass
                 
-            # Dynamic Band Mapping
-            # Check sensor type or provider to map B4, B3, B2 (Red, Green, Blue)
-            sensor = ""
-            cand_metadata = {}
-            if candidate.metadata_json:
-                try:
-                    cand_metadata = json.loads(candidate.metadata_json)
-                    sensor = cand_metadata.get("sensor", "").lower()
-                except Exception:
-                    pass
+        if "landsat" in sensor or "landsat" in candidate.candidate_id.lower():
+            bands = ['SR_B4', 'SR_B3', 'SR_B2']
+        else:
+            bands = ['B4', 'B3', 'B2']
             
-            # Map B4, B3, B2 to 1-based indices dynamically based on provider/sensor metadata
-            r_idx, g_idx, b_idx = None, None, None
-            usable_bands = cand_metadata.get("usable_bands", [])
-            if len(usable_bands) == src_hist.count:
-                for idx, band_name in enumerate(usable_bands):
-                    if "B4" in band_name:
-                        r_idx = idx + 1
-                    elif "B3" in band_name:
-                        g_idx = idx + 1
-                    elif "B2" in band_name:
-                        b_idx = idx + 1
-                    
-            if r_idx is None or g_idx is None or b_idx is None:
-                # Fallbacks based on typical provider/sensor bands
-                if "sentinel" in sensor or "copernicus" in candidate.provider_name.lower():
-                    # Sentinel-2 standard bands usually order: B2, B3, B4, B8 (1, 2, 3, 4)
-                    if src_hist.count >= 3:
-                        r_idx, g_idx, b_idx = 3, 2, 1
-                elif "landsat" in sensor or "google" in candidate.provider_name.lower():
-                    # Landsat-8 standard bands usually order: B2, B3, B4, B5 (1, 2, 3, 4)
-                    if src_hist.count >= 3:
-                        r_idx, g_idx, b_idx = 3, 2, 1
-                        
-            # absolute default index fallback if mapping couldn't be resolved
-            if r_idx is None or g_idx is None or b_idx is None:
-                if src_hist.count >= 4:
-                    r_idx, g_idx, b_idx = 4, 3, 2
-                elif src_hist.count == 3:
-                    r_idx, g_idx, b_idx = 3, 2, 1
-                else:
-                    # Duplicate single band for grayscale preview
-                    r_idx, g_idx, b_idx = 1, 1, 1
-            
-            # Save the aligned GeoTIFF alongside the PNG for future scientific use
-            out_profile = {
-                "driver": "GTiff",
-                "dtype": src_hist.dtypes[0],
-                "nodata": src_hist.nodata,
-                "width": dest_width,
-                "height": dest_height,
-                "count": 3,
-                "crs": dest_crs,
-                "transform": dest_transform,
-                "compress": "lzw"
-            }
-            with rasterio.open(aligned_tiff_path, "w", **out_profile) as dst_tiff:
-                for band_num, source_idx in [(1, r_idx), (2, g_idx), (3, b_idx)]:
-                    band_dest = np.zeros((dest_height, dest_width), dtype=src_hist.dtypes[0])
-                    reproject(
-                        source=rasterio.band(src_hist, source_idx),
-                        destination=band_dest,
-                        src_transform=src_hist.transform,
-                        src_crs=src_hist.crs,
-                        dst_transform=dest_transform,
-                        dst_crs=dest_crs,
-                        resampling=Resampling.bilinear
-                    )
-                    dst_tiff.write(band_dest, band_num)
-
-            # Compute a capped destination transform/shape for the PNG preview
-            from app.services.dataset_preview_service import MAX_PREVIEW_DIM
-            from rasterio.warp import calculate_default_transform
-
-            scale_factor = min(1.0, MAX_PREVIEW_DIM / max(dest_width, dest_height))
-            capped_width = max(1, int(dest_width * scale_factor))
-            capped_height = max(1, int(dest_height * scale_factor))
-
-            capped_transform, capped_width, capped_height = calculate_default_transform(
-                dest_crs, dest_crs, dest_width, dest_height, *dest_bounds,
-                dst_width=capped_width, dst_height=capped_height
+        min_val = 0.0
+        max_val = 0.3
+        
+        # Get thumbnail URL directly from GEE
+        from app.services.temporal.providers.gee_provider import GoogleEarthEngineProvider
+        provider = GoogleEarthEngineProvider()
+        
+        try:
+            thumb_url = provider.get_thumbnail_url(
+                candidate_id=candidate.candidate_id,
+                region_geometry=expanded_bbox,
+                bands=bands,
+                min_val=min_val,
+                max_val=max_val,
+                dimensions=1024
             )
-
-            # Warp/Crop/Resample historical reference bands to capped destination array
-            preview_dest_data = np.zeros((3, capped_height, capped_width), dtype=src_hist.dtypes[0])
-            for band_num, source_idx in [(1, r_idx), (2, g_idx), (3, b_idx)]:
-                reproject(
-                    source=rasterio.band(src_hist, source_idx),
-                    destination=preview_dest_data[band_num - 1],
-                    src_transform=src_hist.transform,
-                    src_crs=src_hist.crs,
-                    dst_transform=capped_transform,
-                    dst_crs=dest_crs,
-                    resampling=Resampling.bilinear
-                )
-
-        # Stretch between 2nd and 98th percentile for visualization
-        def stretch_band(band_data):
-            valid_pixels = band_data[~np.isnan(band_data) & (band_data > 0)]
-            if len(valid_pixels) == 0:
-                valid_pixels = band_data[~np.isnan(band_data)]
-            if len(valid_pixels) == 0:
-                return np.zeros_like(band_data, dtype=np.uint8)
-            p2 = np.percentile(valid_pixels, 2)
-            p98 = np.percentile(valid_pixels, 98)
-
-            if p98 > p2:
-                stretched = (band_data.astype(np.float32) - p2) / (p98 - p2) * 255.0
-                stretched = np.nan_to_num(stretched, nan=0.0)
-                return np.clip(stretched, 0, 255).astype(np.uint8)
-            return np.zeros_like(band_data, dtype=np.uint8)
-
-        r_norm = stretch_band(preview_dest_data[0])
-        g_norm = stretch_band(preview_dest_data[1])
-        b_norm = stretch_band(preview_dest_data[2])
-
-        rgb_stack = np.stack([r_norm, g_norm, b_norm], axis=-1)
-        img = Image.fromarray(rgb_stack)
-        img.save(preview_png_path, "PNG")
-
+            
+            # Fetch the PNG image bytes from Google's servers
+            res = requests.get(thumb_url, timeout=60)
+            if res.status_code != 200:
+                raise RuntimeError(f"Failed to fetch thumbnail image from GEE: HTTP {res.status_code} - {res.text}")
+                
+            with open(preview_png_path, "wb") as f:
+                f.write(res.content)
+        except Exception as e:
+            import traceback
+            print("ERROR in get_candidate_preview_path:")
+            traceback.print_exc()
+            raise e
+            
         return preview_png_path
 
 

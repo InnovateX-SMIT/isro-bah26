@@ -93,12 +93,18 @@ def get_historical_reference_preview(
         preview_path = service.get_candidate_preview_path(candidate, db=db)
         return FileResponse(preview_path, media_type="image/png")
     except FileNotFoundError as fnfe:
+        import traceback
+        print("API HANDLER FileNotFoundError:")
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No historical cloud-free image found: {fnfe}"
         )
     except Exception as e:
+        import traceback
+        print("API HANDLER Exception:")
+        traceback.print_exc()
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No historical cloud-free image found: {e}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Internal server error during preview generation: {e}"
         )

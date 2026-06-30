@@ -249,20 +249,11 @@ class GoogleEarthEngineProvider(TemporalProvider):
             }
         }
 
-    def download_image(self, candidate_id: str, dest_path: str, bounding_box: List[List[float]]) -> None:
+    def _build_composite_image(self, candidate_id: str, geom: Any):
         """
-        Fetches Red, Green, Blue bands for candidate ID, applies proper Surface Reflectance scaling,
-        and downloads the visual composite GeoTIFF locally.
+        Private helper to query, mosaic, scale, and mask the historical GEE imagery
+        consistently across download and thumbnail generation paths.
         """
-        try:
-            ee.Initialize(project='isro-bah26')
-        except Exception as e:
-            raise RuntimeError(f"ee.Initialize failed in download_image: {e}")
-
-        min_lon, min_lat = bounding_box[0]
-        max_lon, max_lat = bounding_box[1]
-        geom = ee.Geometry.Rectangle(min_lon, min_lat, max_lon, max_lat)
-
         img = ee.Image(candidate_id)
         acq_date = ee.Date(img.get('system:time_start'))
         start_date = acq_date.advance(-15, 'day')
@@ -281,6 +272,9 @@ class GoogleEarthEngineProvider(TemporalProvider):
             img_mosaic = img_rgb_coll.mosaic()
             mask = img_mosaic.gt(0)
             img_final = img_mosaic.multiply(0.0000275).subtract(0.2).updateMask(mask)
+            bands = ['SR_B4', 'SR_B3', 'SR_B2']
+            min_val = 0.0
+            max_val = 0.3
         else:
             # Sentinel-2 Surface Reflectance bands: B4 (Red), B3 (Green), B2 (Blue)
             coll = (
@@ -294,6 +288,27 @@ class GoogleEarthEngineProvider(TemporalProvider):
             img_mosaic = img_rgb_coll.mosaic()
             mask = img_mosaic.gt(0)
             img_final = img_mosaic.multiply(0.0001).updateMask(mask)
+            bands = ['B4', 'B3', 'B2']
+            min_val = 0.0
+            max_val = 0.3
+
+        return img_final, bands, min_val, max_val
+
+    def download_image(self, candidate_id: str, dest_path: str, bounding_box: List[List[float]]) -> None:
+        """
+        Fetches Red, Green, Blue bands for candidate ID, applies proper Surface Reflectance scaling,
+        and downloads the visual composite GeoTIFF locally.
+        """
+        try:
+            ee.Initialize(project='isro-bah26')
+        except Exception as e:
+            raise RuntimeError(f"ee.Initialize failed in download_image: {e}")
+
+        min_lon, min_lat = bounding_box[0]
+        max_lon, max_lat = bounding_box[1]
+        geom = ee.Geometry.Rectangle(min_lon, min_lat, max_lon, max_lat)
+
+        img_final, _, _, _ = self._build_composite_image(candidate_id, geom)
 
         # Scale set to 200m for fast download and to stay within Earth Engine's payload limits
         url = img_final.getDownloadURL({
@@ -312,3 +327,48 @@ class GoogleEarthEngineProvider(TemporalProvider):
         with open(dest_path, "wb") as f:
             f.write(res.content)
         print(f"GEE image successfully saved to {dest_path}")
+
+    def get_thumbnail_url(
+        self,
+        candidate_id: str,
+        region_geometry: Any,
+        bands: List[str],
+        min_val: float,
+        max_val: float,
+        dimensions: int = 1024
+    ) -> str:
+        """
+        Calls GEE getThumbURL directly on the composite image to generate a visual PNG preview.
+        Accepts region_geometry either as a list of lists of floats (bounding box) or an ee.Geometry object.
+        """
+        try:
+            try:
+                ee.Initialize(project='isro-bah26')
+            except Exception as e:
+                raise RuntimeError(f"ee.Initialize failed in get_thumbnail_url: {e}")
+
+            if isinstance(region_geometry, list):
+                min_lon, min_lat = region_geometry[0]
+                max_lon, max_lat = region_geometry[1]
+                geom = ee.Geometry.Rectangle(min_lon, min_lat, max_lon, max_lat)
+            else:
+                geom = region_geometry
+
+            img_final, resolved_bands, resolved_min, resolved_max = self._build_composite_image(candidate_id, geom)
+
+            url = img_final.getThumbURL({
+                'dimensions': dimensions,
+                'crs': 'EPSG:4326',
+                'region': geom,
+                'format': 'png',
+                'min': resolved_min,
+                'max': resolved_max,
+                'bands': resolved_bands
+            })
+            return url
+        except Exception as e:
+            import traceback
+            print("ERROR in get_thumbnail_url:")
+            traceback.print_exc()
+            raise e
+

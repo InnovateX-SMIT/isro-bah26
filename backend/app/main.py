@@ -25,6 +25,16 @@ if settings.BACKEND_CORS_ORIGINS:
 def startup_event():
     init_db()
 
+@app.on_event("shutdown")
+def shutdown_event():
+    """
+    Explicitly dispose of the database connection pool on shutdown to avoid hangs.
+    """
+    from app.core.database import engine
+    print("FastAPI shutting down: Disposing of database connections.")
+    engine.dispose()
+
+
 @app.get("/health", status_code=200, tags=["Health Check"])
 def health_check():
     """

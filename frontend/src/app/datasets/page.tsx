@@ -559,7 +559,7 @@ function DatasetsDashboard() {
                 <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
                   Source Type
                 </label>
-                <div className="grid grid-cols-3 gap-2 text-[10px]">
+                <div className="grid grid-cols-2 gap-2 text-[10px]">
                   <button
                     type="button"
                     onClick={() => {
@@ -573,20 +573,6 @@ function DatasetsDashboard() {
                     }`}
                   >
                     Demo Scene
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRegisterSource("custom")
-                      setIsCustomPath(true)
-                    }}
-                    className={`py-2 border font-bold uppercase tracking-wider rounded-lg ${
-                      registerSource === "custom"
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-muted/10 text-muted-foreground hover:bg-muted/20"
-                    }`}
-                  >
-                    Custom Path
                   </button>
                   <button
                     type="button"
@@ -629,38 +615,6 @@ function DatasetsDashboard() {
                       ))}
                     </select>
                   )}
-                </div>
-              )}
-
-              {registerSource === "custom" && (
-                /* Custom path inputs */
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
-                      Scene Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Hyderabad_LISS_IV"
-                      value={customName}
-                      onChange={(e) => setCustomName(e.target.value)}
-                      className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
-                      Folder Path
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. datasets/uploaded/scene1"
-                      value={customPath}
-                      onChange={(e) => setCustomPath(e.target.value)}
-                      className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
-                    />
-                  </div>
                 </div>
               )}
 

@@ -50,6 +50,11 @@ interface TemporalContextPanelProps {
   onRefresh?: () => void;
 }
 
+const isLocalCacheEmpty = (provider: string, candidates: TemporalCandidate[]) => {
+  if (provider !== "LocalHistoricalCache") return false;
+  return candidates.length === 0 || candidates.every(c => c.candidate_id.startsWith("local_cache"));
+};
+
 export default function TemporalContextPanel({ dataset, metadata, status, onRefresh }: TemporalContextPanelProps) {
   const sessionId = dataset.analysis_session_id;
 
@@ -91,7 +96,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
 
   // Poll progress from backend while active operations are running
   useEffect(() => {
-    let intervalId: any = null;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
     if (runningDiscovery || runningSelection) {
       const fetchProgress = async () => {
         try {
@@ -105,7 +110,9 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
       fetchProgress();
       intervalId = setInterval(fetchProgress, 750);
     } else {
-      setProgress(null);
+      setTimeout(() => {
+        setProgress(null);
+      }, 0);
     }
 
     return () => {
@@ -620,7 +627,24 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                 {/* Candidate Inventory Table */}
                 <div className="space-y-1.5">
                   <span className="text-[8px] font-bold text-muted-foreground uppercase tracking-widest block">Discovered Imagery Candidates List ({discoveredCandidates.length} Items found)</span>
-                  {discoveredCandidates.length === 0 ? (
+                  {isLocalCacheEmpty(selectedProvider, discoveredCandidates) ? (
+                    <div className="border border-dashed border-border bg-card/10 p-8 text-center flex flex-col items-center justify-center space-y-4 rounded-xl min-h-[220px]">
+                      <AlertTriangle className="w-8 h-8 text-amber-500 animate-pulse" />
+                      <div className="space-y-1">
+                        <h4 className="text-sm font-bold text-foreground">No cached historical references available.</h4>
+                        <p className="text-[11px] text-muted-foreground max-w-md mx-auto leading-relaxed">
+                          This dataset has no locally cached historical imagery.
+                        </p>
+                        <div className="text-[11px] text-muted-foreground max-w-md mx-auto pt-2 text-left sm:text-center">
+                          <p className="font-semibold text-slate-300">To retrieve historical references:</p>
+                          <ul className="list-disc list-inside mt-1 inline-block text-left">
+                            <li>Run Google Earth Discovery</li>
+                            <li>Import previously cached references.</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  ) : discoveredCandidates.length === 0 ? (
                     <div className="border border-amber-500/20 bg-amber-500/5 p-4 text-center rounded-lg text-amber-500 font-mono text-[9px]">
                       Zero candidate historical reference images found. Try widening search range or checking provider status.
                     </div>
@@ -655,7 +679,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                 </div>
 
                 {/* Parameters configuration */}
-                {discoveredCandidates.length > 0 && (
+                {discoveredCandidates.length > 0 && !isLocalCacheEmpty(selectedProvider, discoveredCandidates) && (
                   <div className="border-t border-border/40 pt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* References Count */}
                     <div className="md:col-span-1 space-y-2">
@@ -766,7 +790,7 @@ export default function TemporalContextPanel({ dataset, metadata, status, onRefr
                 </button>
                 
                 <button
-                  disabled={discoveredCandidates.length === 0 || !isWeightValid}
+                  disabled={discoveredCandidates.length === 0 || !isWeightValid || isLocalCacheEmpty(selectedProvider, discoveredCandidates)}
                   onClick={handleRunSelection}
                   className="px-4 py-1.5 border border-primary text-primary hover:bg-primary/20 hover:text-white transition-all duration-300 rounded-lg text-[9.5px] uppercase font-bold tracking-wider flex items-center gap-1.5 shadow-[0_0_10px_-4px_rgba(6,182,212,0.35)] disabled:border-border/40 disabled:text-muted-foreground disabled:bg-muted/5 disabled:cursor-not-allowed"
                 >

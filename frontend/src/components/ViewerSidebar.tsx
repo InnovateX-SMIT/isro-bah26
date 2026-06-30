@@ -20,7 +20,7 @@ import { DatasetMetadata } from "@/lib/types/dataset-metadata"
 interface ViewerSidebarProps {
   dataset: Dataset
   metadata: DatasetMetadata | null
-  mode: "dataset" | "cloud" | "temporal" | "reconstruction" | "confidence" | "comparison"
+  mode: "dataset" | "cloud" | "temporal" | "reconstruction" | "confidence"
   isOpen?: boolean
   setIsOpen?: (open: boolean) => void
 }
@@ -42,7 +42,6 @@ export default function ViewerSidebar({
     { key: "temporal" as const, label: "Temporal", href: `/datasets/${datasetId}/temporal`, icon: Clock },
     { key: "reconstruction" as const, label: "Reconstruction", href: `/datasets/${datasetId}/reconstruction`, icon: Cpu },
     { key: "confidence" as const, label: "Confidence", href: `/datasets/${datasetId}/confidence`, icon: Shield },
-    { key: "comparison" as const, label: "Comparison", href: `/datasets/${datasetId}/comparison`, icon: GitCompare },
   ]
 
   // Subpage tabs (Level 2) per module
@@ -82,15 +81,6 @@ export default function ViewerSidebar({
       { label: "Overlay", href: `/datasets/${datasetId}/confidence/overlay`, icon: Layers },
       { label: "Analytics", href: `/datasets/${datasetId}/confidence/analytics`, icon: FileText },
       { label: "Report", href: `/datasets/${datasetId}/confidence/report`, icon: FileText },
-    ],
-    comparison: [
-      { label: "Overview", href: `/datasets/${datasetId}/comparison`, icon: GitCompare },
-      { label: "Historical Cloud-Free", href: `/datasets/${datasetId}/comparison/historical-cloud-free`, icon: Clock },
-      { label: "Original vs Recon", href: `/datasets/${datasetId}/comparison/original-vs-reconstruction`, icon: ImageIcon },
-      { label: "Cloud vs Recon", href: `/datasets/${datasetId}/comparison/cloud-vs-reconstruction`, icon: Activity },
-      { label: "Reference vs Recon", href: `/datasets/${datasetId}/comparison/reference-vs-reconstruction`, icon: Clock },
-      { label: "Confidence vs Recon", href: `/datasets/${datasetId}/comparison/confidence-vs-reconstruction`, icon: Shield },
-      { label: "Workspace", href: `/datasets/${datasetId}/comparison/workspace`, icon: Sparkles },
     ],
   }
 

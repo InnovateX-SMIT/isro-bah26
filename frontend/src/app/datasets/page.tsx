@@ -443,16 +443,7 @@ function DatasetsDashboard() {
                       Confidence
                     </button>
 
-                    {/* Comparison */}
-                    <button
-                      onClick={() => router.push(`/datasets/${ds.dataset_id}/comparison`)}
-                      className="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground border border-border hover:border-primary/30 font-bold tracking-wider uppercase text-xs flex items-center gap-1.5 rounded-lg transition-all"
-                    >
-                      <GitCompare className="w-4 h-4" />
-                      Comparison
-                    </button>
-
-                    {/* Spacer */}
+                     {/* Spacer */}
                     <div className="flex-1" />
 
                     {/* Delete Data & Purge */}

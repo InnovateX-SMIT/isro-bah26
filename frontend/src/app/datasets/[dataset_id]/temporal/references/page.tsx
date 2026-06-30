@@ -210,19 +210,28 @@ export default function HistoricalReferencesPage() {
         )}
 
         {/* Empty State */}
-        {references.length === 0 ? (
+        {(references.length === 0 || references.every(r => r.candidate?.candidate_id.startsWith("local_cache"))) ? (
           <div className="border border-dashed border-border/40 p-8 rounded text-center max-w-lg mx-auto space-y-4">
-            <Info className="w-8 h-8 text-amber-500 mx-auto" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">No Reference Stack Loaded</h3>
-            <p className="text-xs text-muted-foreground font-sans">
-              No historical candidate observations are linked to this dataset session yet. Run temporal context generation from the Overview Hub.
+            <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto animate-pulse" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">No cached historical references available.</h3>
+            <p className="text-xs text-muted-foreground font-sans leading-relaxed">
+              This dataset has no locally cached historical imagery.
             </p>
-            <button
-              onClick={() => router.push(`/datasets/${datasetId}/temporal`)}
-              className="px-4 py-2 border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] uppercase font-bold tracking-widest"
-            >
-              Configure Temporal Stack
-            </button>
+            <div className="text-[11px] text-muted-foreground text-left sm:text-center pt-2 max-w-md mx-auto">
+              <p className="font-semibold text-slate-300">To retrieve historical references:</p>
+              <ul className="list-disc list-inside mt-1 inline-block text-left">
+                <li>Run Google Earth Discovery</li>
+                <li>Import previously cached references.</li>
+              </ul>
+            </div>
+            <div className="pt-2">
+              <button
+                onClick={() => router.push(`/datasets/${datasetId}/temporal`)}
+                className="px-4 py-2 border border-primary/20 bg-primary/10 hover:bg-primary/20 text-primary text-[10px] uppercase font-bold tracking-widest"
+              >
+                Configure Temporal Stack
+              </button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

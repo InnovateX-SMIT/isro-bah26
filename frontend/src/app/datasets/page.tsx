@@ -26,7 +26,8 @@ import {
   getDemoDatasets,
   registerDataset,
   getRegisteredDatasets,
-  deleteDataset
+  deleteDataset,
+  uploadDataset
 } from "@/lib/dataset-api"
 import { getAnalysisSessions } from "@/lib/analysis-api"
 import { DemoDataset, Dataset } from "@/lib/types/dataset"
@@ -57,6 +58,13 @@ function DatasetsDashboard() {
   const [isCustomPath, setIsCustomPath] = useState<boolean>(false)
   const [customName, setCustomName] = useState<string>("")
   const [customPath, setCustomPath] = useState<string>("")
+
+  // Upload state variables
+  const [registerSource, setRegisterSource] = useState<"demo" | "custom" | "upload">("demo")
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
+  const [uploading, setUploading] = useState<boolean>(false)
+  const [uploadName, setUploadName] = useState<string>("")
 
   // Two-step Delete flow state
   const [deleteFlowId, setDeleteFlowId] = useState<string | null>(null)
@@ -177,6 +185,37 @@ function DatasetsDashboard() {
 
     if (!formSessionId) {
       setError("Please select or create an Analysis Session first.")
+      return
+    }
+
+    if (registerSource === "upload") {
+      if (!uploadFile) {
+        setError("Please select a ZIP file containing the LISS-IV dataset.")
+        return
+      }
+      setUploading(true)
+      setUploadProgress(0)
+      try {
+        await uploadDataset(
+          formSessionId,
+          uploadName,
+          uploadFile,
+          (progress) => {
+            setUploadProgress(progress)
+          }
+        )
+        triggerSuccess(`Dataset '${uploadName || uploadFile.name}' uploaded and registered successfully.`)
+        setUploadFile(null)
+        setUploadName("")
+        setShowRegisterModal(false)
+        await fetchRegistered(false)
+      } catch (err: any) {
+        console.error(err)
+        setError(err.message || "Failed to upload and register dataset.")
+      } finally {
+        setUploading(false)
+        setUploadProgress(null)
+      }
       return
     }
 
@@ -520,12 +559,15 @@ function DatasetsDashboard() {
                 <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
                   Source Type
                 </label>
-                <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div className="grid grid-cols-3 gap-2 text-[10px]">
                   <button
                     type="button"
-                    onClick={() => setIsCustomPath(false)}
+                    onClick={() => {
+                      setRegisterSource("demo")
+                      setIsCustomPath(false)
+                    }}
                     className={`py-2 border font-bold uppercase tracking-wider rounded-lg ${
-                      !isCustomPath
+                      registerSource === "demo"
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border bg-muted/10 text-muted-foreground hover:bg-muted/20"
                     }`}
@@ -534,20 +576,37 @@ function DatasetsDashboard() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setIsCustomPath(true)}
+                    onClick={() => {
+                      setRegisterSource("custom")
+                      setIsCustomPath(true)
+                    }}
                     className={`py-2 border font-bold uppercase tracking-wider rounded-lg ${
-                      isCustomPath
+                      registerSource === "custom"
                         ? "border-primary bg-primary/10 text-primary"
                         : "border-border bg-muted/10 text-muted-foreground hover:bg-muted/20"
                     }`}
                   >
                     Custom Path
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRegisterSource("upload")
+                      setIsCustomPath(false)
+                    }}
+                    className={`py-2 border font-bold uppercase tracking-wider rounded-lg ${
+                      registerSource === "upload"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-muted/10 text-muted-foreground hover:bg-muted/20"
+                    }`}
+                  >
+                    Upload ZIP
+                  </button>
                 </div>
               </div>
 
               {/* Field 3: Dataset select/inputs */}
-              {!isCustomPath ? (
+              {registerSource === "demo" && (
                 /* Demo Dataset Selector */
                 <div className="space-y-1.5">
                   <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
@@ -571,7 +630,9 @@ function DatasetsDashboard() {
                     </select>
                   )}
                 </div>
-              ) : (
+              )}
+
+              {registerSource === "custom" && (
                 /* Custom path inputs */
                 <div className="space-y-3">
                   <div className="space-y-1.5">
@@ -603,21 +664,71 @@ function DatasetsDashboard() {
                 </div>
               )}
 
+              {registerSource === "upload" && (
+                /* Upload ZIP inputs */
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                      Dataset Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Hyderabad_LISS_IV (Leave blank to use ZIP name)"
+                      value={uploadName}
+                      onChange={(e) => setUploadName(e.target.value)}
+                      className="w-full bg-background border border-border p-2.5 focus:outline-none focus:border-primary text-xs text-foreground rounded-lg"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">
+                      LISS-IV ZIP Archive
+                    </label>
+                    <input
+                      type="file"
+                      accept=".zip"
+                      required
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          setUploadFile(e.target.files[0])
+                        }
+                      }}
+                      className="w-full bg-background border border-border p-2 focus:outline-none focus:border-primary text-xs text-foreground file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-primary/20 file:text-primary hover:file:bg-primary/30 file:cursor-pointer rounded-lg"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Upload Progress Bar if uploading */}
+              {uploading && uploadProgress !== null && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                    <span>Uploading & Processing</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-primary h-full rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={registering || sessions.length === 0}
+                disabled={registering || uploading || sessions.length === 0}
                 className="w-full mt-2 py-3 bg-primary text-primary-foreground font-bold tracking-wider uppercase text-xs flex items-center justify-center gap-1.5 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed rounded-lg"
               >
-                {registering ? (
+                {registering || uploading ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Registering...
+                    {uploading ? "Uploading & Processing..." : "Registering..."}
                   </>
                 ) : (
                   <>
-                    <Plus className="w-3.5 h-3.5" />
-                    Register Dataset
+                    {registerSource === "upload" ? <RefreshCw className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                    {registerSource === "upload" ? "Upload & Register" : "Register Dataset"}
                   </>
                 )}
               </button>

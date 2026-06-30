@@ -67,3 +67,54 @@ export async function deleteDataset(id: string): Promise<boolean> {
   }
   return true;
 }
+
+export async function uploadDataset(
+  sessionId: string,
+  datasetName: string,
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<Dataset> {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("analysis_session_id", sessionId);
+    formData.append("dataset_name", datasetName);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_URL}/api/v1/datasets/upload`);
+
+    if (onProgress && xhr.upload) {
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          onProgress(progress);
+        }
+      };
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          resolve(data);
+        } catch (e) {
+          reject(new Error("Failed to parse upload response"));
+        }
+      } else {
+        try {
+          const errorData = JSON.parse(xhr.responseText);
+          reject(new Error(errorData.detail || "Upload failed"));
+        } catch (e) {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error("Network error during upload"));
+    };
+
+    xhr.send(formData);
+  });
+}
+

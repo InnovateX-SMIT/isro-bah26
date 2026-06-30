@@ -28,6 +28,7 @@ from app.api.v1.analytics import router as analytics_router
 from app.api.v1.export import router as export_router
 from app.api.v1.reports import router as reports_router
 from app.api.v1.packages import router as packages_router
+from app.api.v1.upload import router as upload_router
 
 api_router = APIRouter()
 
@@ -72,5 +73,6 @@ api_router.include_router(analytics_router, prefix="/analytics", tags=["Operatio
 api_router.include_router(export_router, prefix="/exports", tags=["Raster Export Subsystem"])
 api_router.include_router(reports_router, prefix="/reports", tags=["Report Export Subsystem"])
 api_router.include_router(packages_router, prefix="/packages", tags=["Analysis Package Export Subsystem"])
+api_router.include_router(upload_router, prefix="/datasets", tags=["Datasets"])
 
 

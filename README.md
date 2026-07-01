@@ -112,12 +112,16 @@ Instead of functioning purely as an isolated deep learning model, this platform 
 
 ## 📸 Screenshots
 <p align="center">
-  <img src="./assets/Image_1.png" width="49%" alt="Platform Screenshot 2"/>
-  <img src="./assets/Image_2.png" width="49%" alt="Platform Screenshot 1"/>
+  <img src="./assets/Image_1.png" width="100%" alt="Platform Screenshot 1"/>
 </p>
 <p align="center">
-  <img src="./assets/Image_3.png" width="49%" alt="Platform Screenshot 4"/>
-  <img src="./assets/Image_4.png" width="49%" alt="Platform Screenshot 3"/>
+  <img src="./assets/Image_2.png" width="100%" alt="Platform Screenshot 2"/>
+</p>
+<p align="center">
+  <img src="./assets/Image_3.png" width="100%" alt="Platform Screenshot 3"/>
+</p>
+<p align="center">
+  <img src="./assets/Image_4.png" width="100%" alt="Platform Screenshot 4"/>
 </p>
 
 ---

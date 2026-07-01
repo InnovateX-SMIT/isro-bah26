@@ -93,6 +93,24 @@ def initialize_earth_engine() -> bool:
     import ee
     import json
 
+    # 0. Check GEE_SERVICE_ACCOUNT_JSON env var first
+    env_json_string = os.environ.get("GEE_SERVICE_ACCOUNT_JSON")
+    if env_json_string:
+        env_json_string = env_json_string.strip()
+        if env_json_string:
+            try:
+                parsed_dict = json.loads(env_json_string)
+                email = parsed_dict.get("client_email")
+                project_id = parsed_dict.get("project_id") or settings.GEE_PROJECT_ID
+                if not email:
+                    raise ValueError("Missing 'client_email' in GEE_SERVICE_ACCOUNT_JSON.")
+                credentials = ee.ServiceAccountCredentials(email, key_data=env_json_string)
+                ee.Initialize(credentials=credentials, project=project_id)
+                print(f"[STARTUP GEE] Env-var-based auth succeeded. Client email: {email}, Project: {project_id}")
+                return True
+            except Exception as e:
+                print(f"[STARTUP GEE ERROR] Env-var-based auth failed: {e}")
+
     # 1. Resolve key path with robust fallbacks
     current_dir = os.path.dirname(os.path.abspath(__file__)) # app/core
     workspace_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))

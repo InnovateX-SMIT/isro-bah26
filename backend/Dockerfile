@@ -2,9 +2,16 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install basic system build dependencies for future GIS libraries compilation
+# System runtime libraries required by rasterio, GDAL, and OpenCV.
+# rasterio's manylinux wheel does NOT bundle these — they must exist on the host.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    libexpat1 \
+    libgdal-dev \
+    libgeos-dev \
+    libproj-dev \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

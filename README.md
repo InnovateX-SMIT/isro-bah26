@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=36&pause=700&duration=1500&color=FFFFFF&center=true&vCenter=true&multiline=false&width=1600&height=100&lines=AI-Powered+Geospatial+Reconstruction+Platform;Generative+AI+Cloud+Removal+for+LISS-IV+Imagery;Built+for+ISRO+Bharatiya+Antariksh+Hackathon+2026;FastAPI+·+Next.js+·+Google+Earth+Engine+·+U-Net" alt="Project Header" />
+  <img src="./assets/Hero_Banner.png" width="100%" alt="Hero Banner"/>
 </p>
 
 <p align="center">
